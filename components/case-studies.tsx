@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { caseStudies, type CaseStudy } from '@/lib/content'
 
 function Phase({ label, children }: { label: string; children: React.ReactNode }) {
@@ -16,25 +17,41 @@ function CaseStudyCard({ study }: { study: CaseStudy }) {
       className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
     >
       <div className="border-b border-border bg-secondary/50 p-8 md:p-10">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="font-serif text-2xl font-semibold text-primary">{study.index}</span>
-          <span className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {study.company}
-          </span>
-        </div>
-        <h3 className="mt-4 text-balance font-serif text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-          {study.headline}
-        </h3>
-        <p className="mt-3 max-w-3xl text-pretty leading-relaxed text-muted-foreground">
-          {study.descriptor}
-        </p>
-        <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          <span className="text-foreground">
-            <span className="font-semibold">Role:</span> {study.role}
-          </span>
-          <span className="text-foreground">
-            <span className="font-semibold">Timeframe:</span> {study.timeframe}
-          </span>
+        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+          <div className="md:max-w-xl">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="font-serif text-2xl font-semibold text-primary">{study.index}</span>
+              <span className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                {study.company}
+              </span>
+            </div>
+            <h3 className="mt-4 text-balance font-serif text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              {study.headline}
+            </h3>
+            <p className="mt-3 text-pretty leading-relaxed text-muted-foreground">
+              {study.descriptor}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              <span className="text-foreground">
+                <span className="font-semibold">Role:</span> {study.role}
+              </span>
+              <span className="text-foreground">
+                <span className="font-semibold">Timeframe:</span> {study.timeframe}
+              </span>
+            </div>
+          </div>
+
+          {study.screenshot ? (
+            <div className="shrink-0 overflow-hidden rounded-xl border border-border shadow-sm md:w-80">
+              <Image
+                src={study.screenshot.src || '/placeholder.svg'}
+                alt={study.screenshot.alt}
+                width={640}
+                height={400}
+                className="h-auto w-full object-cover"
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
