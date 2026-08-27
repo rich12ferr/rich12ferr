@@ -14,18 +14,15 @@ export function Hero() {
         }}
       />
       <div className="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <div className="flex items-center gap-2 text-sm font-medium text-primary">
-          <span className="inline-block size-2 rounded-full bg-primary" />
-          Open to Director &amp; VP-level product leadership roles
-        </div>
-
-        <h1 className="mt-6 max-w-4xl text-balance font-serif text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
+        <h1 className="max-w-4xl text-balance font-serif text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
           {profile.positioning}
         </h1>
 
-        <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-charcoal-foreground/70">
-          {profile.summary}
-        </p>
+        <div className="mt-6 max-w-2xl space-y-4 text-pretty text-lg leading-relaxed text-charcoal-foreground/70">
+          {profile.summary.split('\n\n').map((paragraph) => (
+            <p key={paragraph.slice(0, 24)}>{paragraph}</p>
+          ))}
+        </div>
 
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <a
