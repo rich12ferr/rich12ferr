@@ -14,13 +14,24 @@ export function Contact() {
               Let&apos;s talk
             </p>
             <h2 className="mt-4 text-balance font-serif text-3xl font-semibold tracking-tight md:text-4xl">
-              Looking for a product leader to build durable platform foundations
+              Looking to build what&apos;s next?
             </h2>
-            <p className="mt-6 max-w-xl text-pretty leading-relaxed text-charcoal-foreground/70">
-              I&apos;m exploring Director and VP-level product leadership roles where identity, data,
-              consent, interoperability, and developer platforms come together. If that sounds like
-              your team, I&apos;d love to connect.
-            </p>
+            <div className="mt-6 max-w-xl space-y-4 text-pretty leading-relaxed text-charcoal-foreground/70">
+              <p>
+                I&apos;m open to opportunities to help organizations turn complex problems into
+                scalable, AI-enabled products and platforms.
+              </p>
+              <p>
+                My focus is building trusted ecosystems that connect AI, data, identity, and
+                enterprise capabilities&mdash;creating the foundations for better customer
+                experiences, smarter decisions, and faster innovation.
+              </p>
+              <p>
+                Whether you&apos;re building a new product, introducing AI into an existing
+                experience, modernizing an enterprise platform, or looking for product leadership
+                to turn an ambitious idea into something real, I&apos;d love to connect.
+              </p>
+            </div>
 
             <div className="mt-8 flex flex-wrap gap-4">
               <a
