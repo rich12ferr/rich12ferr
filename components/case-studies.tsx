@@ -99,12 +99,20 @@ export function CaseStudies() {
             Selected work
           </p>
           <h2 className="mt-4 text-balance font-serif text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Platform problems solved at the intersection of product, engineering &amp; policy
+            Solving complex customer problems with products built to scale
           </h2>
-          <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-            Each of these initiatives turned fragmented identity, data, consent, and developer
-            capabilities into reusable, governed platform foundations built to scale for years.
-          </p>
+          <div className="mt-4 space-y-4 text-pretty leading-relaxed text-muted-foreground">
+            <p>
+              Each initiative started with a customer or business problem&mdash;fragmented
+              experiences, disconnected data, difficult access, or capabilities that were costly
+              to build repeatedly.
+            </p>
+            <p>
+              My approach brings product, engineering, data, AI, and governance together to
+              simplify those experiences while creating secure, compliant, reusable foundations
+              that can scale across products, teams, and organizations.
+            </p>
+          </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-8">
