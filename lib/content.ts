@@ -141,6 +141,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This highlights my ability to lead high-risk modernization efforts where security, platform reliability, regulatory requirements, and customer experience all need to improve at the same time. It also shows direct experience with identity as a product surface that real customers depend on.',
+    screenshot: {
+      src: '/images/arvest-account-overview.png',
+      alt: 'Arvest Bank account overview interface showing account status, password reset, OTP tool with secure SMS/email and authenticator app options, and login history with success statuses',
+    },
   },
   {
     id: 'capital-one-platform',
