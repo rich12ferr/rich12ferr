@@ -110,6 +110,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to lead one of the hardest types of product challenges: building foundational platform capabilities in a regulated environment where identity, consent, interoperability, and governance all intersect. It shows principal-level ownership, technical fluency, and the ability to shape systems that support years of future product growth.',
+    screenshot: {
+      src: '/images/bht-onboarding-flow.png',
+      alt: 'DHCS/BHT self-service organization onboarding flow diagram showing seven steps from registration and identity verification through delegated admin, staff invitation, scoped access, and recertification, with product outcomes including reduced onboarding friction and faster time-to-access',
+    },
   },
   {
     id: 'arvest-ciam',
