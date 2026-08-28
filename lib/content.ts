@@ -9,7 +9,7 @@ export const profile = {
   positioning:
     'I build connected platforms that turn fragmented identity, data, integration, and developer capabilities into reusable enterprise ecosystems.',
   summary:
-    'I\u2019m a senior product leader with 15+ years of experience building and scaling platform, identity, data, and AI-powered products in complex, regulated environments. My work sits at the intersection of product strategy, enterprise architecture, and transformation\u2014connecting capabilities that are often managed in silos and turning them into shared foundations that can be reused across products, teams, and customer experiences.\n\nIncreasingly, I operate at the Director level: defining strategy across interconnected domains, aligning executives and technical leaders around a common vision, guiding cross-functional teams through ambiguity, and establishing the platforms, governance, and operating models organizations need to scale with greater clarity, security, speed, and leverage.',
+    'I\u2019m a senior product leader with 15+ years of experience building and scaling platform, identity, data, and AI-powered products in complex, regulated environments. My work sits at the intersection of product strategy, enterprise architecture, and transformation\u2014connecting capabilities that are often managed in silos and turning them into shared foundations that can be reused across products, teams, and customer experiences.\n\nI lead at enterprise scale: defining strategy across interconnected domains, aligning executives and technical leaders around a common vision, guiding cross-functional teams through ambiguity, and establishing the platforms, governance, and operating models organizations need to scale with greater clarity, security, speed, and leverage. I\u2019m particularly focused on the next generation of AI-enabled products and platforms\u2014where trusted data, identity, interoperability, and intelligent systems come together to create better decisions, experiences, and business outcomes.',
   summaryExtended:
     'Today I lead strategy across client management, consent management, and enterprise identity and access management for California\u2019s Behavioral Health Transformation \u2014 including canonical model design, master client profile strategy, people matching, interoperability, and enterprise authorization. Earlier, I led enterprise platform and data product work at Capital One, AI-powered self-service and personalization at Intuit, and CIAM modernization in banking. I consistently operate at the intersection of product, engineering, policy, operations, and leadership to solve hard platform problems, create durable systems, and deliver measurable outcomes.',
 }
@@ -110,6 +110,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to lead one of the hardest types of product challenges: building foundational platform capabilities in a regulated environment where identity, consent, interoperability, and governance all intersect. It shows principal-level ownership, technical fluency, and the ability to shape systems that support years of future product growth.',
+    screenshot: {
+      src: '/images/bht-onboarding-flow.png',
+      alt: 'DHCS/BHT self-service organization onboarding flow diagram showing seven steps from registration and identity verification through delegated admin, staff invitation, scoped access, and recertification, with product outcomes including reduced onboarding friction and faster time-to-access',
+    },
   },
   {
     id: 'arvest-ciam',
@@ -141,6 +145,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This highlights my ability to lead high-risk modernization efforts where security, platform reliability, regulatory requirements, and customer experience all need to improve at the same time. It also shows direct experience with identity as a product surface that real customers depend on.',
+    screenshot: {
+      src: '/images/arvest-account-overview.png',
+      alt: 'Arvest Bank account overview interface showing account status, password reset, OTP tool with secure SMS/email and authenticator app options, and login history with success statuses',
+    },
   },
   {
     id: 'capital-one-platform',
@@ -173,6 +181,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to lead platform products that create leverage across large engineering organizations. It shows how I think about product strategy for shared capabilities: reduce friction, improve reuse, strengthen governance, and deliver measurable gains in scale and time to market.',
+    screenshot: {
+      src: '/images/capital-one-platform-diagram.png',
+      alt: 'Capital One enterprise platform architecture diagram showing Core Asset Model & Services, Asset Management, Discovery & Personalization, Governance, Collaboration, and User Experience Enablers',
+    },
   },
   {
     id: 'intuit-ai-support',
@@ -205,6 +217,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to apply AI in a practical product context \u2014 not just as a feature, but as a way to improve user outcomes, customer efficiency, and business performance at scale. It shows I can lead complex, cross-functional initiatives where AI, data, UX, and measurable impact come together.',
+    screenshot: {
+      src: '/images/intuit-qb-assistant-metrics.png',
+      alt: 'QuickBooks self-service impact metrics \u2014 128M self-help interactions, 62% self-help resolution, $2M growth from smart digital recommendations, 136M expert connections, $4.3M incremental efficiencies, 8 alpha differentiated experiences \u2014 alongside the QB Assistant conversational support interface',
+    },
   },
   {
     id: 'open-play-sports',
