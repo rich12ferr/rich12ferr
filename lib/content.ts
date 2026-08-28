@@ -173,6 +173,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to lead platform products that create leverage across large engineering organizations. It shows how I think about product strategy for shared capabilities: reduce friction, improve reuse, strengthen governance, and deliver measurable gains in scale and time to market.',
+    screenshot: {
+      src: '/images/capital-one-platform-diagram.png',
+      alt: 'Capital One enterprise platform architecture diagram showing Core Asset Model & Services, Asset Management, Discovery & Personalization, Governance, Collaboration, and User Experience Enablers',
+    },
   },
   {
     id: 'intuit-ai-support',
