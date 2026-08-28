@@ -209,6 +209,10 @@ export const caseStudies: CaseStudy[] = [
     ],
     whyItMatters:
       'This demonstrates my ability to apply AI in a practical product context \u2014 not just as a feature, but as a way to improve user outcomes, customer efficiency, and business performance at scale. It shows I can lead complex, cross-functional initiatives where AI, data, UX, and measurable impact come together.',
+    screenshot: {
+      src: '/images/intuit-qb-assistant-metrics.png',
+      alt: 'QuickBooks self-service impact metrics \u2014 128M self-help interactions, 62% self-help resolution, $2M growth from smart digital recommendations, 136M expert connections, $4.3M incremental efficiencies, 8 alpha differentiated experiences \u2014 alongside the QB Assistant conversational support interface',
+    },
   },
   {
     id: 'open-play-sports',
