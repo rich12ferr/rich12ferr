@@ -1,4 +1,4 @@
-import { Mail, Phone, Link as LinkIcon, ArrowUpRight, Download } from 'lucide-react'
+import { Mail, Phone, Link as LinkIcon, ArrowUpRight } from 'lucide-react'
 import { profile } from '@/lib/content'
 
 export function Contact() {
@@ -40,13 +40,6 @@ export function Contact() {
               >
                 <Mail className="size-4" />
                 Email me
-              </a>
-              <a
-                href="/rich-ferrera-resume.pdf"
-                className="inline-flex items-center gap-2 rounded-md border border-charcoal-foreground/25 px-5 py-3 text-sm font-semibold text-charcoal-foreground transition-colors hover:bg-charcoal-foreground/10"
-              >
-                <Download className="size-4" />
-                Download resume
               </a>
             </div>
           </div>
