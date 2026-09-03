@@ -1,0 +1,35 @@
+{
+  "name": "@openplay/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ingestion pipeline for OpenPlay: geocoding, entity resolution, change detection, and AI extraction. Server-only.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "register-sources": "tsx scripts/register-sources.ts",
+    "generate-source-registry-seed": "tsx scripts/generate-source-registry-seed.ts",
+    "import-source-registry": "tsx scripts/import-source-registry.ts",
+    "approve-source": "tsx scripts/approve-source.ts",
+    "approve-candidates": "tsx scripts/approve-candidates.ts",
+    "crawl": "tsx scripts/crawl.ts",
+    "verify-fetch": "tsx scripts/verify-fetch.ts",
+    "verify-pipeline": "tsx scripts/verify-pipeline.ts"
+  },
+  "dependencies": {
+    "@openplay/core": "workspace:*",
+    "@openplay/db": "workspace:*",
+    "ai": "^5.0.94",
+    "csv-parse": "^7.0.2",
+    "drizzle-orm": "^0.44.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.3.0",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  }
+}

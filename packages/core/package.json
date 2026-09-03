@@ -1,0 +1,17 @@
+{
+  "name": "@openplay/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Platform-agnostic OpenPlay domain layer. Pure TypeScript: no React, no DOM, no Node built-ins. Consumed by apps/web today and apps/mobile (Expo) later.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

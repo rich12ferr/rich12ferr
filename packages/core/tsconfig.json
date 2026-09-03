@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    // No "dom" lib on purpose: this package must stay renderable on React Native.
+    // If a change here needs `window`, `document`, or `fetch`, it belongs in an app or in @openplay/ingest.
+    "lib": ["esnext"],
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}
