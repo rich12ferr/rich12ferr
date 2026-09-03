@@ -1,0 +1,27 @@
+{
+  "name": "@openplay/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Drizzle schema and query layer for OpenPlay. Server-only — never import from mobile UI code.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openplay/core": "workspace:*",
+    "drizzle-orm": "^0.44.6",
+    "pg": "^8.16.3",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.4",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  }
+}
