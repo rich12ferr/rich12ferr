@@ -15,6 +15,7 @@
     "import-source-registry": "tsx scripts/import-source-registry.ts",
     "approve-source": "tsx scripts/approve-source.ts",
     "approve-candidates": "tsx scripts/approve-candidates.ts",
+    "backfill-organization-website": "tsx scripts/backfill-organization-website.ts",
     "crawl": "tsx scripts/crawl.ts",
     "verify-fetch": "tsx scripts/verify-fetch.ts",
     "verify-pipeline": "tsx scripts/verify-pipeline.ts"

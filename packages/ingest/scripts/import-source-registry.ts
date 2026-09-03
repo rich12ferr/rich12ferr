@@ -156,7 +156,12 @@ async function findOrCreateOrganization(entry: SourceRegistryEntry): Promise<str
     slug,
     name: entry.organization,
     organizationType: mapOrganizationType(entry.organizationType),
-    websiteUrl: entry.sourceType === "organization_website" ? entry.sourceUrl : null,
+    // Link out regardless of whether this is the org's own domain or a page
+    // on a shared registration platform (MyRec, SportsEngine, etc.) — that
+    // platform page is where a parent actually finds dates and signs up,
+    // which is the whole point of the link. A future "claim this listing"
+    // flow lets an organization override this with its own preferred URL.
+    websiteUrl: entry.sourceUrl,
     registrationPlatform: entry.platform,
     town: entry.town,
     state: entry.state,
