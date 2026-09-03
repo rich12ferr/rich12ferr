@@ -83,7 +83,6 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>Prototype build. All organizations and programs shown are fictitious sample data.</p>
           <p>Serving Montpelier, Berlin, Barre, Northfield, and Waterbury, VT.</p>
         </div>
       </div>
