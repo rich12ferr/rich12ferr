@@ -3,7 +3,7 @@
     "warning": "GENERATED FILE — do not edit by hand.",
     "sourceOfTruth": "packages/ingest/data/vt-source-registry.csv",
     "regenerateWith": "pnpm --filter @openplay/ingest generate-source-registry-seed",
-    "generatedAt": "2026-09-02T21:47:38.869Z"
+    "generatedAt": "2026-09-03T19:18:32.715Z"
   },
   "entries": [
     {
@@ -797,6 +797,42 @@
       "crawlFrequency": "daily_in_registration_window; weekly_offseason",
       "humanReviewRequired": false,
       "notes": "Use alongside VT-MUNI-BARRE-MIXED (municipal landing page) rather than relying on that page alone."
+    },
+    {
+      "sourceId": "VT-LEAGUE-BLACKBEAR-HOCKEY",
+      "organization": "Black Bear Hockey",
+      "organizationType": "youth_sports_organization",
+      "town": "Barre",
+      "state": "VT",
+      "coverage": "Youth hockey — Barre/Central Vermont",
+      "sourceUrl": "https://blackbearhockey.org/",
+      "platform": "SportsEngine",
+      "sourceType": "organization_portal",
+      "ingestionPriority": "P0",
+      "crawlerAdapter": "sportsengine",
+      "dataStructure": "semi_structured",
+      "sportsScope": "hockey",
+      "crawlFrequency": "daily_in_registration_window; weekly_offseason",
+      "humanReviewRequired": true,
+      "notes": "SportsEngine-hosted registration and scheduling; board meets at Barre Civic Center."
+    },
+    {
+      "sourceId": "VT-PRIVATE-CVPIONEERS-SLEDHOCKEY",
+      "organization": "Central Vermont Pioneers Sled Hockey",
+      "organizationType": "youth_sports_organization",
+      "town": "Central Vermont",
+      "state": "VT",
+      "coverage": "Adaptive sled hockey — travel and recreational teams",
+      "sourceUrl": "https://centralvermontpioneers.org/",
+      "platform": "Custom Website",
+      "sourceType": "organization_portal",
+      "ingestionPriority": "P1",
+      "crawlerAdapter": "generic_html",
+      "dataStructure": "semi_structured",
+      "sportsScope": "hockey;adaptive_recreation",
+      "crawlFrequency": "weekly; daily when changed",
+      "humanReviewRequired": true,
+      "notes": "Adaptive sled hockey club; recreational team starts at age 8, travel team spans age 14 through adult. No online registration system identified — contact via site."
     }
   ]
 }
