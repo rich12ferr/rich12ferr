@@ -37,6 +37,7 @@ export const gradeOptions = Array.from({ length: 13 }, (_, i) => ({
 }))
 
 export function seasonLabel(activity: Activity) {
+  if (!activity.season || !activity.season_year) return "Year-round / ongoing"
   return `${seasonLabels[activity.season]} ${activity.season_year}`
 }
 

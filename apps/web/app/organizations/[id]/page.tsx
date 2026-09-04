@@ -45,6 +45,10 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
   const bySeason = order
     .map((season) => ({ season, items: all.filter((a) => a.season === season) }))
     .filter((g) => g.items.length > 0)
+  // Rolling-enrollment and drop-in offerings have no fixed season. Without
+  // this bucket they'd be counted in "programs listed" above but never
+  // actually rendered in any of the season sections.
+  const ongoing = all.filter((a) => !a.season)
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
@@ -148,6 +152,22 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           </ul>
         </section>
       ))}
+
+      {ongoing.length > 0 ? (
+        <section className="mb-10">
+          <SectionHeading
+            eyebrow={`${ongoing.length} ${ongoing.length === 1 ? "program" : "programs"}`}
+            title="Year-round & ongoing"
+          />
+          <ul className="grid gap-4 lg:grid-cols-2">
+            {ongoing.map((activity) => (
+              <li key={activity.id}>
+                <ActivityCard activity={activity} now={now} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="flex flex-col items-start gap-2 rounded-2xl border border-border bg-secondary/60 p-6">
         <h2 className="font-display text-lg font-bold">Do you run this organization?</h2>

@@ -14,8 +14,8 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { FilterSelect } from "@/components/filter-select"
 import { StatusPill } from "@/components/status-pill"
-import { gradeOptions } from "@/lib/format"
-import { programTypeLabels, seasonLabels, verificationLabels } from "@/lib/labels"
+import { gradeOptions, seasonLabel } from "@/lib/format"
+import { programTypeLabels, verificationLabels } from "@/lib/labels"
 import { registrationStatus, statusShortLabels } from "@/lib/registration-status"
 import type { ActivityWithRelations, RegistrationStatus } from "@/lib/types"
 
@@ -74,7 +74,7 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
           </h1>
           <p className="text-sm text-muted-foreground">
             {activity.organization.name} &middot; {activity.sport.name} &middot;{" "}
-            {seasonLabels[activity.season]} {activity.season_year}
+            {seasonLabel(activity)}
           </p>
         </div>
       </div>
