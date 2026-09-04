@@ -42,7 +42,12 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-secondary/40">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:flex-row lg:gap-16">
         <div className="flex max-w-sm flex-col gap-3">
-          <SiteLogo className="h-8" />
+          {/* The logo is a transparent PNG with a black wordmark, which disappears
+              on this dark footer background. An always-on white plaque keeps it
+              legible regardless of theme, matching the header treatment. */}
+          <span className="flex w-fit items-center rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
+            <SiteLogo className="h-10" />
+          </span>
           <p className="text-sm leading-relaxed text-muted-foreground">
             We keep track of Vermont activities and registration dates, so your family doesn&apos;t
             have to.

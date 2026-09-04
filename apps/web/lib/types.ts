@@ -100,8 +100,9 @@ export type Activity = {
   residency_requirement: string | null
   experience_level: string | null
 
-  season: Season
-  season_year: number
+  /** Null for offerings with no fixed season, e.g. year-round drop-ins or rolling-enrollment classes. */
+  season: Season | null
+  season_year: number | null
 
   registration_open_date: string | null
   registration_close_date: string | null

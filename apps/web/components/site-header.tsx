@@ -27,13 +27,13 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-20 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
         <Link href="/" className="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
           {/* The logo is a transparent PNG with a black wordmark, which vanishes on the
               dark header. A small always-on light plaque keeps the wordmark and the
               yellow mark legible in both light and dark themes. */}
-          <span className="flex items-center rounded-lg bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-black/10">
-            <SiteLogo className="h-7" />
+          <span className="flex items-center rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
+            <SiteLogo className="h-10" />
           </span>
         </Link>
 
@@ -72,8 +72,8 @@ export function SiteHeader() {
               <div className="flex items-center border-b border-border px-5 py-4">
                 <SheetTitle
                   render={
-                    <span className="flex items-center rounded-lg bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-black/10">
-                      <SiteLogo className="h-6" />
+                    <span className="flex items-center rounded-lg bg-white px-2.5 py-2 shadow-sm ring-1 ring-black/10">
+                      <SiteLogo className="h-8" />
                     </span>
                   }
                 />
