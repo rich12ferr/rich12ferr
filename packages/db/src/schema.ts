@@ -248,8 +248,9 @@ export const programOfferings = pgTable(
     id: text("id").primaryKey(),
     programId: text("program_id").notNull(),
 
-    season: text("season").notNull(),
-    seasonYear: integer("season_year").notNull(),
+    /** Null for offerings with no fixed season, e.g. year-round drop-ins or rolling-enrollment classes. */
+    season: text("season"),
+    seasonYear: integer("season_year"),
 
     registrationOpenDate: date("registration_open_date"),
     registrationCloseDate: date("registration_close_date"),
