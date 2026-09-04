@@ -135,8 +135,12 @@ export type Activity = {
   state: string
   /** Null when the source page never published one. */
   zip: string | null
-  /** Straight-line miles from the launch hub (Montpelier, VT) — stands in for geocoding. */
-  distance_from_hub: number
+  /**
+   * Straight-line miles from the search origin. Null when neither the
+   * offering nor its organization has been geocoded yet — never coerce this
+   * to 0, which would falsely claim the activity is located at the origin.
+   */
+  distance_from_hub: number | null
   venue_name: string | null
   venue_address: string | null
 

@@ -55,7 +55,10 @@ export const statusShortLabels: Record<RegistrationStatus, string> = {
   closing_soon: "Closing soon",
   closed: "Closed",
   waitlist: "Waitlist",
-  unknown: "Unknown",
+  // "Unknown" tells a parent nothing actionable, and the detail line right
+  // below the pill already spells out "Registration information hasn't been
+  // published yet" — this just needs to name the same fact concisely.
+  unknown: "Not published",
 }
 
 /** Plain-language explanation shown next to the status. */
