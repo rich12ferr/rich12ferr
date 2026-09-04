@@ -28,8 +28,13 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link href="/" className="flex items-center rounded-md focus-visible:outline-2 focus-visible:outline-ring">
-          <SiteLogo className="h-8" />
+        <Link href="/" className="flex items-center rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          {/* The logo is a transparent PNG with a black wordmark, which vanishes on the
+              dark header. A small always-on light plaque keeps the wordmark and the
+              yellow mark legible in both light and dark themes. */}
+          <span className="flex items-center rounded-lg bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-black/10">
+            <SiteLogo className="h-7" />
+          </span>
         </Link>
 
         <nav aria-label="Main" className="ml-4 hidden items-center gap-1 lg:flex">
@@ -42,7 +47,7 @@ export function SiteHeader() {
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive(link.href)
                   ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  : "text-foreground/70 hover:bg-accent/60 hover:text-foreground",
               )}
             >
               {link.label}
@@ -65,7 +70,13 @@ export function SiteHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[19rem] gap-0 p-0">
               <div className="flex items-center border-b border-border px-5 py-4">
-                <SheetTitle render={<SiteLogo className="h-7" />} />
+                <SheetTitle
+                  render={
+                    <span className="flex items-center rounded-lg bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-black/10">
+                      <SiteLogo className="h-6" />
+                    </span>
+                  }
+                />
               </div>
               <nav aria-label="Mobile" className="flex flex-col gap-1 p-3">
                 {navLinks.map((link) => (
