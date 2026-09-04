@@ -203,8 +203,12 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                     <span className="text-muted-foreground">{activity.venue_address}</span>
                   </>
                 ) : null}
-                <br />
-                <span className="text-muted-foreground">{distanceLabel(activity.distance_from_hub)}</span>
+                {distanceLabel(activity.distance_from_hub) ? (
+                  <>
+                    <br />
+                    <span className="text-muted-foreground">{distanceLabel(activity.distance_from_hub)}</span>
+                  </>
+                ) : null}
               </DetailRow>
 
               <DetailRow icon={BuildingIcon} label="Run by">

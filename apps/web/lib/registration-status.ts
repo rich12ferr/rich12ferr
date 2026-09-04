@@ -4,6 +4,7 @@ import type { Activity, RegistrationStatus } from "@/lib/types"
 export const CLOSING_SOON_DAYS = 14
 export const RECENTLY_OPENED_DAYS = 21
 export const RECENTLY_ADDED_DAYS = 30
+export const STARTING_SOON_DAYS = 21
 
 export function startOfDay(date: Date) {
   const d = new Date(date)
@@ -55,7 +56,10 @@ export const statusShortLabels: Record<RegistrationStatus, string> = {
   closing_soon: "Closing soon",
   closed: "Closed",
   waitlist: "Waitlist",
-  unknown: "Unknown",
+  // "Unknown" tells a parent nothing actionable, and the detail line right
+  // below the pill already spells out "Registration information hasn't been
+  // published yet" — this just needs to name the same fact concisely.
+  unknown: "Not published",
 }
 
 /** Plain-language explanation shown next to the status. */
@@ -112,6 +116,19 @@ export function isRecentlyOpened(activity: Activity, now = new Date()) {
   if (!open) return false
   const days = daysBetween(open, now)
   return days >= 0 && days <= RECENTLY_OPENED_DAYS
+}
+
+/**
+ * True when the season/session itself is about to begin, independent of
+ * registration status — a class can be fully "open" for registration for
+ * months before it starts, so this needs its own signal tied to
+ * season_start_date rather than being folded into the registration pill.
+ */
+export function isStartingSoon(activity: Activity, now = new Date()) {
+  const start = parseDate(activity.season_start_date)
+  if (!start) return false
+  const days = daysBetween(startOfDay(now), start)
+  return days >= 0 && days <= STARTING_SOON_DAYS
 }
 
 export function isRecentlyAdded(activity: Activity, now = new Date()) {

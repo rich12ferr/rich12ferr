@@ -86,7 +86,8 @@ export function ActivityCard({
             </dd>
             <dd className="inline-flex items-center gap-1.5">
               <MapPinIcon className="size-3.5" aria-hidden="true" />
-              {activity.town}, {activity.state} &middot; {distanceLabel(activity.distance_from_hub)}
+              {activity.town}, {activity.state}
+              {distanceLabel(activity.distance_from_hub) ? ` \u00b7 ${distanceLabel(activity.distance_from_hub)}` : ""}
             </dd>
           </div>
         </dl>

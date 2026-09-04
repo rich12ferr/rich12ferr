@@ -45,9 +45,16 @@ export function programLabel(activity: Activity) {
   return `${genderLabels[activity.gender]} \u00b7 ${programTypeLabels[activity.program_type]}`
 }
 
-export function distanceLabel(miles: number) {
+/**
+ * Null means the activity (and its organization) hasn't been geocoded yet —
+ * distinct from being close to the hub. Never fall back to a distance or a
+ * "near X" claim here; the town/state shown alongside this is the only thing
+ * that's actually verified.
+ */
+export function distanceLabel(miles: number | null) {
+  if (miles === null) return null
   if (miles < 1) return "In Montpelier"
-  return `${miles} mi from Montpelier`
+  return `${Math.round(miles)} mi from Montpelier`
 }
 
 /**

@@ -153,8 +153,10 @@ export function listingToActivity(listing: OfferingListing): ActivityWithRelatio
     zip: listing.zip,
     venue_name: listing.venueName,
     venue_address: listing.venueAddress,
-    // Real geodesic distance, replacing the prototype's hardcoded value.
-    distance_from_hub: listing.distanceMiles ?? 0,
+    // Real geodesic distance, replacing the prototype's hardcoded value. Stays
+    // null (never 0) when ungeocoded — a fallback of 0 would render as "in
+    // Montpelier" for an activity that could be anywhere in the state.
+    distance_from_hub: listing.distanceMiles,
     residency_requirement: listing.residencyRequirement,
     experience_level: listing.experienceLevel,
     beginner_friendly: listing.beginnerFriendly,
@@ -477,7 +479,11 @@ export function sortResults(results: SearchResult[], filters: SearchFilters, now
     })
   }
   if (filters.sort === "distance") {
-    return sorted.sort((a, b) => a.distance_from_hub - b.distance_from_hub)
+    return sorted.sort(
+      (a, b) =>
+        (a.distance_from_hub ?? Number.POSITIVE_INFINITY) -
+        (b.distance_from_hub ?? Number.POSITIVE_INFINITY),
+    )
   }
   if (filters.sort === "cost") {
     return sorted.sort(
@@ -490,7 +496,7 @@ export function sortResults(results: SearchResult[], filters: SearchFilters, now
     const eligibilityRank = (r: SearchResult) => (r.eligibility === "check_rules" ? 1 : 0)
     if (eligibilityRank(a) !== eligibilityRank(b)) return eligibilityRank(a) - eligibilityRank(b)
     if (urgencyRank[a.status] !== urgencyRank[b.status]) return urgencyRank[a.status] - urgencyRank[b.status]
-    return a.distance_from_hub - b.distance_from_hub
+    return (a.distance_from_hub ?? Number.POSITIVE_INFINITY) - (b.distance_from_hub ?? Number.POSITIVE_INFINITY)
   })
 }
 
