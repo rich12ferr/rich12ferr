@@ -85,5 +85,122 @@ export const ALERT_TRIGGERS = [
 ] as const
 export type AlertTrigger = (typeof ALERT_TRIGGERS)[number]
 
-export const ALERT_TYPES = ["activity", "sport", "child_match"] as const
+export const ALERT_TYPES = ["activity", "sport", "child_match", "organization"] as const
 export type AlertType = (typeof ALERT_TYPES)[number]
+
+/**
+ * The vocabularies below were added when the model was generalized beyond
+ * Vermont youth sports (Canonical Crawl & Data Model PRD) so a camp, class,
+ * or adult drop-in can be described without overloading sports-shaped fields.
+ */
+
+/** Shape of the offering itself, independent of `programType`/`competitionLevel`. */
+export const PROGRAM_FORMATS = [
+  "league",
+  "class",
+  "camp",
+  "clinic",
+  "tournament",
+  "drop_in",
+  "recurring_class",
+  "other",
+] as const
+export type ProgramFormat = (typeof PROGRAM_FORMATS)[number]
+
+/** Who the program/offering targets. Independent of `genderEligibility`. */
+export const AUDIENCE_TYPES = ["youth", "adult", "family", "all_ages"] as const
+export type AudienceType = (typeof AUDIENCE_TYPES)[number]
+
+/** Independent of `programType` — a "club" program can be recreational or elite. */
+export const COMPETITION_LEVELS = ["recreational", "competitive", "travel", "elite"] as const
+export type CompetitionLevel = (typeof COMPETITION_LEVELS)[number]
+
+export const ORGANIZATION_STATUSES = ["active", "inactive", "merged", "closed"] as const
+export type OrganizationStatus = (typeof ORGANIZATION_STATUSES)[number]
+
+export const PROGRAM_STATUSES = ["active", "inactive", "discontinued"] as const
+export type ProgramStatus = (typeof PROGRAM_STATUSES)[number]
+
+/** Registration platform a `source` runs on. Drives which ingest adapter parses it. */
+export const SOURCE_PLATFORMS = [
+  "myrec",
+  "sportsengine",
+  "webtrac",
+  "rectrac",
+  "civicrec",
+  "leagueapps",
+  "usta",
+  "facebook",
+  "generic_html",
+  "pdf",
+  "custom",
+] as const
+export type SourcePlatform = (typeof SOURCE_PLATFORMS)[number]
+
+/**
+ * Drives conflict resolution when two sources disagree on the same field —
+ * distinct from `VerificationStatus`, which tracks trust on the resulting
+ * canonical record rather than the source itself.
+ */
+export const AUTHORITATIVE_LEVELS = ["primary", "secondary", "discovery_only", "community_submitted"] as const
+export type AuthoritativeLevel = (typeof AUTHORITATIVE_LEVELS)[number]
+
+/** How an extraction run produced its candidates. Distinct from `ExtractionMethod`, which is per-field. */
+export const EXTRACTOR_TYPES = [
+  "structured_parser",
+  "platform_adapter",
+  "html_parser",
+  "pdf_parser",
+  "llm_extraction",
+  "manual",
+] as const
+export type ExtractorType = (typeof EXTRACTOR_TYPES)[number]
+
+/** `pricing[].type` on a program offering. */
+export const PRICING_TYPES = [
+  "registration",
+  "resident",
+  "nonresident",
+  "early_bird",
+  "late_fee",
+  "equipment",
+  "membership",
+  "deposit",
+  "daily",
+  "weekly",
+  "season",
+  "free",
+  "other",
+] as const
+export type PricingType = (typeof PRICING_TYPES)[number]
+
+/** `eligibility_rules[].type` on a program offering. */
+export const ELIGIBILITY_RULE_TYPES = [
+  "age",
+  "grade",
+  "birth_year",
+  "gender",
+  "residency",
+  "school",
+  "school_district",
+  "skill_level",
+  "experience",
+  "membership",
+  "league_division",
+  "tryout_required",
+  "adult_age",
+] as const
+export type EligibilityRuleType = (typeof ELIGIBILITY_RULE_TYPES)[number]
+
+/** Why a `review_candidates` row needs human attention. */
+export const REVIEW_REASONS = [
+  "new_offering",
+  "new_organization",
+  "new_program",
+  "ambiguous_taxonomy",
+  "changed_deadline",
+  "conflicting_age_range",
+  "possible_duplicate",
+  "new_source",
+] as const
+export type ReviewReason = (typeof REVIEW_REASONS)[number]

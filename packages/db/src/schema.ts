@@ -267,10 +267,11 @@ export const programOfferings = pgTable(
      */
     statusOverride: text("status_override"),
     /**
-     * First-class cache of the derived registration status ("not_open" |
-     * "open" | "closing_soon" | "closed" | "waitlist" | "full"). Ingest/app
-     * code may write it directly; the date-derived computation in
-     * @openplay/core remains the fallback and source of truth.
+     * First-class cache of `RegistrationStatus` from @openplay/core
+     * ("upcoming" | "open" | "closing_soon" | "closed" | "waitlist" |
+     * "unknown"). Ingest/app code may write it directly; the date-derived
+     * `registrationStatus()` computation in @openplay/core remains the
+     * fallback and source of truth.
      */
     registrationStatus: text("registration_status"),
     /** "youth" | "adult" | "family" | "all_ages"; overrides the program's when a specific offering targets a different audience. */
@@ -361,7 +362,7 @@ export const sources = pgTable(
     sourceType: text("source_type").notNull(),
     label: text("label"),
     parserHints: jsonb("parser_hints").notNull().default({}),
-    /** Registration platform this source runs on, e.g. "MyRec" | "SportsEngine" | "WebTrac" | "RecTrac" | "CivicRec" | "LeagueApps" | "USTA" | "Facebook" | "Generic HTML" | "PDF" | "Custom". */
+    /** `SourcePlatform` from @openplay/core, e.g. "myrec" | "sportsengine" | "webtrac" | "generic_html". Drives which ingest adapter parses this source. */
     platform: text("platform"),
     /**
      * Drives conflict resolution when two sources disagree on the same field:
