@@ -23,6 +23,7 @@ import { parse } from "csv-parse/sync"
 import { sql } from "drizzle-orm"
 
 import {
+  SPORTS,
   type AudienceType,
   type CompetitionLevel,
   type OrganizationType,
@@ -384,6 +385,9 @@ const TAXONOMY_TO_SPORT_SLUG: Record<string, string> = {
   "Ultimate Frisbee": "ultimate-frisbee",
 }
 
+/** Real sport slug -> id lookup. A sport's id doesn't always derive algorithmically from its slug (e.g. "track-and-field" -> "sp_track_field"), so this must read the actual SPORTS array rather than guessing. */
+const SPORT_ID_BY_SLUG: Record<string, string> = Object.fromEntries(SPORTS.map((s) => [s.slug, s.id]))
+
 /**
  * Resolves an `activity_taxonomy_path` like "Sports > Team Sports > Soccer"
  * or "Camps > Sports Camps" to a sport id. Matches the taxonomy path's last
@@ -396,9 +400,10 @@ function resolveSportId(taxonomyPath: string): string {
   const segments = taxonomyPath.split(">").map((s) => s.trim())
   for (const segment of [...segments].reverse()) {
     const slug = TAXONOMY_TO_SPORT_SLUG[segment]
-    if (slug) return `sp_${slug.replace(/-/g, "_")}`
+    const id = slug ? SPORT_ID_BY_SLUG[slug] : undefined
+    if (id) return id
   }
-  return "sp_camps_enrichment"
+  return SPORT_ID_BY_SLUG["camps-enrichment"]!
 }
 
 /** `pricing[].type` in the CSV ("player"/"team") onto @openplay/core's PricingType. */
@@ -540,14 +545,42 @@ async function seedSources(crawlRows: CrawlRow[]) {
 /*  Programs + offerings                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Every program in this batch has exactly one offering, so this is a light per-row mapping rather than a grouping pass like the fixture seed's. */
+/**
+ * `program_offerings` has a unique (program_id, season, season_year)
+ * constraint, but 14 of the CSV's program_id groups (42 rows) actually
+ * contain multiple distinct offerings in the same season — different grade
+ * bands ("2nd Grade Boys Basketball" vs "3/4 Girls Basketball"), named
+ * sessions (swim lesson sessions 1-3), or camp variants. Those are genuinely
+ * separate programs, so within a colliding group each offering gets its own
+ * program row (id + title derived from the offering itself) instead of
+ * sharing the CSV's coarser program_id/program_name.
+ */
+function buildProgramKeyForOffering(row: OfferingRow, collisionCounts: Map<string, number>): { programId: string; programTitle: string } {
+  const groupKey = `${row.program_id}::${row.season_label}::${row.season_year}`
+  const collides = (collisionCounts.get(groupKey) ?? 0) > 1
+  if (!collides) {
+    return { programId: row.program_id, programTitle: row.program_name }
+  }
+  return {
+    programId: `${row.program_id}--${slugify(row.program_offering_id)}`,
+    programTitle: row.program_offering_title,
+  }
+}
+
 async function seedProgramsAndOfferings(offerings: OfferingRow[], crawlRows: CrawlRow[]) {
   const sourceById = new Map(crawlRows.map((r) => [r.source_id, r]))
+
+  const collisionCounts = new Map<string, number>()
+  for (const row of offerings) {
+    const groupKey = `${row.program_id}::${row.season_label}::${row.season_year}`
+    collisionCounts.set(groupKey, (collisionCounts.get(groupKey) ?? 0) + 1)
+  }
 
   let programCount = 0
   let offeringCount = 0
 
   for (const row of offerings) {
+    const { programId, programTitle } = buildProgramKeyForOffering(row, collisionCounts)
     const sportId = resolveSportId(row.activity_taxonomy_path)
     const competitionLevel = mapCompetitionLevel(row.competition_level)
     const audienceType = mapAudienceType(row.audience_type)
@@ -564,11 +597,11 @@ async function seedProgramsAndOfferings(offerings: OfferingRow[], crawlRows: Cra
     if (row.lifecycle_status && row.lifecycle_status !== "unknown") tags.push(`lifecycle_${row.lifecycle_status}`)
 
     const programValues = {
-      id: row.program_id,
-      slug: `${slugify(row.organization_id)}-${slugify(row.program_name)}`,
+      id: programId,
+      slug: `${slugify(row.organization_id)}-${slugify(programTitle)}`,
       organizationId: row.organization_id,
       sportId,
-      title: row.program_name,
+      title: programTitle,
       description: nullIfEmpty(row.notes),
       programType: mapProgramType(row.competition_level),
       programFormat: mapProgramFormat(row.program_format),
