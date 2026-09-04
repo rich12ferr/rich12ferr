@@ -551,9 +551,18 @@ export async function seasonCounts(): Promise<
     })
     .from(programOfferings)
     .innerJoin(programs, eq(programOfferings.programId, programs.id))
-    .where(and(eq(programOfferings.published, true), eq(programs.active, true)))
+    .where(
+      and(
+        eq(programOfferings.published, true),
+        eq(programs.active, true),
+        // Season-less offerings (year-round drop-ins, rolling enrollment)
+        // have nothing meaningful to group into a season bucket here.
+        isNotNull(programOfferings.season),
+        isNotNull(programOfferings.seasonYear),
+      ),
+    )
     .groupBy(programOfferings.season, programOfferings.seasonYear)
-  return rows
+  return rows as Array<{ season: string; seasonYear: number; total: number; openNow: number }>
 }
 
 /** Per-sport counts for the browse grid. */

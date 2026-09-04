@@ -156,7 +156,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           families always see the current information.
         </p>
         <Button render={<Link href="/about" />} nativeButton={false} variant="outline" size="sm" className="mt-1">
-          How organizations work with OpenPlay
+          How organizations work with Sign Up Vermont
         </Button>
       </div>
     </div>

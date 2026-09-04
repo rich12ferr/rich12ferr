@@ -2,7 +2,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Terms of use",
-  description: "The terms for using the OpenPlay directory.",
+  description: "The terms for using the Sign Up Vermont directory.",
 }
 
 const lastUpdated = "September 2026"
@@ -13,24 +13,29 @@ export default function TermsPage() {
       <header className="mb-8 flex flex-col gap-3">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Terms of use</h1>
         <p className="text-sm text-muted-foreground">Last updated {lastUpdated}</p>
+        <p className="text-sm text-muted-foreground">
+          Sign Up Vermont is operated by Sign Up Vermont, LLC.
+        </p>
       </header>
 
       <div className="flex flex-col gap-8 text-sm leading-relaxed text-muted-foreground">
         <section className="flex flex-col gap-3">
-          <h2 className="font-display text-lg font-bold text-foreground">What OpenPlay is</h2>
+          <h2 className="font-display text-lg font-bold text-foreground">What Sign Up Vermont is</h2>
           <p>
-            OpenPlay is a free directory of youth sports and activity programs. It is provided to help
-            families find and track registration information. By using OpenPlay, you agree to these terms.
+            Sign Up Vermont is a service of Sign Up Vermont, LLC, offered as a directory of youth sports,
+            camps, arts, and recreation programs. It is provided to help families find and track
+            registration information. By using Sign Up Vermont, you agree to these terms.
           </p>
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="font-display text-lg font-bold text-foreground">What OpenPlay is not</h2>
+          <h2 className="font-display text-lg font-bold text-foreground">What Sign Up Vermont is not</h2>
           <p>
-            OpenPlay never processes registrations, payments, or rosters. Every &quot;Register&quot; link
-            sends you directly to the organization running the program, and any registration, payment, or
-            enrollment happens entirely on that organization&apos;s own site, under that organization&apos;s
-            own terms. OpenPlay is not a party to that transaction and is not responsible for it.
+            Sign Up Vermont, LLC never processes registrations, payments, or rosters. Every
+            &quot;Register&quot; link sends you directly to the organization running the program, and any
+            registration, payment, or enrollment happens entirely on that organization&apos;s own site,
+            under that organization&apos;s own terms. Sign Up Vermont, LLC is not a party to that
+            transaction and is not responsible for it.
           </p>
         </section>
 
@@ -72,7 +77,7 @@ export default function TermsPage() {
         <section className="flex flex-col gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">Acceptable use</h2>
           <p>
-            OpenPlay is meant to be used by families and organizations looking for or listing youth
+            Sign Up Vermont is meant to be used by families and organizations looking for or listing youth
             activities. Please do not scrape, mirror, or resell the directory&apos;s data, and do not use the
             contact or submission forms to send spam or unrelated advertising.
           </p>
@@ -81,8 +86,8 @@ export default function TermsPage() {
         <section className="flex flex-col gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">No warranty</h2>
           <p>
-            OpenPlay is provided as-is, without warranties of any kind, express or implied. We do not
-            guarantee that the directory is complete, uninterrupted, or error-free.
+            Sign Up Vermont is provided as-is, without warranties of any kind, express or implied. We do
+            not guarantee that the directory is complete, uninterrupted, or error-free.
           </p>
         </section>
 
@@ -90,7 +95,8 @@ export default function TermsPage() {
           <h2 className="font-display text-lg font-bold text-foreground">Changes to these terms</h2>
           <p>
             We may update these terms as the product changes. If we do, we will update the date at the top
-            of this page. Continued use of OpenPlay after a change means you accept the updated terms.
+            of this page. Continued use of Sign Up Vermont after a change means you accept the updated
+            terms.
           </p>
         </section>
 

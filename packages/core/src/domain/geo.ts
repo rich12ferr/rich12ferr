@@ -28,6 +28,16 @@ export type Place = {
   town: string
   state: string
   zip: string | null
+  /**
+   * County or equivalent, plus locale fields. Optional — additive to the
+   * existing `town`/`state`/`zip` fast path, not required of every caller
+   * that already constructs a `Place`.
+   */
+  administrative_area_2?: string | null
+  /** ISO 3166-1 alpha-2. Defaults to "US"; kept nullable on offering-level overrides. */
+  country_code?: string | null
+  /** IANA zone, e.g. "America/New_York". Null until geocoded. */
+  timezone?: string | null
   venue_name: string | null
   venue_address: string | null
   /** Null until geocoding succeeds; treat null as "unknown location", never as 0,0. */

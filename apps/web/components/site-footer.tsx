@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { OpenPlayMark, OpenPlayWordmark } from "@/components/openplay-mark"
+import { SiteLogo } from "@/components/site-logo"
 
 const columns = [
   {
@@ -15,8 +15,8 @@ const columns = [
     heading: "Contribute",
     links: [
       { href: "/submit", label: "Submit an activity" },
-      { href: "/alerts", label: "Create an alert" },
-      { href: "/about", label: "How OpenPlay works" },
+      { href: "/alerts", label: "Get signup alerts" },
+      { href: "/about", label: "How Sign Up Vermont works" },
       { href: "/about-us", label: "About us" },
     ],
   },
@@ -42,20 +42,14 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-secondary/40">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:flex-row lg:gap-16">
         <div className="flex max-w-sm flex-col gap-3">
-          <div className="flex items-center gap-2.5">
-            <OpenPlayMark className="size-8" />
-            <OpenPlayWordmark className="text-lg" />
-          </div>
-          <p className="font-display text-sm font-bold tracking-tight text-primary">
-            Stronger together &mdash; building healthy kids and connected communities.
-          </p>
+          <SiteLogo className="h-8" />
           <p className="text-sm leading-relaxed text-muted-foreground">
-            A free, open directory of youth sports in central Vermont. Every family sees the same
-            information at the same time.
+            We keep track of Vermont activities and registration dates, so your family doesn&apos;t
+            have to.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            OpenPlay never processes registrations or payments. Registration always happens on the
-            organization&apos;s own site.
+            Sign Up Vermont never processes registrations or payments. Registration always happens on
+            the organization&apos;s own site.
           </p>
         </div>
 
@@ -83,8 +77,8 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>Prototype build. All organizations and programs shown are fictitious sample data.</p>
           <p>Serving Montpelier, Berlin, Barre, Northfield, and Waterbury, VT.</p>
+          <p>&copy; 2026 Sign Up Vermont, LLC.</p>
         </div>
       </div>
     </footer>

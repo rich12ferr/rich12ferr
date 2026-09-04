@@ -32,8 +32,8 @@ export default async function OrganizationsPage() {
       <div className="mb-8 flex flex-col gap-2">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Organizations</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Every program in OpenPlay belongs to one of these organizations. Registration always happens on
-          their own site.
+          Every program in Sign Up Vermont belongs to one of these organizations. Registration always
+          happens on their own site.
         </p>
       </div>
 

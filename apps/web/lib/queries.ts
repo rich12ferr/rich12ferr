@@ -240,12 +240,15 @@ export async function activitiesForSport(slug: string) {
  * The database uses camelCase columns; translating here keeps that boundary in
  * one place instead of spreading naming conversions across components.
  */
-export async function organizationById(idOrSlug: string): Promise<Organization | null> {
-  // Existing links address organizations by id; newer ones use the slug.
-  // Accepting both means neither form 404s.
-  const row = await organizationByIdOrSlug(idOrSlug)
-  if (!row) return null
-
+/**
+ * Maps a raw (camelCase) Drizzle organizations row onto the snake_case
+ * `Organization` shape the UI reads. Shared by every query that returns an
+ * organization so `website_url` and friends aren't silently dropped by a
+ * naive `as unknown as Organization` cast — that previously left the "visit
+ * website" button unable to render on the admin organizations list even when
+ * the row had a website_url.
+ */
+function toOrganization(row: NonNullable<Awaited<ReturnType<typeof organizationByIdOrSlug>>>): Organization {
   return {
     id: row.id,
     name: row.name,
@@ -262,6 +265,14 @@ export async function organizationById(idOrSlug: string): Promise<Organization |
     last_verified_at: row.lastVerifiedAt ? row.lastVerifiedAt.toISOString().slice(0, 10) : null,
     about: row.about,
   }
+}
+
+export async function organizationById(idOrSlug: string): Promise<Organization | null> {
+  // Existing links address organizations by id; newer ones use the slug.
+  // Accepting both means neither form 404s.
+  const row = await organizationByIdOrSlug(idOrSlug)
+  if (!row) return null
+  return toOrganization(row)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -540,12 +551,13 @@ export async function sportSummaries(now = new Date()) {
 export async function organizationSummaries(now = new Date()) {
   const [orgRows, list] = await Promise.all([listOrganizations(), allActivities()])
   return orgRows
-    .map((organization) => {
+    .map((row) => {
+      const organization = toOrganization(row)
       const items = list.filter((a) => a.organization_id === organization.id)
       const openNow = items.filter((a) =>
         ["open", "closing_soon"].includes(registrationStatus(a, now)),
       ).length
-      return { organization: organization as unknown as Organization, total: items.length, openNow }
+      return { organization, total: items.length, openNow }
     })
     .sort((a, b) => b.total - a.total)
 }

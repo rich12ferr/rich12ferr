@@ -33,12 +33,25 @@ export type FieldProvenance = {
   entity_id: string
   /** Column name on the target entity, e.g. "registration_close_date". */
   field: string
-  /** The value as extracted, serialized to text so one table covers all columns. */
+  /** The normalized value, serialized to text so one table covers all columns. */
   value: string | null
+  /** Raw value as it appeared in the source, before normalization into `value`. Optional — additive. */
+  extracted_value?: string | null
+  /** Verbatim quoted text backing the value — the human-checkable citation. Optional — additive. */
+  source_excerpt?: string | null
+  /**
+   * True when the value was inferred/guessed rather than explicitly stated in
+   * the source. AI-inferred information must never be indistinguishable from
+   * explicitly sourced data — `needsHumanReview` below floors confidence to
+   * "low" whenever this is true. Optional field; treat undefined as false.
+   */
+  is_inferred?: boolean
 
   source_id: string | null
   source_type: SourceType | null
   extraction_method: ExtractionMethod
+  /** Which `extraction_runs` row produced this value, if any. Optional — additive. */
+  extraction_run_id?: string | null
   /** Model confidence in [0,1]. Null for human entry, which carries its own tier. */
   confidence: number | null
   /** Prompt/model version, so a quality regression can be traced to a change. */
@@ -62,17 +75,23 @@ export type ConfidenceTier = (typeof CONFIDENCE_TIERS)[number]
 export const REVIEW_CONFIDENCE_THRESHOLD = 0.75
 export const HIGH_CONFIDENCE_THRESHOLD = 0.9
 
-export function confidenceTier(p: Pick<FieldProvenance, "confidence" | "verification_status" | "disputed_at">): ConfidenceTier {
+export function confidenceTier(
+  p: Pick<FieldProvenance, "confidence" | "verification_status" | "disputed_at" | "is_inferred">,
+): ConfidenceTier {
   if (p.disputed_at) return "low"
   // A human or the organization vouched for it; model confidence is irrelevant.
   if (verificationRank(p.verification_status) >= verificationRank("admin_reviewed")) return "high"
+  // A guessed value must never look as trustworthy as an explicitly sourced one.
+  if (p.is_inferred) return "low"
   if (p.confidence === null) return "medium"
   if (p.confidence >= HIGH_CONFIDENCE_THRESHOLD) return "high"
   if (p.confidence >= REVIEW_CONFIDENCE_THRESHOLD) return "medium"
   return "low"
 }
 
-export function needsHumanReview(p: Pick<FieldProvenance, "confidence" | "verification_status" | "disputed_at">): boolean {
+export function needsHumanReview(
+  p: Pick<FieldProvenance, "confidence" | "verification_status" | "disputed_at" | "is_inferred">,
+): boolean {
   return confidenceTier(p) === "low"
 }
 

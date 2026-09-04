@@ -276,7 +276,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               </dl>
             )}
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              OpenPlay is a directory, not the organizer. Always confirm details on the
+              Sign Up Vermont is a directory, not the organizer. Always confirm details on the
               organization&apos;s own page before you pay &mdash; and tell us if something looks off.
             </p>
             <div className="mt-2 -ml-2">
@@ -361,8 +361,8 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Registration happens on{" "}
-                {activity.registration_provider ?? activity.organization.name}&apos;s site. OpenPlay never
-                collects payment or personal details.
+                {activity.registration_provider ?? activity.organization.name}&apos;s site. Sign Up
+                Vermont never collects payment or personal details.
               </p>
             )}
 

@@ -13,7 +13,7 @@ export const submissions: Submission[] = [
     registration_dates: "Opens Aug 1, closes Sep 5",
     registration_url: "https://example.org/middlesex-rec/k-soccer",
     source_url: "https://example.org/middlesex-rec/fall",
-    comments: "Not listed on OpenPlay yet. Flyer went out at the school this week.",
+    comments: "Not listed on Sign Up Vermont yet. Flyer went out at the school this week.",
     status: "pending",
   },
   {

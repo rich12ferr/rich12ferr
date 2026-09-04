@@ -24,6 +24,7 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 
+import { ORGANIZATION_TYPES, type OrganizationType } from "@openplay/core"
 import { db, organizations, pool, sources } from "@openplay/db"
 import { eq, sql } from "drizzle-orm"
 
@@ -38,27 +39,27 @@ const SEED_PATH = join(__dirname, "../data/vt-source-registry.seed.json")
 /* -------------------------------------------------------------------------- */
 
 /**
- * The CSV's organization_type is a richer taxonomy (6 values) than the
- * database's `organizations_type_check` constraint (6 different values:
- * school, recreation_department, league, club, nonprofit, other). This maps
- * one to the other; the original CSV value is preserved verbatim in
- * `parser_hints.registry.organizationType` on the source row, so nothing is
- * lost even though the organization row itself is constrained.
+ * The database's `organizations_type_check` constraint was broadened to the
+ * full PRD taxonomy (13 values, see `ORGANIZATION_TYPES`), so most CSV values
+ * now map onto it directly instead of collapsing into a narrower set. Only
+ * the handful of CSV values with no direct match still get remapped; the
+ * original CSV value is preserved verbatim in
+ * `parser_hints.registry.organizationType` on the source row regardless.
  */
-function mapOrganizationType(
-  csvType: string,
-): "school" | "recreation_department" | "league" | "club" | "nonprofit" | "other" {
+function mapOrganizationType(csvType: string): OrganizationType {
+  if ((ORGANIZATION_TYPES as readonly string[]).includes(csvType)) {
+    return csvType as OrganizationType
+  }
   switch (csvType) {
-    case "municipal_recreation":
-      return "recreation_department"
     case "youth_league":
       return "league"
     case "private_youth_program_provider":
     case "youth_sports_organization":
       return "club"
     case "state_governing_body":
+      return "state_association"
     case "state_member_directory":
-      return "nonprofit"
+      return "national_association"
     default:
       return "other"
   }
@@ -156,7 +157,12 @@ async function findOrCreateOrganization(entry: SourceRegistryEntry): Promise<str
     slug,
     name: entry.organization,
     organizationType: mapOrganizationType(entry.organizationType),
-    websiteUrl: entry.sourceType === "organization_website" ? entry.sourceUrl : null,
+    // Link out regardless of whether this is the org's own domain or a page
+    // on a shared registration platform (MyRec, SportsEngine, etc.) — that
+    // platform page is where a parent actually finds dates and signs up,
+    // which is the whole point of the link. A future "claim this listing"
+    // flow lets an organization override this with its own preferred URL.
+    websiteUrl: entry.sourceUrl,
     registrationPlatform: entry.platform,
     town: entry.town,
     state: entry.state,
