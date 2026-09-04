@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import type { Activity, RegistrationStatus } from "@/lib/types"
-import { isRecentlyAdded } from "@/lib/registration-status"
+import { isRecentlyAdded, isStartingSoon } from "@/lib/registration-status"
 
 /** Optional badges from PRD 14. */
 export function ActivityBadges({
@@ -15,6 +15,10 @@ export function ActivityBadges({
   const badges: { label: string; variant?: "secondary" | "outline" }[] = []
 
   if (activity.registration_fee === 0) badges.push({ label: "Free" })
+  // Independent of registration status: a class can be "open" for
+  // registration for months before it starts, so caregivers still need a
+  // signal tied to when the season itself begins.
+  if (isStartingSoon(activity, now)) badges.push({ label: "Starts soon" })
   if (activity.tryout_required) badges.push({ label: "Tryouts required", variant: "outline" })
   if (activity.beginner_friendly) badges.push({ label: "Beginner friendly", variant: "secondary" })
   if (activity.verification_status === "organization_verified")
