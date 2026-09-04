@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { UnsubscribeAlert } from "@/components/unsubscribe-alert"
 
 export const metadata: Metadata = {
-  title: "Unsubscribe | OpenPlay",
+  title: "Unsubscribe | Sign Up Vermont",
   robots: { index: false },
 }
 

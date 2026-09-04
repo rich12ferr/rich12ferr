@@ -21,11 +21,11 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "OpenPlay — Find youth sports near you",
-    template: "%s | OpenPlay",
+    default: "Sign Up Vermont — Find youth activities near you",
+    template: "%s | Sign Up Vermont",
   },
   description:
-    "OpenPlay is a free, open directory of youth sports programs, registration dates, and deadlines for families in central Vermont.",
+    "We keep track of Vermont youth sports, camps, arts, and recreation programs, and their registration dates, so your family doesn't have to.",
   generator: "v0.app",
   metadataBase: new URL(
     process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -33,23 +33,24 @@ export const metadata: Metadata = {
       : "http://localhost:3000",
   ),
   keywords: [
-    "youth sports",
+    "Vermont youth sports",
+    "Vermont youth activities",
     "youth sports registration",
     "Montpelier VT youth sports",
     "youth soccer registration",
     "middle school sports",
   ],
   openGraph: {
-    title: "OpenPlay — Find something to play",
+    title: "Sign Up Vermont — Find something to do",
     description:
-      "Search youth sports programs, registration windows, and deadlines across your community in one place.",
+      "Search Vermont youth sports, camps, arts, and recreation programs, with registration windows and dates in one place.",
     type: "website",
-    images: [{ url: "/og-openplay.png", width: 1200, height: 630, alt: "OpenPlay" }],
+    images: [{ url: "/og-signup-vermont.png", width: 1200, height: 630, alt: "Sign Up Vermont" }],
   },
   icons: {
     icon: [
       { url: "/icon-light-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/images/openplay-icon.png", sizes: "512x512", type: "image/png" },
+      { url: "/images/signup-vermont-icon.png", sizes: "512x512", type: "image/png" },
     ],
     apple: "/apple-icon.png",
   },

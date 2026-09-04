@@ -6,7 +6,7 @@ import { useState } from "react"
 import { MenuIcon, SearchIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { OpenPlayMark, OpenPlayWordmark } from "@/components/openplay-mark"
+import { SiteLogo } from "@/components/site-logo"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
@@ -28,9 +28,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-ring">
-          <OpenPlayMark className="size-8" />
-          <OpenPlayWordmark className="text-lg" />
+        <Link href="/" className="flex items-center rounded-md focus-visible:outline-2 focus-visible:outline-ring">
+          <SiteLogo className="h-8" />
         </Link>
 
         <nav aria-label="Main" className="ml-4 hidden items-center gap-1 lg:flex">
@@ -65,9 +64,8 @@ export function SiteHeader() {
               <MenuIcon />
             </SheetTrigger>
             <SheetContent side="right" className="w-[19rem] gap-0 p-0">
-              <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
-                <OpenPlayMark className="size-7" />
-                <SheetTitle render={<OpenPlayWordmark className="text-base" />} />
+              <div className="flex items-center border-b border-border px-5 py-4">
+                <SheetTitle render={<SiteLogo className="h-7" />} />
               </div>
               <nav aria-label="Mobile" className="flex flex-col gap-1 p-3">
                 {navLinks.map((link) => (

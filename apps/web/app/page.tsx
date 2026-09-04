@@ -49,15 +49,15 @@ export default async function HomePage() {
               Now covering the Montpelier, Vermont area
             </p>
             <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-              Never miss another signup.
+              Vermont activities, with signup dates you can see coming.
             </h1>
             <p className="text-lg leading-relaxed text-foreground text-pretty">
-              Find youth sports and activities your child is eligible for &mdash; and know when
-              registration opens.
+              We keep track of Vermont activities and registration dates, so your family doesn&apos;t
+              have to.
             </p>
             <p className="leading-relaxed text-muted-foreground text-pretty">
               {total} programs from {orgCount} local schools, rec departments, leagues, and clubs
-              &mdash; with registration deadlines you can actually see coming.
+              &mdash; sports, camps, arts, and community recreation together in one place.
             </p>
           </div>
 
@@ -213,20 +213,21 @@ export default async function HomePage() {
           <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-6">
             <h3 className="font-display text-lg font-bold">Where this comes from</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Every listing shows its original source and when we last checked it. OpenPlay never handles
-              registration or payment &mdash; you always finish on the organization&apos;s own site.
+              Every listing shows its original source and when we last checked it. Sign Up Vermont never
+              handles registration or payment &mdash; you always finish on the organization&apos;s own
+              site.
             </p>
             <Link
               href="/about"
               className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
             >
-              How OpenPlay works
+              How Sign Up Vermont works
               <ArrowRightIcon className="size-3.5" aria-hidden="true" />
             </Link>
           </div>
 
           <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-6">
-            <h3 className="font-display text-lg font-bold">Never miss a signup</h3>
+            <h3 className="font-display text-lg font-bold">Get signup alerts</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Get an email when registration opens for a sport you care about, and a reminder before the
               deadline closes.
@@ -239,7 +240,7 @@ export default async function HomePage() {
               className="mt-2 w-fit"
             >
               <BellIcon data-icon="inline-start" />
-              Set up alerts
+              Get signup alerts
             </Button>
           </div>
 

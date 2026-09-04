@@ -2,7 +2,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Privacy policy",
-  description: "What OpenPlay collects, why, and how you can remove it.",
+  description: "What Sign Up Vermont collects, why, and how you can remove it.",
 }
 
 const lastUpdated = "September 2026"
@@ -19,10 +19,10 @@ export default function PrivacyPage() {
         <section className="flex flex-col gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">The short version</h2>
           <p>
-            OpenPlay is a directory. You can search it, browse it, and set up alerts without creating an
-            account. We collect the minimum information needed to send you an alert email or respond to a
-            message you send us, and nothing else. We do not sell your information, and we do not share it
-            with the organizations running the activities you look up.
+            Sign Up Vermont is a directory. You can search it, browse it, and set up alerts without
+            creating an account. We collect the minimum information needed to send you an alert email or
+            respond to a message you send us, and nothing else. We do not sell your information, and we
+            do not share it with the organizations running the activities you look up.
           </p>
         </section>
 
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
             choose &mdash; for example a sport, a location, or a child&apos;s grade range. When you submit an
             activity or send us a message, we store what you enter, including your email address if you
             provide one, so we can review it or follow up. We do not require an account, a name, or any
-            other identifying information to use OpenPlay.
+            other identifying information to use Sign Up Vermont.
           </p>
           <p>
             Like most websites, our hosting and analytics infrastructure automatically logs basic technical
@@ -56,10 +56,11 @@ export default function PrivacyPage() {
           <h2 className="font-display text-lg font-bold text-foreground">Who can see it</h2>
           <p>
             Your alert preferences and email address are visible only to you and to the small team running
-            OpenPlay. They are never displayed publicly, never shown to the organizations whose programs
-            are listed in the directory, and never sold or shared with third parties for marketing
-            purposes. We rely on standard third-party infrastructure providers (for example, database
-            hosting and email delivery) to operate the service, and they process data only on our behalf.
+            Sign Up Vermont. They are never displayed publicly, never shown to the organizations whose
+            programs are listed in the directory, and never sold or shared with third parties for
+            marketing purposes. We rely on standard third-party infrastructure providers (for example,
+            database hosting and email delivery) to operate the service, and they process data only on
+            our behalf.
           </p>
         </section>
 
@@ -84,16 +85,16 @@ export default function PrivacyPage() {
           <h2 className="font-display text-lg font-bold text-foreground">Changes to this policy</h2>
           <p>
             If this policy changes in a way that affects how your information is used, we will update this
-            page and change the date at the top. Continued use of OpenPlay after a change means you accept
-            the updated policy.
+            page and change the date at the top. Continued use of Sign Up Vermont after a change means you
+            accept the updated policy.
           </p>
         </section>
 
         <section className="flex flex-col gap-3">
           <h2 className="font-display text-lg font-bold text-foreground">Questions</h2>
           <p>
-            OpenPlay is run as a community project without a formal company behind it yet. If you have a
-            question about this policy or your data, reach out through the{" "}
+            Sign Up Vermont is operated by Sign Up Vermont, LLC. If you have a question about this policy
+            or your data, reach out through the{" "}
             <Link href="/contact" className="font-medium text-foreground underline underline-offset-2">
               contact form
             </Link>{" "}

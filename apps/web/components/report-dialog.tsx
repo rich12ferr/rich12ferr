@@ -29,7 +29,7 @@ export function ReportDialog({ activityTitle }: { activityTitle: string }) {
     event.preventDefault()
     setOpen(false)
     toast.success("Thanks — report received", {
-      description: "An OpenPlay reviewer will check this listing against its source.",
+      description: "A Sign Up Vermont reviewer will check this listing against its source.",
     })
   }
 

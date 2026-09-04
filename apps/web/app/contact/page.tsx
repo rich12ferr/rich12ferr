@@ -2,7 +2,7 @@ import { ContactForm } from "@/components/contact-form"
 
 export const metadata = {
   title: "Contact us",
-  description: "Questions, corrections, or feedback about OpenPlay? Send us a message.",
+  description: "Questions, corrections, or feedback about Sign Up Vermont? Send us a message.",
 }
 
 export default function ContactPage() {

@@ -18,9 +18,9 @@ import { verificationLabels } from "@/lib/queries"
 export const revalidate = 300
 
 export const metadata = {
-  title: "How OpenPlay works",
+  title: "How Sign Up Vermont works",
   description:
-    "OpenPlay is a free directory of youth sports programs. It never processes registrations or payments.",
+    "Sign Up Vermont is a directory of Vermont youth sports, camps, arts, and recreation programs. It never processes registrations or payments.",
 }
 
 const principles = [
@@ -37,7 +37,7 @@ const principles = [
   {
     icon: ExternalLinkIcon,
     title: "Registration always happens on the organization's site",
-    body: "OpenPlay never takes a payment, never holds a roster spot, and never asks for a child's medical or identifying information. The Register button sends you to the organization.",
+    body: "Sign Up Vermont never takes a payment, never holds a roster spot, and never asks for a child's medical or identifying information. The Register button sends you to the organization.",
   },
 ]
 
@@ -78,9 +78,10 @@ export default function AboutPage() {
           Every family should see the same information at the same time
         </h1>
         <p className="max-w-prose leading-relaxed text-muted-foreground">
-          Youth sports information is scattered across school pages, league sites, Facebook groups, and
-          word of mouth. Families who happen to know a coach hear about registration first. OpenPlay is a
-          free, open directory that puts all of it in one place so that advantage disappears.
+          Vermont youth sports, camps, arts, and recreation programs are scattered across school pages,
+          league sites, Facebook groups, and word of mouth. Families who happen to know a coach hear about
+          registration first. We keep track of activities and registration dates across the community, so
+          your family doesn&apos;t have to.
         </p>
       </header>
 
@@ -118,7 +119,7 @@ export default function AboutPage() {
 
       <section className="mb-12 flex flex-col gap-4" aria-labelledby="principles">
         <h2 id="principles" className="font-display text-xl font-extrabold tracking-tight">
-          What OpenPlay will and will not do
+          What Sign Up Vermont will and will not do
         </h2>
         <div className="flex flex-col gap-3">
           {principles.map((principle) => (
