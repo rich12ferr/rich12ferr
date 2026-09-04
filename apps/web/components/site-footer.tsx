@@ -45,8 +45,8 @@ export function SiteFooter() {
           {/* The logo is a transparent PNG with a black wordmark, which disappears
               on this dark footer background. An always-on white plaque keeps it
               legible regardless of theme, matching the header treatment. */}
-          <span className="flex w-fit items-center rounded-lg bg-white px-2.5 py-1.5 shadow-sm ring-1 ring-black/10">
-            <SiteLogo className="h-7" />
+          <span className="flex w-fit items-center rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-black/10">
+            <SiteLogo className="h-10" />
           </span>
           <p className="text-sm leading-relaxed text-muted-foreground">
             We keep track of Vermont activities and registration dates, so your family doesn&apos;t
