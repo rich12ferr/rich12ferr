@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
+import { CalendarEventRow } from "@/components/calendar-event-row"
 import { QuickSearch } from "@/components/quick-search"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
@@ -12,6 +13,7 @@ import {
   organizationSummaries,
   recentlyOpened,
   seasonLabels,
+  seasonStartsInCurrentMonth,
   sportSummaries,
   upcomingSeasonCounts,
 } from "@/lib/queries"
@@ -37,6 +39,10 @@ export default async function HomePage() {
   ])
   const total = all.length
   const orgCount = orgRows.length
+  // Only queried on the empty path — the common case (deadlines exist) never
+  // pays for this extra read.
+  const monthStarts = deadlines.length === 0 ? await seasonStartsInCurrentMonth(now) : []
+  const monthLabel = now.toLocaleDateString("en-US", { month: "long", year: "numeric" })
 
   return (
     <div className="flex flex-col">
@@ -116,13 +122,27 @@ export default async function HomePage() {
             ))}
           </ul>
         ) : (
-          <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-            No deadlines in the next two weeks. Check the{" "}
-            <Link href="/calendar" className="font-medium text-foreground underline underline-offset-4">
-              registration calendar
-            </Link>{" "}
-            for what&apos;s ahead.
-          </p>
+          <div className="flex flex-col gap-4">
+            <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+              No deadlines in the next two weeks. Check the{" "}
+              <Link href="/calendar" className="font-medium text-foreground underline underline-offset-4">
+                registration calendar
+              </Link>{" "}
+              for what&apos;s ahead.
+            </p>
+            {monthStarts.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                <h3 className="font-display text-lg font-bold tracking-tight">{monthLabel}</h3>
+                <ul className="flex flex-col gap-2">
+                  {monthStarts.map((event) => (
+                    <li key={event.id}>
+                      <CalendarEventRow event={event} now={now} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
         )}
       </section>
 

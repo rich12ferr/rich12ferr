@@ -607,6 +607,31 @@ export async function calendarEvents(now = new Date()) {
     .sort((a, b) => a.date.getTime() - b.date.getTime())
 }
 
+/**
+ * Season starts anywhere in the calendar month containing `now` — including
+ * days already passed. Used as the homepage's "Don't miss these" fallback
+ * when there are no upcoming deadlines: a parent scanning what's happening
+ * this month still benefits from seeing a program that already started,
+ * unlike `/calendar` itself (via `calendarEvents`), which only ever looks
+ * ahead. Reuses `allActivities()` — the same unfiltered, hub-distance-
+ * annotated list `/calendar` reads from — rather than introducing a new geo
+ * restriction of its own.
+ */
+export async function seasonStartsInCurrentMonth(now = new Date()) {
+  const list = await allActivities()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const events: CalendarEvent[] = []
+  for (const activity of list) {
+    const date = parseDate(activity.season_start_date)
+    if (!date) continue
+    if (date.getFullYear() === year && date.getMonth() === month) {
+      events.push({ id: `${activity.id}_season_start`, kind: "season_start", date, activity })
+    }
+  }
+  return events.sort((a, b) => a.date.getTime() - b.date.getTime())
+}
+
 export function groupEventsByMonth(events: CalendarEvent[]) {
   const groups = new Map<string, { label: string; events: CalendarEvent[] }>()
   for (const event of events) {
