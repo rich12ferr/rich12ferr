@@ -12,6 +12,17 @@
  *   2. Confidence is per field, not per record. A page often states the sport
  *      and org unambiguously while burying the fee in a PDF. One record-level
  *      score would either gate the good fields or wave through the bad one.
+ *
+ * Was originally shaped around Vermont youth sports specifically; generalized
+ * (Canonical Crawl & Data Model PRD) with structured `pricing`,
+ * `eligibilityRules`, `registrationPeriods`, and `sessions` arrays so a camp,
+ * class, or adult drop-in isn't forced into sports-shaped single-fee/
+ * single-window fields. The original flat fields (`registrationFee`,
+ * `minAge`/`maxAge`, `registrationOpenDate`/`registrationCloseDate`,
+ * `practiceSchedule`/`gameSchedule`) remain the fast path for the common case
+ * and take priority — populate the structured array for a field only when the
+ * flat field genuinely can't represent what the page states, never both for
+ * the same fact.
  */
 
 import { z } from "zod"
@@ -32,6 +43,78 @@ export const seasonEnum = z.enum(["fall", "winter", "spring", "summer"])
 export const genderEnum = z.enum(["girls", "boys", "coed", "any"])
 export const programTypeEnum = z.enum(["recreational", "competitive", "school", "club"])
 
+// Added when the model was generalized beyond Vermont youth sports (Canonical
+// Crawl & Data Model PRD). `programType` above stays as the legacy
+// classification; these are new, independent axes alongside it.
+export const programFormatEnum = z.enum([
+  "league",
+  "class",
+  "camp",
+  "clinic",
+  "tournament",
+  "drop_in",
+  "recurring_class",
+  "other",
+])
+export const audienceTypeEnum = z.enum(["youth", "adult", "family", "all_ages"])
+export const competitionLevelEnum = z.enum(["recreational", "competitive", "travel", "elite"])
+
+const pricingEntrySchema = z.object({
+  type: z.enum([
+    "resident",
+    "nonresident",
+    "early_bird",
+    "late_fee",
+    "equipment",
+    "membership",
+    "deposit",
+    "daily",
+    "weekly",
+    "season",
+    "free",
+    "other",
+  ]),
+  amount: z.number().min(0).nullable().describe("Dollars. Null if the page states the tier but not an amount."),
+  currency: z.string().length(3).nullable().describe("ISO 4217, e.g. 'USD'. Null defaults to USD downstream."),
+})
+
+const eligibilityRuleSchema = z.object({
+  type: z.enum([
+    "age",
+    "grade",
+    "birth_year",
+    "gender",
+    "residency",
+    "school",
+    "school_district",
+    "skill_level",
+    "experience",
+    "membership",
+    "league_division",
+    "tryout_required",
+    "adult_age",
+  ]),
+  operator: z.enum(["eq", "gte", "lte", "between", "in"]).nullable(),
+  min: z.number().nullable(),
+  max: z.number().nullable(),
+  values: z.array(z.string()).nullable(),
+})
+
+const registrationPeriodSchema = z.object({
+  type: z.enum(["early_bird", "regular", "late", "walk_in", "waitlist"]),
+  opensAt: isoDate,
+  closesAt: isoDate,
+  price: z.number().min(0).nullable(),
+})
+
+const sessionSchema = z.object({
+  type: z.enum(["practice", "game", "class", "camp_day", "meeting", "tryout", "other"]),
+  startDatetime: z.string().nullable().describe("ISO 8601 datetime if the page states a time, else just a date"),
+  endDatetime: z.string().nullable(),
+  /** RRULE string, e.g. "FREQ=WEEKLY;BYDAY=MO,WE". Null for one-off sessions. */
+  recurrenceRule: z.string().nullable(),
+})
+
 export const extractedProgramSchema = z.object({
   // ---- Identity -----------------------------------------------------------
   title: z.string().min(2).describe("Program name exactly as written on the page"),
@@ -48,6 +131,13 @@ export const extractedProgramSchema = z.object({
     .nullable()
     .describe("One or two sentences copied or closely paraphrased from the page"),
   programType: programTypeEnum.nullable(),
+  programFormat: programFormatEnum
+    .nullable()
+    .describe("Shape of the offering, e.g. 'league', 'camp', 'drop_in'. Independent of programType."),
+  audienceType: audienceTypeEnum.nullable().describe("Who this targets. Independent of gender."),
+  competitionLevel: competitionLevelEnum
+    .nullable()
+    .describe("Independent of programType — a 'club' program can be recreational or elite."),
 
   // ---- Eligibility --------------------------------------------------------
   gender: genderEnum.nullable(),
@@ -63,6 +153,12 @@ export const extractedProgramSchema = z.object({
   maxGrade: z.number().int().min(0).max(12).nullable(),
   residencyRequirement: z.string().nullable(),
   experienceLevel: z.string().nullable(),
+  eligibilityRules: z
+    .array(eligibilityRuleSchema)
+    .nullable()
+    .describe(
+      "Structured rules beyond minAge/maxAge/minGrade/maxGrade above — only when the page states something those flat fields can't capture (e.g. a birth-year cutoff or residency + school combo). Omit, don't invent, when the flat fields already cover it.",
+    ),
 
   // ---- Season and dates ---------------------------------------------------
   season: seasonEnum.nullable(),
@@ -77,6 +173,12 @@ export const extractedProgramSchema = z.object({
   registrationCloseDate: isoDate,
   seasonStartDate: isoDate,
   seasonEndDate: isoDate,
+  registrationPeriods: z
+    .array(registrationPeriodSchema)
+    .nullable()
+    .describe(
+      "Only when the page states more than one registration window (e.g. early-bird vs. regular). Omit when registrationOpenDate/registrationCloseDate above already cover it.",
+    ),
 
   // ---- Registration -------------------------------------------------------
   registrationUrl: z
@@ -89,6 +191,12 @@ export const extractedProgramSchema = z.object({
     .nullable()
     .describe("Base fee in dollars. 0 only when the page says free."),
   additionalFees: z.string().nullable(),
+  pricing: z
+    .array(pricingEntrySchema)
+    .nullable()
+    .describe(
+      "Only when the page states more than one price tier (e.g. resident vs. nonresident). Omit when registrationFee above already covers it — don't duplicate a single flat fee here.",
+    ),
   scholarshipAvailable: z.boolean().nullable(),
   capacity: z.number().int().min(0).nullable(),
   waitlistAvailable: z.boolean().nullable(),
@@ -102,12 +210,25 @@ export const extractedProgramSchema = z.object({
   town: z.string().nullable(),
   state: z.string().length(2).nullable(),
   zip: z.string().nullable(),
+  administrativeArea2: z.string().nullable().describe("County or equivalent, only if the page states one"),
+  countryCode: z.string().length(2).nullable().describe("ISO 3166-1 alpha-2. Omit for US pages — it defaults downstream."),
+  timezone: z.string().nullable().describe("IANA zone, e.g. 'America/New_York', only if the page states one explicitly"),
   venueName: z.string().nullable(),
   venueAddress: z.string().nullable(),
   practiceSchedule: z.string().nullable(),
   gameSchedule: z.string().nullable(),
+  sessions: z
+    .array(sessionSchema)
+    .nullable()
+    .describe(
+      "Structured schedule, only when the page states specific dates/times/recurrence beyond a general description. Omit rather than force practiceSchedule/gameSchedule free text into this shape.",
+    ),
   equipmentRequirements: z.string().nullable(),
   beginnerFriendly: z.boolean().nullable(),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .describe("Freeform labels for search, only for things the sport/programFormat taxonomy doesn't already capture"),
 
   // ---- Contact ------------------------------------------------------------
   contactName: z.string().nullable(),
@@ -155,4 +276,4 @@ export type ExtractionResult = z.infer<typeof extractionResultSchema>
 export const HIGH_STAKES_CONFIDENCE_FLOOR = 0.85
 
 /** Bumped whenever the prompt or schema changes, and recorded per run. */
-export const EXTRACTION_VERSION = "2026.08.1"
+export const EXTRACTION_VERSION = "2026.09.1"

@@ -365,8 +365,8 @@ export const sources = pgTable(
     /** `SourcePlatform` from @openplay/core, e.g. "myrec" | "sportsengine" | "webtrac" | "generic_html". Drives which ingest adapter parses this source. */
     platform: text("platform"),
     /**
-     * Drives conflict resolution when two sources disagree on the same field:
-     * "primary" | "secondary" | "discovery_only" | "community_submitted".
+     * `SourceAuthorityLevel` from @openplay/core. Drives conflict resolution
+     * when two sources disagree on the same field.
      */
     authoritativeLevel: text("authoritative_level").notNull().default("secondary"),
 

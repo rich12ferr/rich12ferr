@@ -14,11 +14,18 @@ export const GENDER_ELIGIBILITIES = ["girls", "boys", "coed", "any"] as const
 export type GenderEligibility = (typeof GENDER_ELIGIBILITIES)[number]
 
 export const ORGANIZATION_TYPES = [
+  "municipal_recreation",
   "school",
-  "recreation_department",
+  "school_district",
   "league",
   "club",
   "nonprofit",
+  "commercial_provider",
+  "camp_provider",
+  "state_association",
+  "national_association",
+  "community_group",
+  "facility_operator",
   "other",
 ] as const
 export type OrganizationType = (typeof ORGANIZATION_TYPES)[number]
@@ -142,8 +149,8 @@ export type SourcePlatform = (typeof SOURCE_PLATFORMS)[number]
  * distinct from `VerificationStatus`, which tracks trust on the resulting
  * canonical record rather than the source itself.
  */
-export const AUTHORITATIVE_LEVELS = ["primary", "secondary", "discovery_only", "community_submitted"] as const
-export type AuthoritativeLevel = (typeof AUTHORITATIVE_LEVELS)[number]
+export const SOURCE_AUTHORITY_LEVELS = ["primary", "secondary", "discovery_only", "community_submitted"] as const
+export type SourceAuthorityLevel = (typeof SOURCE_AUTHORITY_LEVELS)[number]
 
 /** How an extraction run produced its candidates. Distinct from `ExtractionMethod`, which is per-field. */
 export const EXTRACTOR_TYPES = [
@@ -204,3 +211,12 @@ export const REVIEW_REASONS = [
   "new_source",
 ] as const
 export type ReviewReason = (typeof REVIEW_REASONS)[number]
+
+/**
+ * `review_candidates.status`. Was already a closed vocabulary enforced by the
+ * `review_status_check` constraint in Postgres but undocumented in TypeScript
+ * until now — this mirrors the live constraint rather than introducing a new
+ * one, so it can't drift from what the database actually allows.
+ */
+export const REVIEW_CANDIDATE_STATUSES = ["pending", "approved", "rejected", "superseded"] as const
+export type ReviewCandidateStatus = (typeof REVIEW_CANDIDATE_STATUSES)[number]
