@@ -57,6 +57,34 @@ const TOWN_GAZETTEER: Record<string, LatLng> = {
   "duxbury,vt": { lat: 44.2876, lng: -72.7576 },
   "cabot,vt": { lat: 44.3976, lng: -72.3126 },
   "marshfield,vt": { lat: 44.3487, lng: -72.3634 },
+
+  // Added for the winter v3.1 seed (ski/snowboard/Nordic clubs), which
+  // reaches beyond the original Montpelier launch region into ski towns
+  // across the state.
+  "woodstock,vt": { lat: 43.6242, lng: -72.5187 },
+  "chittenden,vt": { lat: 43.7089, lng: -72.9376 },
+  "craftsbury common,vt": { lat: 44.6459, lng: -72.3773 },
+  "middlebury,vt": { lat: 44.0153, lng: -73.1673 },
+  "jericho,vt": { lat: 44.497, lng: -72.991 },
+  "marlboro,vt": { lat: 42.8987, lng: -72.7515 },
+  "st. albans,vt": { lat: 44.8106, lng: -73.0817 },
+  "woodford,vt": { lat: 42.907, lng: -73.0868 },
+  "putney,vt": { lat: 42.9445, lng: -72.5054 },
+  "colchester,vt": { lat: 44.5412, lng: -73.1548 },
+  "huntington,vt": { lat: 44.3084, lng: -72.9887 },
+  "stowe,vt": { lat: 44.4654, lng: -72.6874 },
+  "burlington,vt": { lat: 44.4759, lng: -73.2121 },
+  "londonderry,vt": { lat: 43.2298, lng: -72.8215 },
+  "east burke,vt": { lat: 44.6423, lng: -71.9273 },
+  "richmond,vt": { lat: 44.3959, lng: -72.9968 },
+  "jay,vt": { lat: 44.9421, lng: -72.5087 },
+  "jeffersonville,vt": { lat: 44.6459, lng: -72.7343 },
+  "killington,vt": { lat: 43.6042, lng: -72.8092 },
+  "ludlow,vt": { lat: 43.4051, lng: -72.6979 },
+  "quechee,vt": { lat: 43.6373, lng: -72.4165 },
+  "peru,vt": { lat: 43.2453, lng: -72.8987 },
+  "west dover,vt": { lat: 42.9587, lng: -72.7854 },
+  "stratton,vt": { lat: 43.1131, lng: -72.9081 },
 }
 
 const CENSUS_ENDPOINT =
