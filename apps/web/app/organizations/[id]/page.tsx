@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BadgeCheckIcon, ExternalLinkIcon, MailIcon, MapPinIcon, PhoneIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
+import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { Button } from "@/components/ui/button"
 import { activitiesForOrganization, organizationById, seasonLabels } from "@/lib/queries"
@@ -142,6 +143,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           <SectionHeading
             eyebrow={`${items.length} ${items.length === 1 ? "program" : "programs"}`}
             title={seasonLabels[season]}
+            icon={<SeasonMarker season={season} />}
           />
           <ul className="grid gap-4 lg:grid-cols-2">
             {items.map((activity) => (

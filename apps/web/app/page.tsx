@@ -3,6 +3,7 @@ import { ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-rea
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
 import { QuickSearch } from "@/components/quick-search"
+import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
@@ -213,17 +214,20 @@ export default async function HomePage() {
               <li key={season}>
                 <Link
                   href={`/search?season=${season}`}
-                  className="flex h-full flex-col gap-1 rounded-xl border border-border bg-card p-4 transition-colors hover:border-ring hover:bg-accent/50"
+                  className="flex h-full items-start gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-ring hover:bg-accent/50"
                 >
-                  <span className="font-display text-lg font-bold">{seasonLabels[season]}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {count} {count === 1 ? "program" : "programs"}
-                  </span>
-                  {openNow > 0 ? (
-                    <span className="mt-1 w-fit rounded-full bg-open px-2 py-0.5 text-xs font-semibold text-open-foreground">
-                      {openNow} open now
+                  <SeasonMarker season={season} />
+                  <span className="flex flex-col gap-1">
+                    <span className="font-display text-lg font-bold">{seasonLabels[season]}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {count} {count === 1 ? "program" : "programs"}
                     </span>
-                  ) : null}
+                    {openNow > 0 ? (
+                      <span className="mt-1 w-fit rounded-full bg-open px-2 py-0.5 text-xs font-semibold text-open-foreground">
+                        {openNow} open now
+                      </span>
+                    ) : null}
+                  </span>
                 </Link>
               </li>
             ))}
