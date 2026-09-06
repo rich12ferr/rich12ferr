@@ -17,6 +17,12 @@ const sportOptions = [
   { value: "any", label: "Any sport" },
   ...sports.map((s) => ({ value: s.slug, label: s.name })),
 ]
+const audienceOptions = [
+  { value: "youth", label: "Youth programs" },
+  { value: "adult", label: "Adult programs" },
+  { value: "family", label: "Family & all-ages" },
+  { value: "all", label: "All audiences" },
+]
 const ageOptions = [
   { value: "any", label: "Any age" },
   ...Array.from({ length: 15 }, (_, i) => i + 4).map((a) => ({ value: String(a), label: `${a} years old` })),
@@ -104,6 +110,15 @@ export function SearchFilters({ variant = "sidebar" }: { variant?: "sidebar" | "
       <FieldSet>
         <FieldLegend variant="label">Who is playing</FieldLegend>
         <FieldGroup className="gap-3">
+          <Field>
+            <FieldLabel htmlFor="f-audience">Audience</FieldLabel>
+            <FilterSelect
+              id="f-audience"
+              value={get("audience", "youth")}
+              onValueChange={(v) => update("audience", v)}
+              options={audienceOptions}
+            />
+          </Field>
           <Field>
             <FieldLabel htmlFor="f-sport">Sport</FieldLabel>
             <FilterSelect

@@ -2,7 +2,8 @@ import Link from "next/link"
 import { CalendarCheckIcon, CalendarClockIcon, CalendarXIcon, ClipboardListIcon } from "lucide-react"
 import { SportMarker } from "@/components/sport-marker"
 import { eligibilityLabel } from "@/lib/format"
-import { calendarEventLabels, type CalendarEvent, type CalendarEventKind } from "@/lib/queries"
+import { calendarEventLabels, type CalendarEventKind } from "@/lib/labels"
+import type { CalendarEvent } from "@/lib/queries"
 
 export const calendarEventKindStyles: Record<CalendarEventKind, { icon: typeof CalendarCheckIcon; className: string }> = {
   registration_open: { icon: CalendarCheckIcon, className: "bg-open text-open-foreground" },
@@ -45,21 +46,24 @@ export function CalendarEventRow({ event, now }: { event: CalendarEvent; now: Da
       <SportMarker slug={event.activity.sport.slug} name={event.activity.sport.name} size="sm" />
 
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span
-          className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${className}`}
-        >
-          <Icon className="size-3" aria-hidden="true" />
-          {calendarEventLabels[event.kind]}
-        </span>
         <span className="truncate font-medium">{event.activity.title}</span>
         <span className="truncate text-xs text-muted-foreground">
           {event.activity.organization.name} &middot; {eligibilityLabel(event.activity)}
         </span>
       </div>
 
-      <span className="ml-auto hidden shrink-0 text-xs text-muted-foreground sm:block">
-        {calendarDaysAwayLabel(event.date, now)}
-      </span>
+      {/* Right column: which milestone this is, and how many days until it. */}
+      <div className="ml-auto flex shrink-0 flex-col items-end gap-1 text-right">
+        <span
+          className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ${className}`}
+        >
+          <Icon className="size-3" aria-hidden="true" />
+          {calendarEventLabels[event.kind]}
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {calendarDaysAwayLabel(event.date, now)}
+        </span>
+      </div>
     </Link>
   )
 }

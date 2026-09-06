@@ -107,6 +107,8 @@ export type OfferingListing = {
   practiceSchedule: string | null
   gameSchedule: string | null
   programVerificationStatus: string
+  /** "youth" | "adult" | "family" | "all_ages". Offering value overrides the program's. */
+  audienceType: string | null
 
   // Location (offering overrides organization)
   town: string
@@ -197,6 +199,12 @@ const listingColumns = {
   practiceSchedule: programs.practiceSchedule,
   gameSchedule: programs.gameSchedule,
   programVerificationStatus: programs.verificationStatus,
+  // Offering-level audience overrides the program's when a specific dated
+  // offering targets a different crowd (e.g. a normally-youth program running
+  // an adult clinic one season).
+  audienceType: sql<string | null>`coalesce(${programOfferings.audienceType}, ${programs.audienceType})`.as(
+    "audience_type",
+  ),
 
   town: sql<string>`coalesce(${programOfferings.town}, ${organizations.town})`.as("town"),
   state: sql<string>`coalesce(${programOfferings.state}, ${organizations.state})`.as("state"),
@@ -267,6 +275,8 @@ export type OfferingSearchInput = {
   towns?: string[]
   gender?: string | null
   programTypes?: string[]
+  /** "youth" | "adult" | "family" | "all_ages". Matches the offering's, falling back to the program's. */
+  audienceTypes?: string[]
   /** Radius filter. Ignored unless `origin` is set. */
   origin?: LatLng | null
   radiusMiles?: number | null
@@ -325,9 +335,9 @@ export async function searchOfferings(
   }
 
   if (input.towns?.length) {
-    conditions.push(
-      sql`coalesce(${programOfferings.town}, ${organizations.town}) = any(${input.towns})`,
-    )
+    // See the audienceTypes filter below for why this is `inArray` and not
+    // a raw `= any($1)` — the latter mis-serializes a single-element array.
+    conditions.push(inArray(sql`coalesce(${programOfferings.town}, ${organizations.town})`, input.towns))
   }
 
   // "coed" and "any" programs are open to everyone, so a gender filter must
@@ -342,6 +352,19 @@ export async function searchOfferings(
 
   if (input.programTypes?.length) {
     conditions.push(inArray(programs.programType, input.programTypes))
+  }
+
+  if (input.audienceTypes?.length) {
+    // `inArray`, not a raw `= any($1)`: node-postgres serializes a single-
+    // element JS array as a bare scalar rather than a Postgres array
+    // literal, which `any()` then fails to parse. `inArray` sidesteps that
+    // by emitting one placeholder per value instead of one array parameter.
+    conditions.push(
+      inArray(
+        sql`coalesce(${programOfferings.audienceType}, ${programs.audienceType})`,
+        input.audienceTypes,
+      ),
+    )
   }
 
   if (input.tryoutRequired !== null && input.tryoutRequired !== undefined) {

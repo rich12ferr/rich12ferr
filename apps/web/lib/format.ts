@@ -54,7 +54,11 @@ export function programLabel(activity: Activity) {
 export function distanceLabel(miles: number | null) {
   if (miles === null) return null
   if (miles < 1) return "In Montpelier"
-  return `${Math.round(miles)} mi from Montpelier`
+  // One decimal place below 10 miles, whole miles at 10 or above — "10
+  // miles" reads cleanly while a program a few blocks away still shows
+  // meaningful precision (e.g. "2.3 miles" rather than a rounded "2").
+  const rounded = miles < 10 ? Math.round(miles * 10) / 10 : Math.round(miles)
+  return `${rounded} miles from Montpelier`
 }
 
 /**

@@ -1,8 +1,15 @@
 import Link from "next/link"
 import { BellIcon } from "lucide-react"
-import { CalendarEventRow, calendarEventKindStyles } from "@/components/calendar-event-row"
+import { CalendarEventRow } from "@/components/calendar-event-row"
+import { CalendarFilters } from "@/components/calendar-filters"
 import { Button } from "@/components/ui/button"
-import { calendarEventLabels, calendarEvents, groupEventsByMonth, type CalendarEventKind } from "@/lib/queries"
+import {
+  AUDIENCE_FILTER_TO_TYPES,
+  calendarEvents,
+  DEFAULT_CALENDAR_KINDS,
+  groupEventsByMonth,
+  type CalendarEventKind,
+} from "@/lib/queries"
 
 /**
  * Registration status and "checked N days ago" are computed from the current
@@ -16,32 +23,29 @@ export const metadata = {
   description: "Every upcoming registration window, tryout, and season start in one timeline.",
 }
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kinds?: string; audience?: string }>
+}) {
+  const { kinds: kindsParam, audience: audienceParam } = await searchParams
+  const kinds = kindsParam ? (kindsParam.split(",") as CalendarEventKind[]) : DEFAULT_CALENDAR_KINDS
+  const audience = audienceParam && audienceParam in AUDIENCE_FILTER_TO_TYPES ? audienceParam : "youth"
+
   const now = new Date()
-  const months = groupEventsByMonth(await calendarEvents(now))
+  const months = groupEventsByMonth(
+    await calendarEvents(now, { kinds, audienceTypes: AUDIENCE_FILTER_TO_TYPES[audience] }),
+  )
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
       <header className="mb-8 flex flex-col gap-3">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Registration calendar</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Deadlines are the thing families miss most, so every date in the directory shows up here:
-          registration opening, registration closing, tryouts, and season starts.
+          Deadlines are the thing families miss most, so this defaults to registration opening and
+          closing dates &mdash; toggle on tryouts and season starts, or switch the audience, below.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(calendarEventKindStyles) as CalendarEventKind[]).map((kind) => {
-            const { icon: Icon, className } = calendarEventKindStyles[kind]
-            return (
-              <span
-                key={kind}
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}
-              >
-                <Icon className="size-3.5" aria-hidden="true" />
-                {calendarEventLabels[kind]}
-              </span>
-            )
-          })}
-        </div>
+        <CalendarFilters />
       </header>
 
       <div className="flex flex-col gap-8">

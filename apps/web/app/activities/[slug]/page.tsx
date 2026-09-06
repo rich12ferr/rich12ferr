@@ -362,13 +362,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 We don&apos;t have a direct signup link yet &mdash; this opens the organization&apos;s
                 program page, where you can find how to register.
               </p>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Registration happens on{" "}
-                {activity.registration_provider ?? activity.organization.name}&apos;s site. Sign Up
-                Vermont never collects payment or personal details.
-              </p>
-            )}
+            ) : null}
 
             <Separator />
 
@@ -377,6 +371,11 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               programId={activity.program_id}
               layout="stack"
             />
+
+            <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
+              Registration happens on {activity.registration_provider ?? activity.organization.name}
+              &apos;s site. Sign Up Vermont never collects payment or personal details.
+            </p>
           </div>
         </aside>
       </div>
