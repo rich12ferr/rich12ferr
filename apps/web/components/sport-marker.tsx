@@ -1,4 +1,5 @@
-import { sportMonograms, sportTone } from "@/lib/data/sports"
+import { sportTone } from "@/lib/data/sports"
+import { GenericActivityIcon, sportIcons } from "@/components/sport-icons"
 import { cn } from "@/lib/utils"
 
 const toneClasses: Record<string, string> = {
@@ -9,9 +10,16 @@ const toneClasses: Record<string, string> = {
   "chart-5": "bg-chart-5/15 text-chart-5 ring-chart-5/25",
 }
 
+const iconSizeClasses: Record<"default" | "sm" | "lg", string> = {
+  sm: "size-4",
+  default: "size-5",
+  lg: "size-7",
+}
+
 /**
- * Two-letter sport monogram. The sport is the first thing a parent scans for,
- * so it gets a consistent, color-coded marker across every surface.
+ * Color-coded sport marker. The sport is the first thing a parent scans for,
+ * so it gets a consistent glyph (icon, not a two-letter monogram) across
+ * every surface.
  */
 export function SportMarker({
   slug,
@@ -25,20 +33,21 @@ export function SportMarker({
   className?: string
 }) {
   const tone = toneClasses[sportTone[slug] ?? "chart-1"]
+  const SportIcon = sportIcons[slug] ?? GenericActivityIcon
   return (
     <span
       title={name}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-xl font-display font-bold tabular-nums ring-1 ring-inset",
-        size === "sm" && "size-8 text-xs",
-        size === "default" && "size-11 text-sm",
-        size === "lg" && "size-14 text-lg",
+        "inline-flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
+        size === "sm" && "size-8",
+        size === "default" && "size-11",
+        size === "lg" && "size-14",
         tone,
         className,
       )}
     >
       <span className="sr-only">{name}</span>
-      <span aria-hidden="true">{sportMonograms[slug] ?? name.slice(0, 2).toUpperCase()}</span>
+      <SportIcon aria-hidden="true" className={iconSizeClasses[size]} />
     </span>
   )
 }
