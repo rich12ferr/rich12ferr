@@ -76,6 +76,7 @@ export type CaseStudy = {
   skills: string[]
   whyItMatters: string
   screenshot?: { src: string; alt: string }
+  website?: { label: string; href: string }
 }
 
 export const caseStudies: CaseStudy[] = [
@@ -223,20 +224,21 @@ export const caseStudies: CaseStudy[] = [
     },
   },
   {
-    id: 'open-play-sports',
+    id: 'sign-up-vermont',
     index: '05',
-    company: 'Open Play Sports',
+    company: 'Sign Up Vermont, LLC',
+    website: { label: 'www.signupVT.com', href: 'https://www.signupvt.com' },
     descriptor:
-      'A founder-led discovery and registration-intelligence platform helping parents find youth sports programs across fragmented municipal, school, league, and club systems.',
+      'I built Sign Up Vermont because I was tired of how hard it was to find local activities for my family. Sports, camps, and recreation opportunities were scattered across websites, social media, emails, and word of mouth, and too often the families who knew the right people found out first. I wanted to create something simpler and fairer\u2014a place where every family can discover what\u2019s available, know when to sign up, and feel like they have an equal chance to participate.',
     role: 'Owner / Product Lead',
     timeframe: 'Ongoing',
-    headline: 'Building a Vendor-Neutral Discovery Layer for Youth Sports',
+    headline: 'Building a Vendor-Neutral Discovery Layer for Youth Activities',
     problem:
       'Youth sports registration is highly fragmented across municipal recreation departments, school athletics sites, independent leagues, social media, PDFs, email lists, and word of mouth. Parents often don\u2019t know where to look, when registration opens, or which organizations serve their child\u2019s age or grade \u2014 creating unnecessary friction that can disadvantage families newer to a community or less connected to existing sports networks.',
     approach:
-      'I designed Open Play Sports as a centralized discovery and registration-intelligence platform that helps parents find youth sports opportunities based on location, age, grade, season, and activity. Rather than building another league-management or registration system, I positioned Open Play as a vendor-neutral discovery layer that aggregates programs across municipal recreation systems, schools, clubs, and independent sports organizations. I defined the product strategy, MVP requirements, canonical activity data model, search and eligibility logic, notification model, and source-provenance framework \u2014 and designed an AI-assisted ingestion architecture that collects structured and unstructured information from sources such as MyRec, SportsEngine, WebTrac, CivicRec, and municipal websites, normalizes it into a common schema, and routes uncertain data through human review. The product is being built using an AI-assisted development workflow with a web-first architecture designed to support future mobile applications and shared platform services.',
+      'I designed Sign Up Vermont as a centralized discovery and registration-intelligence platform that helps parents find activities \u2014 sports, camps, arts, and community recreation \u2014 based on location, age, grade, season, and activity. Rather than building another league-management or registration system, I positioned Sign Up Vermont as a vendor-neutral discovery layer that aggregates programs across municipal recreation systems, schools, clubs, and independent organizations. I defined the product strategy, MVP requirements, canonical activity data model, search and eligibility logic, notification model, and source-provenance framework \u2014 and designed an AI-assisted ingestion architecture that collects structured and unstructured information from sources such as MyRec, SportsEngine, WebTrac, CivicRec, and municipal websites, normalizes it into a common schema, and routes uncertain data through human review. The product is being built using an AI-assisted development workflow with a web-first architecture designed to support future mobile applications and shared platform services.',
     outcome:
-      'Open Play Sports has progressed from problem discovery to a functioning web product with activity search, eligibility filtering, program detail pages, registration links, alerts, organization discovery, community submissions, and data-verification concepts. I established an initial Vermont source registry spanning municipal recreation departments, statewide sports associations, and independent youth organizations to support automated program discovery and future statewide coverage. The next phase is a Central Vermont pilot designed to validate program coverage, registration click-throughs, alert adoption, information accuracy, and whether families discover opportunities they otherwise would have missed.',
+      'Sign Up Vermont has progressed from problem discovery to a functioning web product with activity search, eligibility filtering, program detail pages, registration links, alerts, organization discovery, community submissions, and data-verification concepts. I established an initial Vermont source registry spanning municipal recreation departments, statewide sports associations, and independent youth organizations to support automated program discovery and future statewide coverage. The next phase is a Central Vermont pilot designed to validate program coverage, registration click-throughs, alert adoption, information accuracy, and whether families discover opportunities they otherwise would have missed.',
     skills: [
       'Product strategy',
       'Zero-to-one product development',
@@ -258,10 +260,10 @@ export const caseStudies: CaseStudy[] = [
       'Competitive analysis',
     ],
     whyItMatters:
-      'Open Play demonstrates how I approach ambiguous, fragmented problems as a product leader: identify the underlying user problem, establish a differentiated product position, define a scalable platform architecture, and use AI where it creates operational leverage rather than adding unnecessary complexity. It also reflects my broader focus on building connected ecosystems \u2014 separating the consumer experience from underlying source systems to create a common data and services layer that can support web, mobile, organizations, municipalities, and AI agents without requiring every participant to use the same technology.',
+      'Sign Up Vermont demonstrates how I approach ambiguous, fragmented problems as a product leader: identify the underlying user problem, establish a differentiated product position, define a scalable platform architecture, and use AI where it creates operational leverage rather than adding unnecessary complexity. It also reflects my broader focus on building connected ecosystems \u2014 separating the consumer experience from underlying source systems to create a common data and services layer that can support web, mobile, organizations, municipalities, and AI agents without requiring every participant to use the same technology.',
     screenshot: {
-      src: '/images/open-play-sports-screenshot.png',
-      alt: 'Open Play Sports homepage showing youth sports search by sport, grade, and ZIP code, with programs closing soon',
+      src: '/images/sign-up-vermont-screenshot.png',
+      alt: 'Sign Up Vermont homepage showing activity search by sport, grade, and ZIP code across sports, camps, arts, and community recreation',
     },
   },
 ]

@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { ArrowUpRight } from 'lucide-react'
 import { caseStudies, type CaseStudy } from '@/lib/content'
 
 function Phase({ label, children }: { label: string; children: React.ReactNode }) {
@@ -39,6 +40,17 @@ function CaseStudyCard({ study }: { study: CaseStudy }) {
                 <span className="font-semibold">Timeframe:</span> {study.timeframe}
               </span>
             </div>
+            {study.website ? (
+              <a
+                href={study.website.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                {study.website.label}
+                <ArrowUpRight className="size-4" />
+              </a>
+            ) : null}
           </div>
 
           {study.screenshot ? (
