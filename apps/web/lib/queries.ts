@@ -128,6 +128,7 @@ export function listingToActivity(listing: OfferingListing): ActivityWithRelatio
     description: listing.description ?? "",
     program_type: listing.programType as Activity["program_type"],
     gender: listing.gender as Activity["gender"],
+    audience_type: (listing.audienceType as Activity["audience_type"]) ?? null,
     min_age: listing.minAge,
     max_age: listing.maxAge,
     min_grade: listing.minGrade,
@@ -191,9 +192,21 @@ export function listingToActivity(listing: OfferingListing): ActivityWithRelatio
 /* -------------------------------------------------------------------------- */
 
 /** Every published offering, ordered by registration urgency. */
-export async function allActivities(): Promise<ActivityWithRelations[]> {
-  const rows = await searchOfferings({ origin: LAUNCH_HUB, radiusMiles: null })
+export async function allActivities(audienceTypes?: string[]): Promise<ActivityWithRelations[]> {
+  const rows = await searchOfferings({ origin: LAUNCH_HUB, radiusMiles: null, audienceTypes })
   return rows.map(listingToActivity)
+}
+
+/**
+ * Ranks youth programs first, preserving each group's existing relative order
+ * (Array#sort is stable). Used where the product wants youth to lead without
+ * hiding family/adult programs outright — home page urgency rails.
+ */
+function prioritizeYouth<T extends { audience_type: string | null }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const rank = (item: T) => (item.audience_type === "youth" ? 0 : 1)
+    return rank(a) - rank(b)
+  })
 }
 
 /**
@@ -296,6 +309,7 @@ export type SearchParamsShape = {
   tryouts?: string
   cost?: string
   sort?: string
+  audience?: string
 }
 
 export type SearchFilters = {
@@ -313,6 +327,20 @@ export type SearchFilters = {
   tryouts: string | null
   cost: string | null
   sort: string
+  /**
+   * "youth" | "adult" | "family" | "all". Defaults to "youth" (PRD priority:
+   * youth programs are the default scope), unlike every other filter here,
+   * which defaults to "no constraint".
+   */
+  audience: string
+}
+
+/** Maps the UI's 3-way audience choice onto the schema's 4-value vocabulary. */
+export const AUDIENCE_FILTER_TO_TYPES: Record<string, string[] | undefined> = {
+  youth: ["youth"],
+  adult: ["adult"],
+  family: ["family", "all_ages"],
+  all: undefined,
 }
 
 export function parseFilters(params: SearchParamsShape): SearchFilters {
@@ -336,6 +364,7 @@ export function parseFilters(params: SearchParamsShape): SearchFilters {
     tryouts: params.tryouts && params.tryouts !== "any" ? params.tryouts : null,
     cost: params.cost && params.cost !== "any" ? params.cost : null,
     sort: params.sort ?? "relevance",
+    audience: params.audience && params.audience in AUDIENCE_FILTER_TO_TYPES ? params.audience : "youth",
   }
 }
 
@@ -419,6 +448,7 @@ export async function searchActivities(
             : undefined,
     tryoutRequired: filters.tryouts === "yes" ? true : filters.tryouts === "no" ? false : null,
     freeOnly: filters.cost === "free",
+    audienceTypes: AUDIENCE_FILTER_TO_TYPES[filters.audience],
   })
 
   const results: SearchResult[] = []
@@ -513,6 +543,9 @@ export function countActiveFilters(filters: SearchFilters) {
   if (filters.tryouts) count++
   if (filters.cost) count++
   if (filters.radius !== DEFAULT_RADIUS_MILES) count++
+  // "youth" is the default scope, not an unconstrained state, so only a
+  // *different* audience choice counts as an active filter.
+  if (filters.audience !== "youth") count++
   return count
 }
 
@@ -520,18 +553,23 @@ export function countActiveFilters(filters: SearchFilters) {
 /*  Home page collections                                                     */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Fetches a wider pool than `limit` so youth programs can be promoted ahead
+ * of family/adult ones (PRD: youth is the priority for "Don't miss these")
+ * without dropping the rail to zero results when few youth deadlines exist.
+ */
 export async function closingSoon(now = new Date(), limit = 4) {
-  const rows = await closingSoonOfferings(CLOSING_SOON_DAYS, limit)
-  return rows.map(listingToActivity)
+  const rows = await closingSoonOfferings(CLOSING_SOON_DAYS, limit * 4)
+  return prioritizeYouth(rows.map(listingToActivity)).slice(0, limit)
 }
 
 export async function recentlyOpened(now = new Date(), limit = 4) {
-  const rows = await recentlyOpenedOfferings(14, limit)
-  return rows.map(listingToActivity)
+  const rows = await recentlyOpenedOfferings(14, limit * 4)
+  return prioritizeYouth(rows.map(listingToActivity)).slice(0, limit)
 }
 
-export async function upcomingSeasonCounts(now = new Date()) {
-  const list = await allActivities()
+export async function upcomingSeasonCounts(now = new Date(), audienceTypes?: string[]) {
+  const list = await allActivities(audienceTypes)
   return SEASONS.map((season) => {
     const items = list.filter((a) => a.season === season)
     const openNow = items.filter((a) =>
@@ -541,8 +579,8 @@ export async function upcomingSeasonCounts(now = new Date()) {
   })
 }
 
-export async function sportSummaries(now = new Date()) {
-  const [sportRows, list] = await Promise.all([listSports(), allActivities()])
+export async function sportSummaries(now = new Date(), audienceTypes?: string[]) {
+  const [sportRows, list] = await Promise.all([listSports(), allActivities(audienceTypes)])
   return sportRows
     .map((sport) => {
       const items = list.filter((a) => a.sport_id === sport.id)
@@ -554,8 +592,8 @@ export async function sportSummaries(now = new Date()) {
     .sort((a, b) => b.total - a.total || a.sport.name.localeCompare(b.sport.name))
 }
 
-export async function organizationSummaries(now = new Date()) {
-  const [orgRows, list] = await Promise.all([listOrganizations(), allActivities()])
+export async function organizationSummaries(now = new Date(), audienceTypes?: string[]) {
+  const [orgRows, list] = await Promise.all([listOrganizations(), allActivities(audienceTypes)])
   return orgRows
     .map((row) => {
       const organization = toOrganization(row)
@@ -572,7 +610,10 @@ export async function organizationSummaries(now = new Date()) {
 /*  Calendar                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type CalendarEventKind = "registration_open" | "registration_close" | "tryout" | "season_start"
+export type { CalendarEventKind } from "@/lib/labels"
+import type { CalendarEventKind } from "@/lib/labels"
+export { calendarEventLabels, DEFAULT_CALENDAR_KINDS } from "@/lib/labels"
+import { DEFAULT_CALENDAR_KINDS } from "@/lib/labels"
 
 export type CalendarEvent = {
   id: string
@@ -581,18 +622,16 @@ export type CalendarEvent = {
   activity: ActivityWithRelations
 }
 
-export const calendarEventLabels: Record<CalendarEventKind, string> = {
-  registration_open: "Registration opens",
-  registration_close: "Registration closes",
-  tryout: "Tryouts / evaluations",
-  season_start: "Season starts",
-}
-
-export async function calendarEvents(now = new Date()) {
+export async function calendarEvents(
+  now = new Date(),
+  options: { kinds?: CalendarEventKind[]; audienceTypes?: string[] } = {},
+) {
+  const kinds = new Set(options.kinds ?? DEFAULT_CALENDAR_KINDS)
   const events: CalendarEvent[] = []
-  const list = await allActivities()
+  const list = await allActivities(options.audienceTypes)
   for (const activity of list) {
     const push = (kind: CalendarEventKind, value: string | null) => {
+      if (!kinds.has(kind)) return
       const date = parseDate(value)
       if (!date) return
       events.push({ id: `${activity.id}_${kind}`, kind, date, activity })
@@ -629,7 +668,11 @@ export async function seasonStartsInCurrentMonth(now = new Date()) {
       events.push({ id: `${activity.id}_season_start`, kind: "season_start", date, activity })
     }
   }
-  return events.sort((a, b) => a.date.getTime() - b.date.getTime())
+  // This fallback fills the same "Don't miss these" slot deadlines normally
+  // occupy, so it gets the same youth-first treatment. Date-sort first, then
+  // stably promote youth within that order.
+  const byDate = events.sort((a, b) => a.date.getTime() - b.date.getTime())
+  return prioritizeYouth(byDate.map((e) => ({ ...e, audience_type: e.activity.audience_type })))
 }
 
 export function groupEventsByMonth(events: CalendarEvent[]) {

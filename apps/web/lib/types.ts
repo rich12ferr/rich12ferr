@@ -7,6 +7,9 @@ export type ProgramType = "recreational" | "competitive" | "school" | "club"
 
 export type GenderEligibility = "girls" | "boys" | "coed" | "any"
 
+/** Who the program targets, independent of gender eligibility. */
+export type AudienceType = "youth" | "adult" | "family" | "all_ages"
+
 export type OrganizationType =
   | "school"
   | "recreation_department"
@@ -92,6 +95,8 @@ export type Activity = {
 
   program_type: ProgramType
   gender: GenderEligibility
+  /** Null for older records ingested before this field existed. */
+  audience_type: AudienceType | null
 
   min_age: number | null
   max_age: number | null

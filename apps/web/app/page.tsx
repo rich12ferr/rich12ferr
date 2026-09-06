@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
@@ -27,15 +26,19 @@ export const revalidate = 300
 
 export default async function HomePage() {
   const now = new Date()
+  // Youth is the priority scope for every homepage count and browse list
+  // (PRD: youth-only is the default). Family/adult programs stay reachable
+  // through the search page's audience filter.
+  const YOUTH = ["youth"]
   // Issued together: these six reads are independent, so serialising them would
   // add six round trips to the database for no reason.
   const [deadlines, opened, sportRows, seasons, all, orgRows] = await Promise.all([
     closingSoon(now),
     recentlyOpened(now),
-    sportSummaries(now),
-    upcomingSeasonCounts(now),
-    allActivities(),
-    organizationSummaries(now),
+    sportSummaries(now, YOUTH),
+    upcomingSeasonCounts(now, YOUTH),
+    allActivities(YOUTH),
+    organizationSummaries(now, YOUTH),
   ])
   const total = all.length
   const orgCount = orgRows.length
@@ -46,58 +49,59 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
-      {/* Hero */}
-      <section className="overflow-hidden border-b border-border bg-secondary">
+      {/* Hero — full-bleed looping video montage, dark scrim for text legibility over
+          moving footage, poster frame as the low-data / legacy-browser fallback. */}
+      <section className="relative isolate flex min-h-[34rem] items-center overflow-hidden border-b border-border sm:min-h-[38rem]">
+        <video
+          className="absolute inset-0 -z-10 size-full object-cover"
+          poster="/images/hero-poster.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+        >
+          <source src="/videos/hero-montage.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 -z-10 bg-black/50" aria-hidden="true" />
+
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 lg:py-16">
-          {/* Headline runs full width so it can stay large */}
           <div className="flex max-w-3xl flex-col gap-4">
             <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
-              Now covering the Montpelier, Vermont area
+              Starting in Central Vermont
             </p>
-            <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-              Vermont activities, with signup dates you can see coming.
+            <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
+              Vermont activities, without the signup scramble.
             </h1>
-            <p className="text-lg leading-relaxed text-foreground text-pretty">
-              We keep track of Vermont activities and registration dates, so your family doesn&apos;t
-              have to.
-            </p>
-            <p className="leading-relaxed text-muted-foreground text-pretty">
-              {total} programs from {orgCount} local schools, rec departments, leagues, and clubs
-              &mdash; sports, camps, arts, and community recreation together in one place.
+            <p className="text-lg leading-relaxed text-white/90 text-pretty">
+              Search sports, camps, arts, and community recreation. Get email alerts when registration
+              opens or a deadline is coming.
             </p>
           </div>
 
-          {/* Search sits beside the photo, overlapping its left edge */}
-          <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:gap-0">
-            <div className="relative z-10 flex flex-col gap-5">
-              <QuickSearch />
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground md:pr-16">
-                <span className="font-medium text-foreground">Popular right now:</span>
-                {sportRows.slice(0, 5).map(({ sport }) => (
-                  <Link
-                    key={sport.slug}
-                    href={`/search?sport=${sport.slug}`}
-                    className="underline decoration-border underline-offset-4 hover:text-foreground hover:decoration-foreground"
-                  >
-                    {sport.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="md:-ml-12 lg:-ml-16">
-              <Image
-                src="/images/hero-kids-sports.png"
-                alt="Kids playing baseball, tennis, soccer, football, basketball, and wheelchair basketball together on a sunny park field."
-                width={1685}
-                height={945}
-                priority
-                sizes="(max-width: 768px) 100vw, 42vw"
-                className="aspect-[4/3] w-full rounded-3xl border border-border object-cover shadow-lg"
-              />
+          <div className="flex flex-col gap-5">
+            <QuickSearch />
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/80">
+              <span className="font-medium text-white">Popular right now:</span>
+              {sportRows.slice(0, 5).map(({ sport }) => (
+                <Link
+                  key={sport.slug}
+                  href={`/search?sport=${sport.slug}`}
+                  className="underline decoration-white/40 underline-offset-4 hover:text-white hover:decoration-white"
+                >
+                  {sport.name}
+                </Link>
+              ))}
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Directory stats — moved below the search so the hero leads with the search itself */}
+      <section className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6">
+        <p className="leading-relaxed text-muted-foreground text-pretty">
+          {total} youth programs from {orgCount} local schools, rec departments, leagues, and clubs
+          &mdash; sports, camps, arts, and community recreation together in one place.
+        </p>
       </section>
 
       {/* Deadlines — the signature section */}

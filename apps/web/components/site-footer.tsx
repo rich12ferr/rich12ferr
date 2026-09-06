@@ -25,7 +25,6 @@ const columns = [
     links: [
       { href: "/alerts/manage", label: "Manage your alerts" },
       { href: "/contact", label: "Contact us" },
-      { href: "/admin", label: "Admin console" },
     ],
   },
   {
@@ -49,8 +48,7 @@ export function SiteFooter() {
             <SiteLogo className="h-10" />
           </span>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            We keep track of Vermont activities and registration dates, so your family doesn&apos;t
-            have to.
+            Helping Vermont families find activities and catch registration dates.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
             Sign Up Vermont never processes registrations or payments. Registration always happens on
@@ -82,7 +80,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>Serving Montpelier, Berlin, Barre, Northfield, and Waterbury, VT.</p>
+          <p>Starting in Central Vermont and expanding community by community.</p>
           <p>&copy; 2026 Sign Up Vermont, LLC.</p>
         </div>
       </div>

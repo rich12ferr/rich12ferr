@@ -34,6 +34,18 @@ export const genderLabels = {
   any: "All players",
 } as const
 
+export type CalendarEventKind = "registration_open" | "registration_close" | "tryout" | "season_start"
+
+export const calendarEventLabels: Record<CalendarEventKind, string> = {
+  registration_open: "Registration opens",
+  registration_close: "Registration closes",
+  tryout: "Tryouts / evaluations",
+  season_start: "Season starts",
+}
+
+/** Default view (PRD priority): registration windows, not tryouts/season starts. */
+export const DEFAULT_CALENDAR_KINDS: CalendarEventKind[] = ["registration_open", "registration_close"]
+
 export const alertTriggerLabels: Record<AlertTrigger, string> = {
   registration_opened: "Registration opens",
   registration_closing_soon: "Registration is closing soon",
@@ -44,7 +56,7 @@ export const alertTriggerLabels: Record<AlertTrigger, string> = {
 
 export const verificationLabels = {
   unverified: "Unverified",
-  ai_extracted: "AI extracted",
+  ai_extracted: "Automated import",
   community_submitted: "Community submitted",
   admin_reviewed: "Admin reviewed",
   organization_verified: "Organization verified",

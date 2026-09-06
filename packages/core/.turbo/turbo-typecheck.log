@@ -1,0 +1,4 @@
+
+> @openplay/core@0.1.0 typecheck /vercel/share/v0-project/packages/core
+> tsc --noEmit
+

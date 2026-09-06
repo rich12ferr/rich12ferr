@@ -13,7 +13,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * Alert capture + share on an activity page.
  *
  * The alert flow is deliberately inline and login-free (see product decision):
- * "Alert me" reveals an email field right here, the parent submits without
+ * the email field is shown open by default so the primary CTA on this page is
+ * "get notified," not a click that reveals a form. The parent submits without
  * leaving the page, and success is shown in place. No redirect to sign-in.
  * Bookmarking/"Save" is intentionally deferred, so it is not offered here.
  */
@@ -27,7 +28,7 @@ export function ActivityActions({
   programId: string
   layout?: "row" | "stack"
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [done, setDone] = useState(false)
   const [email, setEmail] = useState("")
   const [pending, startTransition] = useTransition()
