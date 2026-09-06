@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CircleAlertIcon, MapPinIcon, TicketIcon } from "lucide-react"
 import { ActivityBadges } from "@/components/activity-badges"
+import { SeasonIcon } from "@/components/season-icons"
 import { SportMarker } from "@/components/sport-marker"
 import { StatusPill, statusAccent } from "@/components/status-pill"
 import { TrustNote } from "@/components/trust-note"
@@ -70,7 +71,14 @@ export function ActivityCard({
           </div>
           <div className="flex gap-2 text-muted-foreground">
             <dt className="sr-only">Season and program</dt>
-            <dd>
+            <dd className="inline-flex items-center gap-1.5">
+              {activity.season && activity.season_year ? (
+                <SeasonIcon
+                  season={activity.season}
+                  className="size-3.5 shrink-0"
+                  aria-hidden="true"
+                />
+              ) : null}
               {seasonLabel(activity)} &middot; {programLabel(activity)}
             </dd>
           </div>

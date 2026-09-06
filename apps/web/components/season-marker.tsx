@@ -1,5 +1,6 @@
-import { sportTone } from "@/lib/data/sports"
-import { GenericActivityIcon, sportIcons } from "@/components/sport-icons"
+import { seasonIcons, seasonTone } from "@/components/season-icons"
+import { seasonLabels } from "@/lib/labels"
+import type { Season } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 const toneClasses: Record<string, string> = {
@@ -17,26 +18,24 @@ const iconSizeClasses: Record<"default" | "sm" | "lg", string> = {
 }
 
 /**
- * Color-coded sport marker. The sport is the first thing a parent scans for,
- * so it gets a consistent glyph (icon, not a two-letter monogram) across
- * every surface.
+ * Color-coded season marker, following the same pattern as `SportMarker`: a
+ * consistent glyph and color for each season across the homepage, sport and
+ * organization pages, and search filter chips.
  */
-export function SportMarker({
-  slug,
-  name,
+export function SeasonMarker({
+  season,
   size = "default",
   className,
 }: {
-  slug: string
-  name: string
+  season: Season
   size?: "default" | "sm" | "lg"
   className?: string
 }) {
-  const tone = toneClasses[sportTone[slug] ?? "chart-1"]
-  const SportIcon = sportIcons[slug] ?? GenericActivityIcon
+  const tone = toneClasses[seasonTone[season]]
+  const SeasonIcon = seasonIcons[season]
   return (
     <span
-      title={name}
+      title={seasonLabels[season]}
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-xl ring-1 ring-inset",
         size === "sm" && "size-8",
@@ -46,8 +45,8 @@ export function SportMarker({
         className,
       )}
     >
-      <span className="sr-only">{name}</span>
-      <SportIcon aria-hidden="true" className={iconSizeClasses[size]} />
+      <span className="sr-only">{seasonLabels[season]}</span>
+      <SeasonIcon aria-hidden="true" className={iconSizeClasses[size]} />
     </span>
   )
 }

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BellIcon, PlusIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
+import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
@@ -98,7 +99,11 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
 
       {bySeason.map(({ season, items }) => (
         <section key={season} className="mb-10">
-          <SectionHeading eyebrow={`${items.length} ${items.length === 1 ? "program" : "programs"}`} title={seasonLabels[season]} />
+          <SectionHeading
+            eyebrow={`${items.length} ${items.length === 1 ? "program" : "programs"}`}
+            title={seasonLabels[season]}
+            icon={<SeasonMarker season={season} />}
+          />
           <ul className="grid gap-4 lg:grid-cols-2">
             {items.map((activity) => (
               <li key={activity.id}>
