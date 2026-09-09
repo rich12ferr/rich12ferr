@@ -7,9 +7,11 @@ import "server-only"
 import {
   adminCounts,
   closingSoonOfferings,
+  currentWeeklyEdition as currentWeeklyEditionRow,
   listOrganizations,
   listSports,
   listTowns,
+  listWeeklyEditions,
   offeringById,
   offeringsByOrganizationSlug,
   offeringsByProgramSlug,
@@ -18,7 +20,10 @@ import {
   programSlugsForStaticParams,
   recentlyOpenedOfferings,
   searchOfferings,
+  weeklyEditionBySlug as weeklyEditionBySlugRow,
   type OfferingListing,
+  type WeeklyEditionRow,
+  type WeeklyStoryRow,
 } from "@openplay/db"
 import { LAUNCH_HUB, SEASONS } from "@openplay/core"
 import { DEFAULT_RADIUS as DEFAULT_RADIUS_MILES } from "@/lib/labels"
@@ -37,6 +42,9 @@ import type {
   RegistrationStatus,
   Season,
   Sport,
+  WeeklyEdition,
+  WeeklyEditionSummary,
+  WeeklyStory,
 } from "@/lib/types"
 
 /**
@@ -705,4 +713,106 @@ export async function adminMetrics(now = new Date()) {
     closingSoonWindow: CLOSING_SOON_DAYS,
     all,
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  "This Week" editorial feature                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Sport lookup keyed by id, built once per request rather than joined in SQL —
+ * a weekly edition has at most a handful of stories, so a handful of extra
+ * lookups against an already-fetched, tiny `sports` table costs nothing and
+ * keeps `weeklyStories` a plain flat table with no join dependency.
+ */
+async function sportsById(): Promise<Map<string, Sport>> {
+  const rows = await listSports()
+  return new Map(rows.map((row) => [row.id, row as unknown as Sport]))
+}
+
+function toWeeklyStory(row: WeeklyStoryRow, sports: Map<string, Sport>): WeeklyStory {
+  return {
+    id: row.id,
+    sortOrder: row.sortOrder,
+    featuredRank: row.featuredRank,
+    headline: row.headline,
+    teaser: row.teaser,
+    body: row.body,
+    categoryLabel: row.categoryLabel,
+    sport: row.sportId ? sports.get(row.sportId) ?? null : null,
+    season: row.season as Season | null,
+    locationLabel: row.locationLabel,
+    organizationName: row.organizationName,
+    organizationId: row.organizationId,
+    registrationStatus: row.registrationStatus as RegistrationStatus | null,
+    registrationOpensOn: row.registrationOpensOn,
+    registrationClosesOn: row.registrationClosesOn,
+    waitlistStatus: row.waitlistStatus,
+    programDatesLabel: row.programDatesLabel,
+    sourceUrl: row.sourceUrl,
+    sourceLabel: row.sourceLabel,
+    ctaLabel: row.ctaLabel,
+    ctaHref: row.ctaHref,
+    missingActivity: row.missingActivity,
+    missingActivityNote: row.missingActivityNote,
+  }
+}
+
+function toWeeklyEdition(
+  edition: WeeklyEditionRow,
+  storyRows: WeeklyStoryRow[],
+  sports: Map<string, Sport>,
+): WeeklyEdition {
+  return {
+    id: edition.id,
+    weekSlug: edition.weekSlug,
+    weekStart: edition.weekStart,
+    weekEnd: edition.weekEnd,
+    title: edition.title,
+    intro: edition.intro,
+    publishedAt: edition.publishedAt ? edition.publishedAt.toISOString() : null,
+    stories: storyRows.map((row) => toWeeklyStory(row, sports)),
+  }
+}
+
+/** The current "What's happening this week" edition, or null before the first one is published. */
+export async function currentWeeklyEdition(): Promise<WeeklyEdition | null> {
+  const [result, sports] = await Promise.all([currentWeeklyEditionRow(), sportsById()])
+  if (!result) return null
+  return toWeeklyEdition(result.edition, result.stories, sports)
+}
+
+/** One edition by its `/this-week/[week]` route slug. */
+export async function weeklyEditionBySlug(weekSlug: string): Promise<WeeklyEdition | null> {
+  const [result, sports] = await Promise.all([weeklyEditionBySlugRow(weekSlug), sportsById()])
+  if (!result) return null
+  return toWeeklyEdition(result.edition, result.stories, sports)
+}
+
+/** Newest-first archive list for the `/this-week` sidebar/drawer and prev/next navigation. */
+export async function weeklyEditionSummaries(): Promise<WeeklyEditionSummary[]> {
+  const rows = await listWeeklyEditions()
+  return rows.map((row) => ({
+    weekSlug: row.weekSlug,
+    weekStart: row.weekStart,
+    weekEnd: row.weekEnd,
+    title: row.title,
+  }))
+}
+
+/**
+ * "Sep 7–13" — the compact range label used in nav lists and the article
+ * header. Spans a month boundary as "Aug 31–Sep 6" per the product spec.
+ */
+export function weekRangeLabel(weekStart: string, weekEnd: string): string {
+  // Dates are plain YYYY-MM-DD strings from Postgres `date` columns; parsing
+  // with the UTC-noon trick avoids the timezone-rollback-by-a-day bug that
+  // `new Date("2026-09-07")` (midnight UTC) hits west of Greenwich.
+  const start = new Date(`${weekStart}T12:00:00`)
+  const end = new Date(`${weekEnd}T12:00:00`)
+  const startMonth = start.toLocaleDateString("en-US", { month: "short" })
+  const endMonth = end.toLocaleDateString("en-US", { month: "short" })
+  const startLabel = startMonth === endMonth ? `${startMonth} ${start.getDate()}` : `${startMonth} ${start.getDate()}`
+  const endLabel = startMonth === endMonth ? `${end.getDate()}` : `${endMonth} ${end.getDate()}`
+  return `${startLabel}\u2013${endLabel}`
 }
