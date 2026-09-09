@@ -1,20 +1,14 @@
 import { ReportQueue } from "@/components/report-queue"
-import { reports } from "@/lib/data/moderation"
-import { activities } from "@/lib/data/activities"
+import { reportQueue } from "@/lib/queries"
 
 export const metadata = {
   title: "Accuracy reports",
 }
 
-export default function AdminReportsPage() {
-  const enriched = reports.map((report) => {
-    const activity = activities.find((a) => a.id === report.activity_id)
-    return {
-      report,
-      activityTitle: activity?.title ?? "Unknown activity",
-      activitySlug: activity?.slug ?? null,
-    }
-  })
+// Moderation state changes on every action; never serve a cached queue.
+export const dynamic = "force-dynamic"
 
-  return <ReportQueue items={enriched} />
+export default async function AdminReportsPage() {
+  const items = await reportQueue()
+  return <ReportQueue items={items} />
 }

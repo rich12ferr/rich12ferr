@@ -1,4 +1,4 @@
-import type { ChildProfile, ParentAlert, Report, ReviewCandidate, Submission } from "@/lib/types"
+import type { ChildProfile, ParentAlert, ReviewCandidate, Submission } from "@/lib/types"
 
 /** Community submissions awaiting review (PRD 23). */
 export const submissions: Submission[] = [
@@ -57,46 +57,6 @@ export const submissions: Submission[] = [
     source_url: "https://example.org/waterbury-rec/fall",
     comments: "Duplicate of an existing listing, sending in case dates changed.",
     status: "approved",
-  },
-]
-
-/** Incorrect-information reports (PRD 24). */
-export const reports: Report[] = [
-  {
-    id: "rep_001",
-    activity_id: "act_bll_minors",
-    category: "registration_link_broken",
-    details: "The TeamSnap link returns a 404 page.",
-    reporter_email: "parent3@example.com",
-    reported_at: "2026-08-25",
-    status: "new",
-  },
-  {
-    id: "rep_002",
-    activity_id: "act_cv_travel_u14",
-    category: "registration_closed",
-    details: "Club told us the roster is full and the waitlist is closed too.",
-    reporter_email: "parent4@example.com",
-    reported_at: "2026-08-24",
-    status: "investigating",
-  },
-  {
-    id: "rep_003",
-    activity_id: "act_nf_basketball_clinic",
-    category: "wrong_date",
-    details: "Clinic starts in January, not December.",
-    reporter_email: null,
-    reported_at: "2026-08-20",
-    status: "new",
-  },
-  {
-    id: "rep_004",
-    activity_id: "act_wat_flag_football",
-    category: "wrong_cost",
-    details: "Fee went up to $60 this year, listing said $50.",
-    reporter_email: "parent5@example.com",
-    reported_at: "2026-08-11",
-    status: "resolved",
   },
 ]
 

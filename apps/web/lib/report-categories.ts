@@ -14,6 +14,7 @@ export const reportCategories: { value: ReportCategory; label: string }[] = [
   { value: "program_no_longer_exists", label: "This program no longer exists" },
   { value: "duplicate_activity", label: "This is a duplicate listing" },
   { value: "other", label: "Something else" },
+  { value: "suggested_edit", label: "Suggested edit" },
   { value: "general_inquiry", label: "General question" },
 ]
 

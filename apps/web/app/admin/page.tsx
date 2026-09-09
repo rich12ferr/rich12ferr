@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusPill } from "@/components/status-pill"
-import { reports, reviewQueue, submissions } from "@/lib/data/moderation"
+import { reviewQueue, submissions } from "@/lib/data/moderation"
 import { adminMetrics, weeklyStoryCandidateCount } from "@/lib/queries"
 import { registrationStatus } from "@/lib/registration-status"
 
@@ -38,7 +38,6 @@ export default async function AdminDashboardPage() {
   const [metrics, weeklyCandidates] = await Promise.all([adminMetrics(now), weeklyStoryCandidateCount()])
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending").length
-  const openReports = reports.filter((r) => r.status !== "resolved").length
   const lowConfidence = reviewQueue.filter((c) => c.confidence < 0.7).length
 
   const healthCards = [
@@ -95,7 +94,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "Accuracy reports",
-      count: openReports,
+      count: metrics.openReports,
       description: "Parents flagged something wrong",
       href: "/admin/reports",
     },
