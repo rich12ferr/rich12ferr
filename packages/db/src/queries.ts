@@ -384,14 +384,26 @@ export async function searchOfferings(
   }
 
   // Radius: ST_DWithin is index-backed, unlike filtering on ST_Distance.
+  //
+  // Ungeocoded rows (no offering *or* org location — still true for a
+  // meaningful share of listings) are kept rather than dropped: ST_DWithin
+  // against a null geography is null, which WHERE treats as false, so
+  // without the explicit "is null" branch every sport whose organizations
+  // haven't been geocoded yet would silently return zero radius results
+  // regardless of how generous the radius is. Same "don't penalize a
+  // program for incomplete data" rule the maxFee filter below already
+  // follows; the null distance already sorts last, not first, so these
+  // rows don't crowd out closer, geocoded matches.
   if (input.origin && input.radiusMiles) {
-    conditions.push(
+    const radiusCondition = or(
       sql`st_dwithin(
         coalesce(${programOfferings.location}, ${organizations.location}),
         st_setsrid(st_makepoint(${input.origin.lng}, ${input.origin.lat}), 4326)::geography,
         ${input.radiusMiles * 1609.344}
       )`,
+      sql`coalesce(${programOfferings.location}, ${organizations.location}) is null`,
     )
+    if (radiusCondition) conditions.push(radiusCondition)
   }
 
   const origin = input.origin

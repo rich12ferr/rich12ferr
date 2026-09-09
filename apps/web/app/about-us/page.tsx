@@ -29,6 +29,9 @@ export default function AboutUsPage() {
           Because sport and play are about more than competition. They build confidence, friendships,
           acceptance, community, and a sense that we are all part of something together.
         </p>
+        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
+          Sign Up Vermont is operated by Sign Up Vermont, LLC, a Vermont limited liability company.
+        </p>
         <p className="max-w-prose leading-relaxed text-muted-foreground">
           Read more about{" "}
           <Link href="/about" className="font-medium text-foreground underline underline-offset-4">

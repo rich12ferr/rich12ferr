@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { FlagIcon } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -19,17 +19,57 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { FilterSelect } from "@/components/filter-select"
 import { reportCategories as categories } from "@/lib/report-categories"
+import type { ReportCategory } from "@/lib/types"
+import { submitReport } from "@/app/activities/[slug]/report/actions"
 
-/** PRD screen 8: report incorrect information, reachable from every listing. */
-export function ReportDialog({ activityTitle }: { activityTitle: string }) {
+/**
+ * PRD screen 8: report incorrect information, reachable from every listing.
+ *
+ * Saves into the same `reports` table (and eventual admin queue) as the
+ * "Suggest an edit" flow — see that flow's action docstring — distinguished
+ * only by `category`. This dialog is the quick, low-friction flag; "Suggest
+ * an edit" is the detailed, pre-filled correction. Kept as two entry points
+ * rather than merged into one form so flagging a broken link stays a
+ * 30-second action.
+ */
+export function ReportDialog({
+  activityTitle,
+  programId,
+  offeringId,
+}: {
+  activityTitle: string
+  programId: string
+  offeringId: string
+}) {
   const [open, setOpen] = useState(false)
   const [category, setCategory] = useState<string>(categories[0].value)
+  const [pending, startTransition] = useTransition()
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setOpen(false)
-    toast.success("Thanks — report received", {
-      description: "A Sign Up Vermont reviewer will check this listing against its source.",
+    const form = event.currentTarget
+    const details = (form.elements.namedItem("details") as HTMLTextAreaElement).value
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value
+
+    startTransition(async () => {
+      const result = await submitReport({
+        programId,
+        offeringId,
+        activityTitle,
+        category: category as ReportCategory,
+        details,
+        email,
+      })
+      if (result.ok) {
+        setOpen(false)
+        form.reset()
+        setCategory(categories[0].value)
+        toast.success("Thanks — report received", {
+          description: "A Sign Up Vermont reviewer will check this listing against its source.",
+        })
+      } else {
+        toast.error(result.error)
+      }
     })
   }
 
@@ -79,7 +119,9 @@ export function ReportDialog({ activityTitle }: { activityTitle: string }) {
 
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
-            <Button type="submit">Send report</Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Sending…" : "Send report"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

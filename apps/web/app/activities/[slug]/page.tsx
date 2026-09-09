@@ -7,6 +7,7 @@ import {
   ExternalLinkIcon,
   MailIcon,
   MapPinIcon,
+  PencilLineIcon,
   PhoneIcon,
   ShieldCheckIcon,
   TicketIcon,
@@ -283,8 +284,21 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               Sign Up Vermont is a directory, not the organizer. Always confirm details on the
               organization&apos;s own page before you pay &mdash; and tell us if something looks off.
             </p>
-            <div className="mt-2 -ml-2">
-              <ReportDialog activityTitle={activity.title} />
+            <div className="mt-2 -ml-2 flex flex-wrap items-center gap-1">
+              <ReportDialog
+                activityTitle={activity.title}
+                programId={activity.program_id}
+                offeringId={activity.id}
+              />
+              <Button
+                render={<Link href={`/activities/${activity.slug}/suggest-edit`} />}
+                nativeButton={false}
+                variant="ghost"
+                size="sm"
+              >
+                <PencilLineIcon data-icon="inline-start" />
+                Suggest an edit
+              </Button>
             </div>
           </section>
 

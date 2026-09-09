@@ -11,10 +11,21 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** Trigger set offered for a single-program ("activity") watch. */
+/**
+ * Trigger set offered for a single-program ("activity") watch.
+ *
+ * Includes `registration_info_added` so a parent who followed a program
+ * before it had a close date, fee, or registration link posted is emailed
+ * once that detail appears — not just when the open date itself is set
+ * (`registration_opened`) or an already-published date/detail is later
+ * corrected (`deadline_changed`). See `triggersFromChanges` in
+ * `packages/db/src/notify.ts` for exactly which field transitions map to
+ * which trigger.
+ */
 const ACTIVITY_TRIGGERS: AlertTrigger[] = [
   "registration_opened",
   "registration_closing_soon",
+  "registration_info_added",
   "deadline_changed",
 ]
 
