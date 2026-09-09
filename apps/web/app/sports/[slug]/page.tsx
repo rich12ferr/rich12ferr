@@ -89,7 +89,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
             >
               Filter these programs
             </Button>
-            <Button render={<Link href="/alerts" />} nativeButton={false} size="sm">
+            <Button render={<Link href={`/alerts?sport=${sport.slug}`} />} nativeButton={false} size="sm">
               <BellIcon data-icon="inline-start" />
               Alert me
             </Button>
