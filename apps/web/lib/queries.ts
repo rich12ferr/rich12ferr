@@ -17,12 +17,15 @@ import {
   offeringsByProgramSlug,
   offeringsBySportSlug,
   organizationByIdOrSlug,
+  pendingWeeklyStoryCandidateCount,
+  pendingWeeklyStoryCandidates,
   programSlugsForStaticParams,
   recentlyOpenedOfferings,
   searchOfferings,
   weeklyEditionBySlug as weeklyEditionBySlugRow,
   type OfferingListing,
   type WeeklyEditionRow,
+  type WeeklyStoryCandidateRow,
   type WeeklyStoryRow,
 } from "@openplay/db"
 import { LAUNCH_HUB, SEASONS } from "@openplay/core"
@@ -798,6 +801,20 @@ export async function weeklyEditionSummaries(): Promise<WeeklyEditionSummary[]> 
     weekEnd: row.weekEnd,
     title: row.title,
   }))
+}
+
+/**
+ * The "This Week" candidate shortlist — backs `/admin/weekly-candidates`.
+ * Rows are plain columns already, so no shape adapter is needed the way
+ * `listingToActivity` is for offerings.
+ */
+export async function weeklyStoryCandidateQueue(): Promise<WeeklyStoryCandidateRow[]> {
+  return pendingWeeklyStoryCandidates()
+}
+
+/** Count for the admin dashboard's "Work queues" card. */
+export async function weeklyStoryCandidateCount(): Promise<number> {
+  return pendingWeeklyStoryCandidateCount()
 }
 
 /**

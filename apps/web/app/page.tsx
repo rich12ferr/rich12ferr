@@ -108,11 +108,13 @@ export default async function HomePage() {
       </section>
 
       {/* Directory stats — moved below the search so the hero leads with the search itself */}
-      <section className="mx-auto w-full max-w-6xl px-4 pt-8 sm:px-6">
-        <p className="leading-relaxed text-muted-foreground text-pretty">
-          {total} youth programs from {orgCount} local schools, rec departments, leagues, and clubs
-          &mdash; sports, camps, arts, and community recreation together in one place.
-        </p>
+      <section className="w-full bg-[#F5B642]">
+        <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
+          <p className="leading-relaxed text-pretty text-neutral-900">
+            {total} youth programs from {orgCount} local schools, rec departments, leagues, and clubs
+            &mdash; sports, camps, arts, and community recreation together in one place.
+          </p>
+        </div>
       </section>
 
       {/* Deadlines — the signature section */}

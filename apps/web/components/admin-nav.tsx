@@ -8,6 +8,7 @@ import {
   GaugeIcon,
   InboxIcon,
   ListIcon,
+  NewspaperIcon,
   SparklesIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,6 +18,7 @@ const links = [
   { href: "/admin/activities", label: "Activities", icon: ListIcon },
   { href: "/admin/organizations", label: "Organizations", icon: BuildingIcon },
   { href: "/admin/review", label: "AI review", icon: SparklesIcon },
+  { href: "/admin/weekly-candidates", label: "This Week", icon: NewspaperIcon },
   { href: "/admin/submissions", label: "Submissions", icon: InboxIcon },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon },
 ]

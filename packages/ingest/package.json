@@ -16,6 +16,9 @@
     "approve-source": "tsx scripts/approve-source.ts",
     "approve-candidates": "tsx scripts/approve-candidates.ts",
     "backfill-organization-website": "tsx scripts/backfill-organization-website.ts",
+    "scan-weekly-story-candidates": "tsx scripts/scan-weekly-story-candidates.ts",
+    "draft-weekly-story": "tsx scripts/draft-weekly-story.ts",
+    "publish-weekly-edition": "tsx scripts/publish-weekly-edition.ts",
     "crawl": "tsx scripts/crawl.ts",
     "verify-fetch": "tsx scripts/verify-fetch.ts",
     "verify-pipeline": "tsx scripts/verify-pipeline.ts"

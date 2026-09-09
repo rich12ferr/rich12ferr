@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusPill } from "@/components/status-pill"
 import { reports, reviewQueue, submissions } from "@/lib/data/moderation"
-import { adminMetrics } from "@/lib/queries"
+import { adminMetrics, weeklyStoryCandidateCount } from "@/lib/queries"
 import { registrationStatus } from "@/lib/registration-status"
 
 /**
@@ -35,7 +35,7 @@ const TRUSTED_STATUSES = new Set(["admin_reviewed", "organization_verified"])
 
 export default async function AdminDashboardPage() {
   const now = new Date()
-  const metrics = await adminMetrics(now)
+  const [metrics, weeklyCandidates] = await Promise.all([adminMetrics(now), weeklyStoryCandidateCount()])
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending").length
   const openReports = reports.filter((r) => r.status !== "resolved").length
@@ -80,6 +80,12 @@ export default async function AdminDashboardPage() {
       count: reviewQueue.length,
       description: `${lowConfidence} below the 0.70 confidence line`,
       href: "/admin/review",
+    },
+    {
+      label: "This Week candidates",
+      count: weeklyCandidates,
+      description: "Auto-surfaced story ideas awaiting a draft",
+      href: "/admin/weekly-candidates",
     },
     {
       label: "Community submissions",
@@ -138,7 +144,7 @@ export default async function AdminDashboardPage() {
         <h2 id="queues" className="font-display text-xl font-semibold">
           Work queues
         </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {queues.map((queue) => (
             <Card key={queue.label} className="flex flex-col">
               <CardHeader className="flex-1">

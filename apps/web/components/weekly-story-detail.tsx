@@ -36,7 +36,16 @@ function Fact({
  * the corresponding Sign Up Vermont record — the article's job is context,
  * the activity page's job is the registration path.
  */
-export function WeeklyStoryDetail({ story, index }: { story: WeeklyStory; index: number }) {
+export function WeeklyStoryDetail({
+  story,
+  index,
+  isCurrent,
+}: {
+  story: WeeklyStory
+  index: number
+  /** False inside an archived (non-current) edition — governs the "as of" status qualifier below. */
+  isCurrent: boolean
+}) {
   const isExternalCta = story.ctaHref.startsWith("http")
 
   return (
@@ -77,10 +86,13 @@ export function WeeklyStoryDetail({ story, index }: { story: WeeklyStory; index:
 
         {story.registrationStatus ? (
           <Fact icon={CalendarIcon}>
-            <span className="inline-flex items-center gap-2">
+            <span className="inline-flex flex-wrap items-center gap-2">
               <StatusPill status={story.registrationStatus} size="sm" />
               {story.registrationOpensOn ? `Opens ${formatDate(story.registrationOpensOn)}` : null}
               {story.registrationClosesOn ? `Closes ${formatDate(story.registrationClosesOn)}` : null}
+              {!isCurrent ? (
+                <span className="text-xs text-muted-foreground">(as published, may no longer be current)</span>
+              ) : null}
             </span>
           </Fact>
         ) : null}
