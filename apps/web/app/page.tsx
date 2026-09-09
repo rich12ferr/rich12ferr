@@ -6,10 +6,12 @@ import { QuickSearch } from "@/components/quick-search"
 import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
+import { WeeklyStoryCard } from "@/components/weekly-story-card"
 import { Button } from "@/components/ui/button"
 import {
   allActivities,
   closingSoon,
+  currentWeeklyEdition,
   organizationSummaries,
   recentlyOpened,
   seasonLabels,
@@ -33,16 +35,24 @@ export default async function HomePage() {
   const YOUTH = ["youth"]
   // Issued together: these six reads are independent, so serialising them would
   // add six round trips to the database for no reason.
-  const [deadlines, opened, sportRows, seasons, all, orgRows] = await Promise.all([
+  const [deadlines, opened, sportRows, seasons, all, orgRows, weeklyEdition] = await Promise.all([
     closingSoon(now),
     recentlyOpened(now),
     sportSummaries(now, YOUTH),
     upcomingSeasonCounts(now, YOUTH),
     allActivities(YOUTH),
     organizationSummaries(now, YOUTH),
+    currentWeeklyEdition(),
   ])
   const total = all.length
   const orgCount = orgRows.length
+  // Never manufacture stories to fill the module — show only the stories an
+  // editor actually marked featured (rank 1-3), and hide the section
+  // entirely once there is no published edition at all.
+  const featuredStories = (weeklyEdition?.stories ?? [])
+    .filter((story) => story.featuredRank !== null)
+    .sort((a, b) => (a.featuredRank ?? 0) - (b.featuredRank ?? 0))
+    .slice(0, 3)
   // Only queried on the empty path — the common case (deadlines exist) never
   // pays for this extra read.
   const monthStarts = deadlines.length === 0 ? await seasonStartsInCurrentMonth(now) : []
@@ -168,6 +178,29 @@ export default async function HomePage() {
               ))}
             </ul>
           </div>
+        </section>
+      ) : null}
+
+      {/* What's happening this week — timely editorial context, not a blog. */}
+      {featuredStories.length > 0 ? (
+        <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+          <SectionHeading
+            title="What's happening this week"
+            description="New programs, registration openings, and deadlines worth knowing about around Vermont."
+            action={
+              <Button render={<Link href="/this-week" />} nativeButton={false} variant="outline" size="sm">
+                View this week&apos;s full update
+                <ArrowRightIcon data-icon="inline-end" />
+              </Button>
+            }
+          />
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredStories.map((story) => (
+              <li key={story.id}>
+                <WeeklyStoryCard story={story} />
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 

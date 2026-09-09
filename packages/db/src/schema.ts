@@ -735,7 +735,103 @@ export const alerts = pgTable(
 )
 
 /* -------------------------------------------------------------------------- */
-/*  Inferred row types                                                        */
+/*  "This Week" editorial feature                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A single published weekly update ("What's happening this week" on the
+ * homepage, `/this-week/[week]` as the full article). One row per calendar
+ * week, keyed by `weekSlug` (e.g. "september-7-2026") rather than `id` for
+ * routing, so the URL stays stable and readable independent of the row id.
+ */
+export const weeklyEditions = pgTable(
+  "weekly_editions",
+  {
+    id: text("id").primaryKey(),
+    weekSlug: text("week_slug").notNull(),
+    weekStart: date("week_start").notNull(),
+    weekEnd: date("week_end").notNull(),
+    title: text("title").notNull(),
+    intro: text("intro"),
+    /** Unpublished editions stay invisible to parents but editable by admins, mirroring `program_offerings.published`. */
+    published: boolean("published").notNull().default(false),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("weekly_editions_week_slug_idx").on(t.weekSlug),
+    index("weekly_editions_week_start_idx").on(t.weekStart),
+  ],
+)
+
+/**
+ * One editorial development within a weekly edition. Deliberately
+ * denormalized (org name, dates, status all copied in as plain text/labels
+ * at authoring time) rather than purely joined from `programs`/
+ * `program_offerings`, because a story is a snapshot of what was true when it
+ * was written — the underlying offering can keep changing after the story
+ * ships without silently rewriting last week's copy. The optional
+ * `sportId`/`organizationId`/`programId`/`offeringId` links are what let the
+ * UI still resolve real iconography and CTAs into the live directory.
+ */
+export const weeklyStories = pgTable(
+  "weekly_stories",
+  {
+    id: text("id").primaryKey(),
+    editionId: text("edition_id")
+      .notNull()
+      .references(() => weeklyEditions.id, { onDelete: "cascade" }),
+    /** Manual display order within the edition's full article. */
+    sortOrder: integer("sort_order").notNull().default(0),
+    /** 1-3 for the homepage's "What's happening this week" module; null keeps a story archive-only. */
+    featuredRank: integer("featured_rank"),
+
+    headline: text("headline").notNull(),
+    /** ~40-60 word homepage teaser. */
+    teaser: text("teaser").notNull(),
+    /** ~100-200 word full-article copy. */
+    body: text("body").notNull(),
+
+    /** Free-text fallback (e.g. "Winter sports") for stories that span more than one sport. */
+    categoryLabel: text("category_label"),
+    sportId: text("sport_id").references(() => sports.id),
+    season: text("season"),
+    locationLabel: text("location_label"),
+
+    organizationName: text("organization_name"),
+    organizationId: text("organization_id").references(() => organizations.id),
+    programId: text("program_id").references(() => programs.id),
+    offeringId: text("offering_id").references(() => programOfferings.id),
+
+    registrationStatus: text("registration_status"),
+    registrationOpensOn: date("registration_opens_on"),
+    registrationClosesOn: date("registration_closes_on"),
+    waitlistStatus: text("waitlist_status"),
+    programDatesLabel: text("program_dates_label"),
+
+    sourceUrl: text("source_url"),
+    sourceLabel: text("source_label"),
+
+    ctaLabel: text("cta_label").notNull(),
+    ctaHref: text("cta_href").notNull(),
+
+    /** Set when the story references a real, verified program that isn't in the directory yet — flagged for ingestion, never fabricated. */
+    missingActivity: boolean("missing_activity").notNull().default(false),
+    missingActivityNote: text("missing_activity_note"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("weekly_stories_edition_id_idx").on(t.editionId),
+    index("weekly_stories_featured_rank_idx").on(t.featuredRank),
+  ],
+)
+
+/* -------------------------------------------------------------------------- */
+/*  Inferred row types                                                       */
 /* -------------------------------------------------------------------------- */
 
 export type SportRow = typeof sports.$inferSelect
@@ -750,6 +846,8 @@ export type ReviewCandidateRow = typeof reviewCandidates.$inferSelect
 export type ReportRow = typeof reports.$inferSelect
 export type SubmissionRow = typeof submissions.$inferSelect
 export type AlertRow = typeof alerts.$inferSelect
+export type WeeklyEditionRow = typeof weeklyEditions.$inferSelect
+export type WeeklyStoryRow = typeof weeklyStories.$inferSelect
 
 export type NewSport = typeof sports.$inferInsert
 export type NewOrganization = typeof organizations.$inferInsert
@@ -759,3 +857,5 @@ export type NewSource = typeof sources.$inferInsert
 export type NewFieldProvenance = typeof fieldProvenance.$inferInsert
 export type NewReviewCandidate = typeof reviewCandidates.$inferInsert
 export type NewAlert = typeof alerts.$inferInsert
+export type NewWeeklyEdition = typeof weeklyEditions.$inferInsert
+export type NewWeeklyStory = typeof weeklyStories.$inferInsert

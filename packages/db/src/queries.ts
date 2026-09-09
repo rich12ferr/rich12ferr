@@ -43,6 +43,8 @@ import {
   reviewCandidates,
   sports,
   submissions,
+  weeklyEditions,
+  weeklyStories,
 } from "./schema"
 
 /* -------------------------------------------------------------------------- */
@@ -1068,4 +1070,52 @@ export async function findAlertsToNotify(
     })
     .from(alerts)
     .where(and(eq(alerts.active, true), overlaps, targetsProgram))
+}
+
+/* -------------------------------------------------------------------------- */
+/*  "This Week" editorial feature                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Stories ordered for display within their edition — sort_order first, id as a stable tiebreaker. */
+async function storiesForEditions(editionIds: string[]) {
+  if (editionIds.length === 0) return []
+  return db
+    .select()
+    .from(weeklyStories)
+    .where(inArray(weeklyStories.editionId, editionIds))
+    .orderBy(asc(weeklyStories.sortOrder), asc(weeklyStories.id))
+}
+
+/** The most recently published edition, with its stories attached — backs the homepage module and the bare `/this-week` route. */
+export async function currentWeeklyEdition() {
+  const [edition] = await db
+    .select()
+    .from(weeklyEditions)
+    .where(eq(weeklyEditions.published, true))
+    .orderBy(desc(weeklyEditions.weekStart))
+    .limit(1)
+  if (!edition) return null
+  const stories = await storiesForEditions([edition.id])
+  return { edition, stories }
+}
+
+/** One published edition by its route slug, with its stories — backs `/this-week/[week]`. */
+export async function weeklyEditionBySlug(weekSlug: string) {
+  const [edition] = await db
+    .select()
+    .from(weeklyEditions)
+    .where(and(eq(weeklyEditions.weekSlug, weekSlug), eq(weeklyEditions.published, true)))
+    .limit(1)
+  if (!edition) return null
+  const stories = await storiesForEditions([edition.id])
+  return { edition, stories }
+}
+
+/** Every published edition, newest first — powers the `/this-week` archive's sidebar/drawer navigation and prev/next links. */
+export async function listWeeklyEditions() {
+  return db
+    .select()
+    .from(weeklyEditions)
+    .where(eq(weeklyEditions.published, true))
+    .orderBy(desc(weeklyEditions.weekStart))
 }

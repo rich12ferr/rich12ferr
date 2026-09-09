@@ -262,6 +262,66 @@ export type ParentAlert = {
   active: boolean
 }
 
+/**
+ * One editorial development inside a "This Week" edition (see
+ * `packages/db/src/schema.ts` for why this is denormalized rather than a
+ * pure join). `sport`/`organization` are resolved from the optional
+ * `sportId`/`organizationId` links when present, so the card can show real
+ * iconography without the story author having had to duplicate it by hand.
+ */
+export type WeeklyStory = {
+  id: string
+  sortOrder: number
+  /** 1-3 for the homepage module; null keeps a story archive-only. */
+  featuredRank: number | null
+
+  headline: string
+  teaser: string
+  body: string
+
+  categoryLabel: string | null
+  sport: Sport | null
+  season: Season | null
+  locationLabel: string | null
+
+  organizationName: string | null
+  organizationId: string | null
+
+  registrationStatus: RegistrationStatus | null
+  registrationOpensOn: string | null
+  registrationClosesOn: string | null
+  waitlistStatus: string | null
+  programDatesLabel: string | null
+
+  sourceUrl: string | null
+  sourceLabel: string | null
+
+  ctaLabel: string
+  ctaHref: string
+
+  missingActivity: boolean
+  missingActivityNote: string | null
+}
+
+export type WeeklyEdition = {
+  id: string
+  weekSlug: string
+  weekStart: string
+  weekEnd: string
+  title: string
+  intro: string | null
+  publishedAt: string | null
+  stories: WeeklyStory[]
+}
+
+/** Lightweight entry for the `/this-week` archive's navigation list. */
+export type WeeklyEditionSummary = {
+  weekSlug: string
+  weekStart: string
+  weekEnd: string
+  title: string
+}
+
 export type ChildProfile = {
   id: string
   nickname: string
