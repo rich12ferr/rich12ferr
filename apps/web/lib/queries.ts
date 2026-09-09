@@ -9,10 +9,12 @@ import {
   closingSoonOfferings,
   currentWeeklyEdition as currentWeeklyEditionRow,
   listOrganizations,
+  listReports,
   listSports,
   listTowns,
   listWeeklyEditions,
   offeringById,
+  offeringsByIds,
   offeringsByOrganizationSlug,
   offeringsByProgramSlug,
   offeringsBySportSlug,
@@ -24,6 +26,8 @@ import {
   searchOfferings,
   weeklyEditionBySlug as weeklyEditionBySlugRow,
   type OfferingListing,
+  type ReportRow,
+  type ReportStatus,
   type WeeklyEditionRow,
   type WeeklyStoryCandidateRow,
   type WeeklyStoryRow,
@@ -713,6 +717,7 @@ export async function adminMetrics(now = new Date()) {
     deadlineSoon: counts.closingSoon,
     missingDates: counts.missingDates,
     stale: counts.stale,
+    openReports: counts.openReports,
     closingSoonWindow: CLOSING_SOON_DAYS,
     all,
   }
@@ -815,6 +820,54 @@ export async function weeklyStoryCandidateQueue(): Promise<WeeklyStoryCandidateR
 /** Count for the admin dashboard's "Work queues" card. */
 export async function weeklyStoryCandidateCount(): Promise<number> {
   return pendingWeeklyStoryCandidateCount()
+}
+
+/**
+ * A report enriched for the admin queue: the raw row plus the human-readable
+ * activity it points at. Dates are pre-formatted to ISO strings so the whole
+ * item is serializable across the server/client boundary the queue renders in.
+ */
+export type ReportQueueItem = {
+  id: string
+  category: ReportRow["category"]
+  status: ReportStatus
+  details: string | null
+  reporterEmail: string | null
+  reportedAt: string
+  /** Display label for what the report targets; static text when it's not tied to a listing. */
+  activityTitle: string
+  /** Present only when the target resolves to a live, linkable activity. */
+  activitySlug: string | null
+}
+
+/**
+ * The admin accuracy-report queue, read from the live `reports` table and
+ * enriched with each report's activity title + slug.
+ *
+ * Offerings are resolved in a single batched query (not per-row) to avoid an
+ * N+1. Reports with no `offeringId` — general contact inquiries — get a static
+ * label instead of a broken link.
+ */
+export async function reportQueue(): Promise<ReportQueueItem[]> {
+  const rows = await listReports()
+
+  const offeringIds = [...new Set(rows.map((r) => r.offeringId).filter((id): id is string => id !== null))]
+  const offerings = await offeringsByIds(offeringIds)
+  const byId = new Map(offerings.map((o) => [o.offeringId, o]))
+
+  return rows.map((row) => {
+    const offering = row.offeringId ? byId.get(row.offeringId) : undefined
+    return {
+      id: row.id,
+      category: row.category,
+      status: row.status as ReportStatus,
+      details: row.details,
+      reporterEmail: row.reporterEmail,
+      reportedAt: row.reportedAt.toISOString(),
+      activityTitle: offering?.title ?? (row.offeringId ? "Unknown activity" : "General inquiry"),
+      activitySlug: offering?.programSlug ?? null,
+    }
+  })
 }
 
 /**

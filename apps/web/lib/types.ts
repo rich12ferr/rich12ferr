@@ -197,6 +197,8 @@ export type ReportCategory =
   | "program_no_longer_exists"
   | "duplicate_activity"
   | "other"
+  /** Filed from an activity page's "suggest an edit" form — tied to a listing. */
+  | "suggested_edit"
   /** Filed from the general /contact form rather than an activity page — not tied to a listing. */
   | "general_inquiry"
 

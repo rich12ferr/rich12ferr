@@ -46,6 +46,7 @@ import {
   weeklyEditions,
   weeklyStories,
   weeklyStoryCandidates,
+  type ReportRow,
 } from "./schema"
 
 /* -------------------------------------------------------------------------- */
@@ -450,6 +451,17 @@ export async function offeringById(id: string): Promise<OfferingListing | null> 
 }
 
 /**
+ * Batched sibling of `offeringById` — one query for many ids, so callers that
+ * need to enrich a list (e.g. the admin report queue attaching activity titles)
+ * avoid an N+1. Ids not found are simply absent from the result.
+ */
+export async function offeringsByIds(ids: string[]): Promise<OfferingListing[]> {
+  if (ids.length === 0) return []
+  const rows = await baseJoin().where(inArray(programOfferings.id, ids))
+  return rows.map(normalizeListing)
+}
+
+/**
  * All offerings for a program slug, newest season first.
  *
  * This is the program detail page: one durable program, its season history, and
@@ -739,6 +751,55 @@ export async function openReports(limit = 50) {
     .where(inArray(reports.status, ["new", "investigating"]))
     .orderBy(asc(reports.reportedAt))
     .limit(limit)
+}
+
+export type ReportStatus = "new" | "investigating" | "resolved" | "dismissed"
+
+/**
+ * Every report for the admin console, open ones first (oldest open at the top
+ * so nothing rots), then closed ones (most recently closed first). One query
+ * with a computed sort key rather than two round trips — the queue re-reads on
+ * every status change.
+ */
+export async function listReports(limit = 200): Promise<ReportRow[]> {
+  return db
+    .select()
+    .from(reports)
+    .orderBy(
+      // Open (new/investigating) sorts ahead of closed (resolved/dismissed).
+      sql`case when ${reports.status} in ('new', 'investigating') then 0 else 1 end`,
+      // Within open: oldest first. Within closed: most recent activity first.
+      sql`case
+        when ${reports.status} in ('new', 'investigating') then ${reports.reportedAt}
+        else null
+      end asc nulls last`,
+      desc(sql`coalesce(${reports.resolvedAt}, ${reports.reportedAt})`),
+    )
+    .limit(limit)
+}
+
+/**
+ * Moves a report between states. Closing (`resolved`/`dismissed`) stamps
+ * `resolvedAt`; reopening (`new`/`investigating`) clears it and any note, so a
+ * reopened report doesn't keep a stale resolution timestamp. Returns the
+ * updated row (or null if the id doesn't exist).
+ */
+export async function setReportStatus(
+  id: string,
+  status: ReportStatus,
+  note?: string | null,
+): Promise<ReportRow | null> {
+  const closing = status === "resolved" || status === "dismissed"
+  const [row] = await db
+    .update(reports)
+    .set({
+      status,
+      resolvedAt: closing ? new Date() : null,
+      resolutionNote: closing ? (note ?? null) : null,
+    })
+    .where(eq(reports.id, id))
+    .returning()
+  return row ?? null
 }
 
 export async function pendingSubmissions(limit = 50) {
