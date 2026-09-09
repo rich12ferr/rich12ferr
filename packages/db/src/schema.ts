@@ -883,6 +883,36 @@ export const weeklyStoryCandidates = pgTable(
 )
 
 /* -------------------------------------------------------------------------- */
+/*  Admin audit log                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Every change an admin makes through an admin write action, starting with the
+ * activity editor. `entityType`/`entityId` generalize beyond offerings (e.g.
+ * organizations) the same way `reports.entityType`/`entityId` do.
+ *
+ * `actor` is a plain string, not a foreign key: there is no admin auth yet, so
+ * every row currently reads `"Admin"`. Kept as its own column (not inferred
+ * from a session) so it is a one-line change to start recording a real
+ * identity once auth exists, without touching every write site.
+ */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id").primaryKey(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    actor: text("actor").notNull().default("Admin"),
+    /** `{ [field]: { before, after } }` — only fields that actually changed. */
+    changes: jsonb("changes").notNull(),
+    /** Set when this edit was made to resolve a specific "suggested edit" report. */
+    reportId: text("report_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("admin_audit_log_entity_idx").on(t.entityType, t.entityId, t.createdAt)],
+)
+
+/* -------------------------------------------------------------------------- */
 /*  Inferred row types                                                       */
 /* -------------------------------------------------------------------------- */
 
@@ -901,6 +931,7 @@ export type AlertRow = typeof alerts.$inferSelect
 export type WeeklyEditionRow = typeof weeklyEditions.$inferSelect
 export type WeeklyStoryRow = typeof weeklyStories.$inferSelect
 export type WeeklyStoryCandidateRow = typeof weeklyStoryCandidates.$inferSelect
+export type AdminAuditLogRow = typeof adminAuditLog.$inferSelect
 
 export type NewSport = typeof sports.$inferInsert
 export type NewOrganization = typeof organizations.$inferInsert
