@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import { createStandingAlert } from "@/app/alerts/actions"
 import { getSportBySlug } from "@/lib/data/sports"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Field,
@@ -21,21 +20,21 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { FilterSelect } from "@/components/filter-select"
 import { sports } from "@/lib/data/sports"
 import { gradeOptions } from "@/lib/format"
-import { DEFAULT_RADIUS, alertTriggerLabels } from "@/lib/labels"
+import { DEFAULT_RADIUS } from "@/lib/labels"
 import type { AlertTrigger } from "@/lib/types"
 
-const triggers: AlertTrigger[] = [
+// Every standing alert subscribes to all event types. The per-event opt-in
+// checkboxes were removed to cut setup friction — visitors are simply told
+// we'll email them when a matching activity is added or changed. Two of these
+// (registration_closing_soon, new_matching_activity) aren't fired by the
+// backend yet; they're stored now so no data migration is needed once the
+// scheduled jobs and the planned single-digest email land.
+const ALL_TRIGGERS: AlertTrigger[] = [
   "registration_opened",
   "registration_closing_soon",
   "deadline_changed",
   "new_matching_activity",
   "registration_info_added",
-]
-
-const defaultTriggers: AlertTrigger[] = [
-  "registration_opened",
-  "registration_closing_soon",
-  "deadline_changed",
 ]
 
 /** PRD 17. Sport alert and child-match alert, no account required. */
@@ -46,15 +45,8 @@ export function AlertForm({ initialSport }: { initialSport?: string }) {
   const [zip, setZip] = useState("")
   const [radius, setRadius] = useState(String(DEFAULT_RADIUS))
   const [email, setEmail] = useState("")
-  const [selected, setSelected] = useState<AlertTrigger[]>(defaultTriggers)
   const [done, setDone] = useState(false)
   const [pending, startTransition] = useTransition()
-
-  function toggle(trigger: AlertTrigger) {
-    setSelected((prev) =>
-      prev.includes(trigger) ? prev.filter((t) => t !== trigger) : [...prev, trigger],
-    )
-  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -64,10 +56,6 @@ export function AlertForm({ initialSport }: { initialSport?: string }) {
     }
     if (kind === "sport" && !sport) {
       toast.error("Pick a sport to follow.")
-      return
-    }
-    if (selected.length === 0) {
-      toast.error("Choose at least one thing to be notified about.")
       return
     }
 
@@ -86,8 +74,8 @@ export function AlertForm({ initialSport }: { initialSport?: string }) {
         grade: grade ? Number(grade) : null,
         zip: zip.trim() || null,
         radiusMiles: Number(radius),
-        // Frontend and DB AlertTrigger share one vocabulary, so pass through.
-        triggers: selected,
+        // Every alert subscribes to all events; per-event opt-in was removed.
+        triggers: ALL_TRIGGERS,
         label,
       })
       if (result.ok) {
@@ -226,20 +214,19 @@ export function AlertForm({ initialSport }: { initialSport?: string }) {
       </FieldSet>
 
       <FieldSet>
-        <FieldLegend>When should we email you</FieldLegend>
+        <FieldLegend>What you&apos;ll hear about</FieldLegend>
         <FieldGroup>
-          {triggers.map((trigger) => (
-            <Field key={trigger} orientation="horizontal">
-              <Checkbox
-                id={`trigger-${trigger}`}
-                checked={selected.includes(trigger)}
-                onCheckedChange={() => toggle(trigger)}
-              />
-              <FieldLabel htmlFor={`trigger-${trigger}`} className="font-normal">
-                {alertTriggerLabels[trigger]}
-              </FieldLabel>
-            </Field>
-          ))}
+          <div className="rounded-2xl border border-border bg-muted/40 p-4">
+            <p className="text-sm leading-relaxed text-foreground">
+              We&apos;ll email you whenever a matching activity is added or updated &mdash; when
+              registration opens, a deadline changes, a closing date is coming up, missing details
+              get filled in, or a new activity that fits is published.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              You don&apos;t need to pick and choose &mdash; we&apos;re moving toward a single digest
+              email that rounds up everything for you. Every email has a one-click unsubscribe.
+            </p>
+          </div>
         </FieldGroup>
       </FieldSet>
 
