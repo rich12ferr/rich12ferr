@@ -45,6 +45,7 @@ import {
   submissions,
   weeklyEditions,
   weeklyStories,
+  weeklyStoryCandidates,
 } from "./schema"
 
 /* -------------------------------------------------------------------------- */
@@ -699,6 +700,38 @@ export async function pendingReviewCandidates(limit = 50) {
     .limit(limit)
 }
 
+/**
+ * The "This Week" candidate shortlist, highest-scored first — backs
+ * `/admin/weekly-candidates`. Populated by `scan-weekly-story-candidates.ts`,
+ * consumed (turned into real stories) by `draft-weekly-story.ts`.
+ */
+export async function pendingWeeklyStoryCandidates(limit = 50) {
+  return db
+    .select()
+    .from(weeklyStoryCandidates)
+    .where(eq(weeklyStoryCandidates.status, "pending"))
+    .orderBy(desc(weeklyStoryCandidates.score), asc(weeklyStoryCandidates.discoveredAt))
+    .limit(limit)
+}
+
+export async function weeklyStoryCandidateById(id: string) {
+  const [row] = await db
+    .select()
+    .from(weeklyStoryCandidates)
+    .where(eq(weeklyStoryCandidates.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+/** Count for the admin dashboard's work-queue card. */
+export async function pendingWeeklyStoryCandidateCount(): Promise<number> {
+  const [row] = await db
+    .select({ pending: sql<number>`count(*)::int` })
+    .from(weeklyStoryCandidates)
+    .where(eq(weeklyStoryCandidates.status, "pending"))
+  return row?.pending ?? 0
+}
+
 export async function openReports(limit = 50) {
   return db
     .select()
@@ -1086,12 +1119,20 @@ async function storiesForEditions(editionIds: string[]) {
     .orderBy(asc(weeklyStories.sortOrder), asc(weeklyStories.id))
 }
 
-/** The most recently published edition, with its stories attached — backs the homepage module and the bare `/this-week` route. */
+/**
+ * The most recently published edition, with its stories attached — backs the
+ * homepage module and the bare `/this-week` route.
+ *
+ * Guarded by `weekStart <= current_date` so an edition drafted and published
+ * ahead of its week (e.g. queued Sunday night for Monday) never preempts the
+ * edition that is still actually current — "current" tracks the calendar,
+ * not publish order.
+ */
 export async function currentWeeklyEdition() {
   const [edition] = await db
     .select()
     .from(weeklyEditions)
-    .where(eq(weeklyEditions.published, true))
+    .where(and(eq(weeklyEditions.published, true), lte(weeklyEditions.weekStart, sql`current_date`)))
     .orderBy(desc(weeklyEditions.weekStart))
     .limit(1)
   if (!edition) return null

@@ -830,6 +830,58 @@ export const weeklyStories = pgTable(
   ],
 )
 
+/**
+ * Auto-generated shortlist feeding the weekly "This Week" editorial loop.
+ *
+ * A scheduled scanner (`scan-weekly-story-candidates.ts`) mines signals
+ * already proven out elsewhere in the schema — recently *approved*
+ * `review_candidates` (i.e. already human-verified), and offerings whose
+ * registration is closing soon or just opened — into a single ranked queue,
+ * so "what might be worth a story this week" stops being a from-scratch SQL
+ * query every Monday. Nothing here is ever auto-published: `draft-weekly-
+ * story.ts` is the human-in-the-loop step that turns a candidate plus
+ * verified copy into a real `weekly_stories` row, mirroring how
+ * `review_candidates` never auto-creates a `program`/`program_offering`.
+ */
+export const weeklyStoryCandidates = pgTable(
+  "weekly_story_candidates",
+  {
+    id: text("id").primaryKey(),
+    /** "approved_review_candidate" | "closing_soon_offering" | "recently_opened_offering". */
+    sourceKind: text("source_kind").notNull(),
+    /** Set when sourced from an approved `review_candidates` row. */
+    reviewCandidateId: text("review_candidate_id"),
+    /** Set when sourced from an existing published offering (closing soon / recently opened). */
+    offeringId: text("offering_id"),
+    programId: text("program_id"),
+    organizationId: text("organization_id"),
+    sportId: text("sport_id"),
+
+    /** Machine-drafted starting point; the editorial step in `draft-weekly-story.ts` supplies the verified copy. */
+    headlineSuggestion: text("headline_suggestion").notNull(),
+    teaserSuggestion: text("teaser_suggestion").notNull(),
+    /** Why this surfaced, e.g. "Registration closes in 5 days" — shown in the admin queue. */
+    summary: text("summary").notNull(),
+    /** The date driving relevance/ranking: a close date, open date, or approval date. */
+    signalDate: date("signal_date"),
+    /** Ranking score, higher first; scanner-defined (e.g. urgency for deadlines, confidence for new programs). */
+    score: numeric("score", { precision: 6, scale: 3, mode: "number" }).notNull().default(0),
+
+    status: text("status").notNull().default("pending"),
+    /** Set once turned into a real story, so a re-scan never re-surfaces it. */
+    weeklyStoryId: text("weekly_story_id"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewedBy: text("reviewed_by"),
+    reviewNote: text("review_note"),
+    discoveredAt: timestamp("discovered_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("weekly_story_candidates_status_idx").on(t.status, t.discoveredAt),
+    index("weekly_story_candidates_offering_idx").on(t.offeringId),
+    index("weekly_story_candidates_review_candidate_idx").on(t.reviewCandidateId),
+  ],
+)
+
 /* -------------------------------------------------------------------------- */
 /*  Inferred row types                                                       */
 /* -------------------------------------------------------------------------- */
@@ -848,6 +900,7 @@ export type SubmissionRow = typeof submissions.$inferSelect
 export type AlertRow = typeof alerts.$inferSelect
 export type WeeklyEditionRow = typeof weeklyEditions.$inferSelect
 export type WeeklyStoryRow = typeof weeklyStories.$inferSelect
+export type WeeklyStoryCandidateRow = typeof weeklyStoryCandidates.$inferSelect
 
 export type NewSport = typeof sports.$inferInsert
 export type NewOrganization = typeof organizations.$inferInsert
@@ -859,3 +912,4 @@ export type NewReviewCandidate = typeof reviewCandidates.$inferInsert
 export type NewAlert = typeof alerts.$inferInsert
 export type NewWeeklyEdition = typeof weeklyEditions.$inferInsert
 export type NewWeeklyStory = typeof weeklyStories.$inferInsert
+export type NewWeeklyStoryCandidate = typeof weeklyStoryCandidates.$inferInsert

@@ -32,7 +32,11 @@ export function WeeklyEditionArticle({
           <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
             This week
           </p>
-        ) : null}
+        ) : (
+          <p className="inline-flex w-fit items-center gap-2 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+            Archived edition &mdash; a historical snapshot
+          </p>
+        )}
         <h1 className="font-display text-3xl leading-tight font-extrabold tracking-tight text-balance sm:text-4xl">
           {edition.title}
         </h1>
@@ -44,11 +48,17 @@ export function WeeklyEditionArticle({
         {edition.intro ? (
           <p className="max-w-2xl text-base leading-relaxed text-muted-foreground text-pretty">{edition.intro}</p>
         ) : null}
+        {!isCurrent ? (
+          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground text-pretty">
+            Registration details below reflect what was true when this update was published, not current
+            availability &mdash; check each activity&apos;s page for the latest status.
+          </p>
+        ) : null}
       </header>
 
       <div className="flex flex-col gap-5">
         {edition.stories.map((story, i) => (
-          <WeeklyStoryDetail key={story.id} story={story} index={i} />
+          <WeeklyStoryDetail key={story.id} story={story} index={i} isCurrent={isCurrent} />
         ))}
       </div>
 
