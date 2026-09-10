@@ -16,17 +16,17 @@ import {
 import { ActivityActions } from "@/components/activity-actions"
 import { ActivityBadges } from "@/components/activity-badges"
 import { ActivityCard } from "@/components/activity-card"
+import { CustomerStatusPill } from "@/components/customer-status-pill"
 import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
 import { TrackView } from "@/components/track-view"
 import { ReportDialog } from "@/components/report-dialog"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
-import { StatusPill } from "@/components/status-pill"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { allPublishedActivitySlugs, activityBySlug, activitiesForSport, genderLabels, programTypeLabels } from "@/lib/queries"
-import { distanceLabel, eligibilityLabel, freshnessLabel, isDemoListing, seasonLabel, sourceHost, verificationLabel } from "@/lib/format"
-import { formatDate, formatFee, registrationStatus, statusDetail } from "@/lib/registration-status"
+import { distanceLabel, eligibilityLabel, freshnessLabel, isDemoListing, seasonLabel, sourceHost } from "@/lib/format"
+import { customerFacingState, formatDate, formatFee, registrationStatus } from "@/lib/registration-status"
 import { buildHandoffProps } from "@/lib/analytics"
 
 /**
@@ -77,8 +77,12 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
   if (!activity) notFound()
 
   const now = new Date()
-  const status = registrationStatus(activity, now)
-  const canRegister = ["open", "closing_soon", "waitlist"].includes(status)
+  const { state: status, detail: statusDetail } = customerFacingState(activity, now)
+  const canRegister = status === "open"
+  // The granular status is kept only for analytics attribution — every
+  // parent-facing label and CTA in this page reads `status` (the collapsed
+  // 4-state value) instead.
+  const analyticsStatus = registrationStatus(activity, now)
 
   const similar = (await activitiesForSport(activity.sport.slug))
     .filter((a) => a.id !== activity.id)
@@ -95,7 +99,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
           sport_name: activity.sport.name,
           organization_id: activity.organization_id,
           source_type: activity.source_type,
-          registration_status: status,
+          registration_status: analyticsStatus,
         }}
       />
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
@@ -142,7 +146,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               </div>
             </div>
 
-            <ActivityBadges activity={activity} status={status} now={now} />
+            <ActivityBadges activity={activity} now={now} />
 
             <p className="max-w-2xl leading-relaxed text-muted-foreground text-pretty">
               {activity.description}
@@ -173,13 +177,33 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
 
               <DetailRow icon={CalendarIcon} label="Dates">
                 <ul className="flex flex-col gap-0.5">
-                  <li>Registration opens: {formatDate(activity.registration_open_date)}</li>
-                  <li>Registration closes: {formatDate(activity.registration_close_date)}</li>
-                  <li>Season: {formatDate(activity.season_start_date)} to {formatDate(activity.season_end_date)}</li>
-                  {activity.tryout_required ? (
+                  {!activity.season_start_date &&
+                  !activity.season_end_date &&
+                  !activity.registration_open_date &&
+                  !activity.registration_close_date ? (
+                    <li className="text-muted-foreground">No dates published yet.</li>
+                  ) : null}
+                  {activity.season_start_date || activity.season_end_date ? (
+                    <li>
+                      Season: {formatDate(activity.season_start_date)} to {formatDate(activity.season_end_date)}
+                    </li>
+                  ) : null}
+                  {activity.registration_open_date ? (
+                    <li>Registration opens: {formatDate(activity.registration_open_date)}</li>
+                  ) : null}
+                  {activity.registration_close_date ? (
+                    <li>Registration closes: {formatDate(activity.registration_close_date)}</li>
+                  ) : null}
+                  {activity.tryout_required && activity.tryout_date ? (
                     <li>Tryouts / evaluations: {formatDate(activity.tryout_date)}</li>
                   ) : null}
                 </ul>
+                {/* One consolidated sentence instead of several independent "not
+                    published" lines — matches the status rail's explanation so a
+                    parent doesn't read two different accounts of the same gap. */}
+                {status === "check_with_org" ? (
+                  <p className="mt-1 text-muted-foreground">{statusDetail}</p>
+                ) : null}
               </DetailRow>
 
               <DetailRow icon={TicketIcon} label="Cost">
@@ -282,16 +306,12 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                   </dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-muted-foreground">Verification</dt>
-                  <dd className="font-medium">{verificationLabel(activity)}</dd>
+                  <dt className="text-muted-foreground">Organization</dt>
+                  <dd className="font-medium">{activity.organization.name}</dd>
                 </div>
                 <div className="flex gap-2">
                   <dt className="text-muted-foreground">Last checked</dt>
                   <dd className="font-medium">{freshnessLabel(activity, now)}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="text-muted-foreground">Method</dt>
-                  <dd className="font-medium">{activity.verification_method}</dd>
                 </div>
               </dl>
             )}
@@ -341,10 +361,10 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
         <aside className="lg:sticky lg:top-20 lg:h-fit">
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
             <div className="flex flex-col gap-2">
-              <StatusPill status={status} className="w-fit" />
-              <p className="font-display text-lg leading-snug font-bold text-pretty">
-                {statusDetail(activity, now)}
-              </p>
+              <CustomerStatusPill state={status} className="w-fit" />
+              {statusDetail ? (
+                <p className="font-display text-lg leading-snug font-bold text-pretty">{statusDetail}</p>
+              ) : null}
               <p className="text-sm text-muted-foreground">
                 {formatFee(activity.registration_fee, activity.currency)}
                 {activity.capacity ? ` \u00b7 ${activity.capacity} spots` : ""}
@@ -359,13 +379,13 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               <RegistrationHandoffButton
                 href={activity.registration_url}
                 handoff={buildHandoffProps(activity, {
-                  ctaLabel: status === "waitlist" ? "Join the waitlist" : "Register",
+                  ctaLabel: "Register",
                   ctaLocation: "activity_detail_primary",
-                  status,
+                  status: analyticsStatus,
                 })}
                 size="lg"
               >
-                {status === "waitlist" ? "Join the waitlist" : "Register"}
+                Register
                 <ExternalLinkIcon data-icon="inline-end" />
               </RegistrationHandoffButton>
             ) : status !== "closed" && activity.source_url ? (
@@ -374,7 +394,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 handoff={buildHandoffProps(activity, {
                   ctaLabel: "View program page",
                   ctaLocation: "activity_detail_source",
-                  status,
+                  status: analyticsStatus,
                 })}
                 size="lg"
                 variant="outline"
@@ -386,9 +406,9 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               <Button size="lg" disabled>
                 {status === "closed"
                   ? "Registration closed"
-                  : status === "upcoming"
+                  : status === "coming_up"
                     ? "Registration not open yet"
-                    : "Registration info not published"}
+                    : "No link available yet"}
               </Button>
             )}
 

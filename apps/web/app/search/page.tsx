@@ -61,12 +61,7 @@ export default async function SearchPage({
             <ul className="flex flex-col gap-4">
               {results.map((result) => (
                 <li key={result.id}>
-                  <ActivityCard
-                    activity={result}
-                    status={result.status}
-                    eligibilityNote={result.eligibilityNote}
-                    now={now}
-                  />
+                  <ActivityCard activity={result} eligibilityNote={result.eligibilityNote} now={now} />
                 </li>
               ))}
             </ul>
