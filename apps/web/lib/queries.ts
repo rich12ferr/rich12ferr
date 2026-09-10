@@ -36,6 +36,7 @@ import { LAUNCH_HUB, SEASONS } from "@openplay/core"
 import { DEFAULT_RADIUS as DEFAULT_RADIUS_MILES } from "@/lib/labels"
 import {
   CLOSING_SOON_DAYS,
+  customerFacingState,
   daysBetween,
   parseDate,
   registrationStatus,
@@ -45,6 +46,7 @@ import type {
   Activity,
   ActivityWithRelations,
   AlertTrigger,
+  CustomerFacingState,
   Organization,
   RegistrationStatus,
   Season,
@@ -431,6 +433,15 @@ function evaluateEligibility(
 
 export type SearchResult = ActivityWithRelations & {
   status: RegistrationStatus
+  /**
+   * The same collapsed 4-state value `ActivityCard` derives via
+   * `customerFacingState()` for display. Sorting is keyed off this, not the
+   * finer-grained `status` above — otherwise a listing whose season has
+   * ended (and therefore renders "Registration Closed") but whose raw
+   * `registrationStatus()` doesn't know about season end dates could still
+   * rank as "open" and float to the top of the default sort.
+   */
+  customerState: CustomerFacingState
   eligibility: EligibilityFlag
   eligibilityNote: string | null
 }
@@ -471,12 +482,20 @@ export async function searchActivities(
   for (const row of rows) {
     const activity = listingToActivity(row)
     const status = registrationStatus(activity, now)
+    // The collapsed state actually shown on the card (see `ActivityCard`).
+    // `status` alone misses cases `customerState` catches — e.g. a season
+    // that ended with no explicit registration_close_date reads as "open"
+    // by dates alone but renders as "Registration Closed" on the card — so
+    // any "is this closed?" filtering below must agree with `customerState`,
+    // not `status`, or a listing can pass a "hide closed" filter while still
+    // showing a closed pill.
+    const customerState = customerFacingState(activity, now).state
 
     if (filters.status) {
-      if (filters.status === "open" && !["open", "closing_soon"].includes(status)) continue
-      if (filters.status === "upcoming" && status !== "upcoming") continue
+      if (filters.status === "open" && customerState !== "open") continue
+      if (filters.status === "upcoming" && customerState !== "coming_up") continue
       if (filters.status === "closing_soon" && status !== "closing_soon") continue
-      if (filters.status === "not_closed" && status === "closed") continue
+      if (filters.status === "not_closed" && customerState === "closed") continue
     }
 
     const eligibility = evaluateEligibility(
@@ -493,6 +512,7 @@ export async function searchActivities(
     results.push({
       ...activity,
       status,
+      customerState,
       eligibility: eligibility.flag,
       eligibilityNote: eligibility.note,
     })
@@ -501,13 +521,19 @@ export async function searchActivities(
   return sortResults(results, filters, now)
 }
 
-const urgencyRank: Record<RegistrationStatus, number> = {
-  closing_soon: 0,
-  open: 1,
-  waitlist: 2,
-  upcoming: 3,
-  unknown: 4,
-  closed: 5,
+/**
+ * Ranked by the same 4-state value shown on the card (`customerState`), not
+ * the finer-grained `status` — see the note on `SearchResult.customerState`.
+ * Sorting on `status` instead let listings whose card actually reads
+ * "Registration Closed" (season ended, no close date; or a stale check-with-
+ * organization case) outrank ones legitimately open, since `status` alone
+ * doesn't know about season-end or staleness.
+ */
+const customerStateRank: Record<CustomerFacingState, number> = {
+  open: 0,
+  coming_up: 1,
+  check_with_org: 2,
+  closed: 3,
 }
 
 /**
@@ -540,7 +566,20 @@ export function sortResults(results: SearchResult[], filters: SearchFilters, now
   return sorted.sort((a, b) => {
     const eligibilityRank = (r: SearchResult) => (r.eligibility === "check_rules" ? 1 : 0)
     if (eligibilityRank(a) !== eligibilityRank(b)) return eligibilityRank(a) - eligibilityRank(b)
-    if (urgencyRank[a.status] !== urgencyRank[b.status]) return urgencyRank[a.status] - urgencyRank[b.status]
+
+    const stateRank = customerStateRank[a.customerState] - customerStateRank[b.customerState]
+    if (stateRank !== 0) return stateRank
+
+    // Within the "open" bucket, closing-soon listings still bubble up ahead
+    // of open-ended ones — same nuance the old `closing_soon` urgency rank
+    // captured, just derived from the actual close date instead of a
+    // separate top-level status.
+    if (a.customerState === "open" && b.customerState === "open") {
+      const ad = parseDate(a.registration_close_date)?.getTime() ?? Number.POSITIVE_INFINITY
+      const bd = parseDate(b.registration_close_date)?.getTime() ?? Number.POSITIVE_INFINITY
+      if (ad !== bd) return ad - bd
+    }
+
     return (a.distance_from_hub ?? Number.POSITIVE_INFINITY) - (b.distance_from_hub ?? Number.POSITIVE_INFINITY)
   })
 }
