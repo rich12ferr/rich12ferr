@@ -6,6 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Toaster } from "@/components/ui/sonner"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import { AnalyticsProvider } from "@/components/analytics-provider"
 import "./globals.css"
 
 const inter = Inter({
@@ -87,6 +88,7 @@ export default function RootLayout({
           <SiteFooter />
         </div>
         <Toaster position="top-center" />
+        <AnalyticsProvider />
         {process.env.NODE_ENV === "production" && (
           <>
             <Analytics />

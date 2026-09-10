@@ -2,6 +2,8 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BadgeCheckIcon, ExternalLinkIcon, MailIcon, MapPinIcon, PhoneIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
+import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
+import { TrackView } from "@/components/track-view"
 import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { Button } from "@/components/ui/button"
@@ -53,6 +55,16 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      <TrackView
+        discoveryOrigin="organization_page"
+        event="organization_viewed"
+        payload={{
+          organization_id: organization.id,
+          organization_name: organization.name,
+          program_count: all.length,
+          open_now_count: openNow.length,
+        }}
+      />
       <header className="mb-8 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
@@ -113,17 +125,19 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           {/* Omitted entirely when unknown — a button to nowhere is worse than no button. */}
           {organization.website_url && (
             <div className="flex items-start">
-              <Button
-                render={
-                  <a href={organization.website_url} target="_blank" rel="noopener noreferrer" />
-                }
-                nativeButton={false}
+              <RegistrationHandoffButton
+                href={organization.website_url}
+                handoff={{
+                  cta_label: sourceHost(organization.website_url),
+                  cta_location: "organization_website",
+                  organization_id: organization.id,
+                }}
                 variant="outline"
                 size="sm"
               >
                 {sourceHost(organization.website_url)}
                 <ExternalLinkIcon data-icon="inline-end" />
-              </Button>
+              </RegistrationHandoffButton>
             </div>
           )}
         </div>

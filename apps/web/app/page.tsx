@@ -6,6 +6,7 @@ import { QuickSearch } from "@/components/quick-search"
 import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
+import { TrackView } from "@/components/track-view"
 import { WeeklyStoryCard } from "@/components/weekly-story-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -60,6 +61,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
+      <TrackView discoveryOrigin="homepage" />
       {/* Hero — full-bleed looping video montage, dark scrim for text legibility over
           moving footage, poster frame as the low-data / legacy-browser fallback. */}
       <section className="relative isolate flex min-h-[34rem] items-center overflow-hidden border-b border-border sm:min-h-[38rem]">

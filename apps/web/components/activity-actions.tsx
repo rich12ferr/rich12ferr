@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createActivityAlert } from "@/app/alerts/actions"
+import { trackEvent } from "@/lib/analytics"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -47,6 +48,13 @@ export function ActivityActions({
         label: activityTitle,
       })
       if (result.ok) {
+        trackEvent("alert_created", {
+          alert_type: "activity",
+          sport_id: null,
+          has_zip: false,
+          trigger_count: null,
+          source: "activity_detail",
+        })
         setDone(true)
         toast.success("You're on the list", {
           description: `We'll email you when registration opens for ${activityTitle}.`,

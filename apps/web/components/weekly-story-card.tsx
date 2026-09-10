@@ -1,6 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRightIcon, MapPinIcon } from "lucide-react"
 import { WeeklyStoryMarker } from "@/components/weekly-story-marker"
+import { trackEvent } from "@/lib/analytics"
 import type { WeeklyStory } from "@/lib/types"
 
 /**
@@ -16,6 +19,13 @@ export function WeeklyStoryCard({ story }: { story: WeeklyStory }) {
   return (
     <Link
       href={story.ctaHref}
+      onClick={() =>
+        trackEvent("weekly_update_activity_clicked", {
+          story_id: story.id,
+          cta_label: story.ctaLabel,
+          destination: story.ctaHref,
+        })
+      }
       className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-card-foreground transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <div className="flex items-start gap-3">
