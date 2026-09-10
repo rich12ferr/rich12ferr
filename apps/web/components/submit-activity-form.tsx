@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { CheckCircle2Icon, SendIcon } from "lucide-react"
 import { toast } from "sonner"
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/field"
 import { FilterSelect } from "@/components/filter-select"
 import { submitActivity } from "@/app/submit/actions"
+import { trackEvent } from "@/lib/analytics"
 import { sports } from "@/lib/data/sports"
 import { gradeOptions } from "@/lib/format"
 
@@ -43,8 +44,14 @@ export function SubmitActivityForm({ organizations }: { organizations: Organizat
   const [submitted, setSubmitted] = useState(false)
   const [errors, setErrors] = useState<Record<string, boolean>>({})
   const [isPending, startTransition] = useTransition()
+  const startedRef = useRef(false)
 
   function set(key: keyof typeof initial, value: string) {
+    // The first field a submitter touches marks the funnel as started.
+    if (!startedRef.current) {
+      startedRef.current = true
+      trackEvent("activity_submission_started", {})
+    }
     setValues((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => ({ ...prev, [key]: false }))
   }
@@ -95,6 +102,10 @@ export function SubmitActivityForm({ organizations }: { organizations: Organizat
       })
 
       if (result.ok) {
+        trackEvent("activity_submission_completed", {
+          has_registration_url: values.registrationUrl.trim().length > 0,
+          has_dates: dates.length > 0,
+        })
         setSubmitted(true)
       } else {
         toast.error(result.error)

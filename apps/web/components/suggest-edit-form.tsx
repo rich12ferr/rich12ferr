@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { submitSuggestedEdit } from "@/app/activities/[slug]/suggest-edit/actions"
+import { trackEvent } from "@/lib/analytics"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -71,6 +72,12 @@ export function SuggestEditForm({
         ...values,
       })
       if (result.ok) {
+        trackEvent("activity_report_submitted", {
+          source: "suggest_edit",
+          category: "suggested_edit",
+          offering_id: offeringId,
+          program_id: programId,
+        })
         setSent(true)
       } else {
         toast.error(result.error)

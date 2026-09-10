@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { CheckIcon, FlagIcon, MailIcon, SearchIcon, XIcon } from "lucide-react"
+import { CheckIcon, FlagIcon, MailIcon, PencilIcon, SearchIcon, XIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -164,6 +164,19 @@ export function ReportQueue({ items }: { items: ReportQueueItem[] }) {
                     {report.reporterEmail ?? "Reported anonymously"}
                   </p>
                   <div className="flex flex-wrap gap-2">
+                    {report.offeringId && report.category === "suggested_edit" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <Link href={`/admin/activities/${report.offeringId}?reportId=${report.id}`} />
+                        }
+                        nativeButton={false}
+                      >
+                        <PencilIcon data-icon="inline-start" />
+                        Edit this activity
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

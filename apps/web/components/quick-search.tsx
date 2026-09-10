@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { FilterSelect } from "@/components/filter-select"
 import { sports } from "@/lib/data/sports"
 import { gradeLabel } from "@/lib/format"
+import { trackEvent } from "@/lib/analytics"
 
 const sportOptions = [
   { value: "any", label: "Any sport" },
@@ -36,6 +37,12 @@ export function QuickSearch() {
     if (sport !== "any") params.set("sport", sport)
     if (grade !== "any") params.set("grade", grade)
     if (zip.trim()) params.set("zip", zip.trim())
+    trackEvent("search_submitted", {
+      source: "home_quick_search",
+      sport: sport === "any" ? null : sport,
+      grade: grade === "any" ? null : grade,
+      has_zip: zip.trim().length > 0,
+    })
     const query = params.toString()
     router.push(`/search${query ? `?${query}` : ""}`)
   }

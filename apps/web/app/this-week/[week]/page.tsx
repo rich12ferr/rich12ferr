@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import { TrackView } from "@/components/track-view"
 import { WeeklyArchiveNav } from "@/components/weekly-archive-nav"
 import { WeeklyEditionArticle } from "@/components/weekly-edition-article"
 import { currentWeeklyEdition, weeklyEditionBySlug, weeklyEditionSummaries } from "@/lib/queries"
@@ -35,6 +36,7 @@ export default async function WeeklyEditionPage({ params }: { params: Promise<{ 
 
   return (
     <div className="mx-auto flex w-full max-w-6xl gap-8 px-4 py-10 sm:px-6">
+      <TrackView discoveryOrigin="weekly_update" />
       <WeeklyArchiveNav editions={summaries} currentSlug={edition.weekSlug} />
       <WeeklyEditionArticle
         edition={edition}

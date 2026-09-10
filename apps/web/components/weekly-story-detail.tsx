@@ -1,6 +1,5 @@
 import Link from "next/link"
 import {
-  ArrowRightIcon,
   BuildingIcon,
   CalendarIcon,
   ExternalLinkIcon,
@@ -9,7 +8,7 @@ import {
 } from "lucide-react"
 import { StatusPill } from "@/components/status-pill"
 import { WeeklyStoryMarker } from "@/components/weekly-story-marker"
-import { Button } from "@/components/ui/button"
+import { WeeklyStoryCta } from "@/components/weekly-story-cta"
 import { sourceHost } from "@/lib/format"
 import { formatDate } from "@/lib/registration-status"
 import type { WeeklyStory } from "@/lib/types"
@@ -46,8 +45,6 @@ export function WeeklyStoryDetail({
   /** False inside an archived (non-current) edition — governs the "as of" status qualifier below. */
   isCurrent: boolean
 }) {
-  const isExternalCta = story.ctaHref.startsWith("http")
-
   return (
     <article
       id={story.id}
@@ -122,14 +119,7 @@ export function WeeklyStoryDetail({
         </p>
       ) : null}
 
-      <Button render={<Link href={story.ctaHref} />} nativeButton={false} className="w-fit" size="sm">
-        {story.ctaLabel}
-        {isExternalCta ? (
-          <ExternalLinkIcon data-icon="inline-end" />
-        ) : (
-          <ArrowRightIcon data-icon="inline-end" />
-        )}
-      </Button>
+      <WeeklyStoryCta story={story} />
     </article>
   )
 }

@@ -3,6 +3,7 @@ import { BellIcon, PlusIcon, SearchXIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
 import { SearchFilters } from "@/components/search-filters"
 import { SearchToolbar } from "@/components/search-toolbar"
+import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { parseFilters, searchActivities, type SearchParamsShape } from "@/lib/queries"
@@ -22,8 +23,22 @@ export default async function SearchPage({
   const filters = parseFilters(params)
   const results = await searchActivities(filters, now)
 
+  const first = (value: string | string[] | undefined): string | null =>
+    Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
+  const hasFilters = Object.keys(params).length > 0
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      <TrackView
+        discoveryOrigin="search"
+        event="search_results_viewed"
+        payload={{
+          result_count: results.length,
+          sport: first(params.sport),
+          season: first(params.season),
+          has_filters: hasFilters,
+        }}
+      />
       <div className="mb-6 flex flex-col gap-1">
         <h1 className="font-display text-3xl font-extrabold tracking-tight">Find activities</h1>
         <p className="text-sm text-muted-foreground">

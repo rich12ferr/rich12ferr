@@ -5,6 +5,7 @@ import Link from "next/link"
 import { BellIcon, CheckCircle2Icon } from "lucide-react"
 import { toast } from "sonner"
 import { createStandingAlert } from "@/app/alerts/actions"
+import { trackEvent } from "@/lib/analytics"
 import { getSportBySlug } from "@/lib/data/sports"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,6 +80,13 @@ export function AlertForm({ initialSport }: { initialSport?: string }) {
         label,
       })
       if (result.ok) {
+        trackEvent("alert_created", {
+          alert_type: kind,
+          sport_id: kind === "sport" ? (getSportBySlug(sport)?.id ?? null) : null,
+          has_zip: zip.trim().length > 0,
+          trigger_count: ALL_TRIGGERS.length,
+          source: "alerts_page",
+        })
         setDone(true)
       } else {
         toast.error(result.error)

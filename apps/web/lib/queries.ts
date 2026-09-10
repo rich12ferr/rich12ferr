@@ -838,6 +838,8 @@ export type ReportQueueItem = {
   activityTitle: string
   /** Present only when the target resolves to a live, linkable activity. */
   activitySlug: string | null
+  /** The offering id, for deep-linking into the admin editor. Null for untargeted (contact-form) reports. */
+  offeringId: string | null
 }
 
 /**
@@ -866,6 +868,7 @@ export async function reportQueue(): Promise<ReportQueueItem[]> {
       reportedAt: row.reportedAt.toISOString(),
       activityTitle: offering?.title ?? (row.offeringId ? "Unknown activity" : "General inquiry"),
       activitySlug: offering?.programSlug ?? null,
+      offeringId: offering?.offeringId ?? null,
     }
   })
 }

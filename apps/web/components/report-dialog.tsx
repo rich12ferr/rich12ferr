@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { FilterSelect } from "@/components/filter-select"
 import { reportCategories as categories } from "@/lib/report-categories"
+import { trackEvent } from "@/lib/analytics"
 import type { ReportCategory } from "@/lib/types"
 import { submitReport } from "@/app/activities/[slug]/report/actions"
 
@@ -61,6 +62,12 @@ export function ReportDialog({
         email,
       })
       if (result.ok) {
+        trackEvent("activity_report_submitted", {
+          source: "report_dialog",
+          category,
+          offering_id: offeringId,
+          program_id: programId,
+        })
         setOpen(false)
         form.reset()
         setCategory(categories[0].value)

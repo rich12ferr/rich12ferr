@@ -16,6 +16,8 @@ import {
 import { ActivityActions } from "@/components/activity-actions"
 import { ActivityBadges } from "@/components/activity-badges"
 import { ActivityCard } from "@/components/activity-card"
+import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
+import { TrackView } from "@/components/track-view"
 import { ReportDialog } from "@/components/report-dialog"
 import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
@@ -25,6 +27,7 @@ import { Separator } from "@/components/ui/separator"
 import { allPublishedActivitySlugs, activityBySlug, activitiesForSport, genderLabels, programTypeLabels } from "@/lib/queries"
 import { distanceLabel, eligibilityLabel, freshnessLabel, isDemoListing, seasonLabel, sourceHost, verificationLabel } from "@/lib/format"
 import { formatDate, formatFee, registrationStatus, statusDetail } from "@/lib/registration-status"
+import { buildHandoffProps } from "@/lib/analytics"
 
 /**
  * Registration status and "checked N days ago" are computed from the current
@@ -83,6 +86,18 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      <TrackView
+        event="program_offering_viewed"
+        payload={{
+          offering_id: activity.id,
+          program_id: activity.program_id,
+          sport_id: activity.sport_id,
+          sport_name: activity.sport.name,
+          organization_id: activity.organization_id,
+          source_type: activity.source_type,
+          registration_status: status,
+        }}
+      />
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
@@ -341,26 +356,32 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 No registration &mdash; demo listing
               </Button>
             ) : canRegister && activity.registration_url ? (
-              <Button
-                render={
-                  <a href={activity.registration_url} target="_blank" rel="noopener noreferrer" />
-                }
-                nativeButton={false}
+              <RegistrationHandoffButton
+                href={activity.registration_url}
+                handoff={buildHandoffProps(activity, {
+                  ctaLabel: status === "waitlist" ? "Join the waitlist" : "Register",
+                  ctaLocation: "activity_detail_primary",
+                  status,
+                })}
                 size="lg"
               >
                 {status === "waitlist" ? "Join the waitlist" : "Register"}
                 <ExternalLinkIcon data-icon="inline-end" />
-              </Button>
+              </RegistrationHandoffButton>
             ) : status !== "closed" && activity.source_url ? (
-              <Button
-                render={<a href={activity.source_url} target="_blank" rel="noopener noreferrer" />}
-                nativeButton={false}
+              <RegistrationHandoffButton
+                href={activity.source_url}
+                handoff={buildHandoffProps(activity, {
+                  ctaLabel: "View program page",
+                  ctaLocation: "activity_detail_source",
+                  status,
+                })}
                 size="lg"
                 variant="outline"
               >
                 View program page
                 <ExternalLinkIcon data-icon="inline-end" />
-              </Button>
+              </RegistrationHandoffButton>
             ) : (
               <Button size="lg" disabled>
                 {status === "closed"
