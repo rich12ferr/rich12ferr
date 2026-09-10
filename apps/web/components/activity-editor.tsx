@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { ArrowLeftIcon, ExternalLinkIcon, SaveIcon } from "lucide-react"
+import { AlertTriangleIcon, ArrowLeftIcon, ExternalLinkIcon, SaveIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import { gradeOptions, seasonLabel } from "@/lib/format"
 import { programTypeLabels, verificationLabels } from "@/lib/labels"
 import { registrationStatus, statusShortLabels } from "@/lib/registration-status"
 import type { ActivityWithRelations, RegistrationStatus } from "@/lib/types"
+import { saveActivity, type SaveActivityInput } from "@/app/admin/activities/[id]/actions"
 
 const statusOverrideOptions = [
   { value: "auto", label: "Computed from dates" },
@@ -33,7 +35,10 @@ const statusOverrideOptions = [
  */
 export function ActivityEditor({ activity }: { activity: ActivityWithRelations }) {
   const now = new Date()
-  const [form, setForm] = useState({
+  const searchParams = useSearchParams()
+  const reportId = searchParams.get("reportId")
+  const [isPending, startTransition] = useTransition()
+  const initial = {
     title: activity.title,
     description: activity.description,
     minGrade: activity.min_grade === null ? "" : String(activity.min_grade),
@@ -46,7 +51,8 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
     verification: activity.verification_status,
     published: activity.published,
     beginnerFriendly: activity.beginner_friendly,
-  })
+  }
+  const [form, setForm] = useState(initial)
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -54,6 +60,45 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
 
   const computed = registrationStatus(activity, now)
   const effective = form.statusOverride === "auto" ? computed : (form.statusOverride as RegistrationStatus)
+
+  function handleSave() {
+    const patch: SaveActivityInput["patch"] = {
+      program: {
+        title: form.title,
+        description: form.description,
+        minGrade: form.minGrade === "" ? null : Number(form.minGrade),
+        maxGrade: form.maxGrade === "" ? null : Number(form.maxGrade),
+        beginnerFriendly: form.beginnerFriendly,
+      },
+      offering: {
+        registrationOpenDate: form.openDate === "" ? null : form.openDate,
+        registrationCloseDate: form.closeDate === "" ? null : form.closeDate,
+        registrationFee: form.fee === "" ? null : Number(form.fee),
+        registrationUrl: form.registrationUrl === "" ? null : form.registrationUrl,
+        statusOverride: form.statusOverride === "auto" ? null : form.statusOverride,
+        verificationStatus: form.verification,
+        published: form.published,
+      },
+    }
+
+    startTransition(async () => {
+      const result = await saveActivity({
+        offeringId: activity.id,
+        programId: activity.program_id,
+        patch,
+        reportId,
+      })
+      if (result.ok) {
+        toast.success("Changes saved", {
+          description: reportId
+            ? "The activity was updated and the linked report was marked resolved."
+            : "The listing now reflects these changes.",
+        })
+      } else {
+        toast.error("Couldn't save changes", { description: result.error })
+      }
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -83,11 +128,19 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
         className="flex flex-col gap-6"
         onSubmit={(event) => {
           event.preventDefault()
-          toast.success("Changes saved", {
-            description: "In the prototype this stays in memory. The real build writes to Postgres.",
-          })
+          handleSave()
         }}
       >
+        {reportId && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+            <p>
+              Editing to resolve a suggested edit. Saving will apply these changes to the listing and
+              mark that report resolved.
+            </p>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Listing</CardTitle>
@@ -274,9 +327,9 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
         </Card>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit">
+          <Button type="submit" disabled={isPending}>
             <SaveIcon data-icon="inline-start" />
-            Save changes
+            {isPending ? "Saving..." : "Save changes"}
           </Button>
           <Button
             render={<Link href={`/activities/${activity.slug}`} />}

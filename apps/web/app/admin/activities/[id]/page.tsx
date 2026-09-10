@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
 
+import { ActivityAuditLog } from "@/components/activity-audit-log"
 import { ActivityEditor } from "@/components/activity-editor"
 import { activityById } from "@/lib/queries"
+import { auditLogForEntity } from "@openplay/db"
 
 /**
  * Always server-rendered: an admin must see the effect of an edit immediately,
@@ -24,5 +26,12 @@ export default async function AdminActivityEditPage({
   const activity = await activityById(id)
   if (!activity) notFound()
 
-  return <ActivityEditor activity={activity} />
+  const auditEntries = await auditLogForEntity("program_offering", id)
+
+  return (
+    <div className="flex flex-col gap-6">
+      <ActivityEditor activity={activity} />
+      <ActivityAuditLog entries={auditEntries} />
+    </div>
+  )
 }

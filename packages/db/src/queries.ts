@@ -34,6 +34,7 @@ import {
 import type { LatLng, Season } from "@openplay/core"
 import { db } from "./client"
 import {
+  adminAuditLog,
   alerts,
   fieldProvenance,
   organizations,
@@ -46,6 +47,7 @@ import {
   weeklyEditions,
   weeklyStories,
   weeklyStoryCandidates,
+  type AdminAuditLogRow,
   type ReportRow,
 } from "./schema"
 
@@ -800,6 +802,99 @@ export async function setReportStatus(
     .where(eq(reports.id, id))
     .returning()
   return row ?? null
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Admin audit log + activity editor (write path)                            */
+/* -------------------------------------------------------------------------- */
+
+function newAuditLogId(): string {
+  return `aud_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`
+}
+
+export type AuditChange = Record<string, { before: unknown; after: unknown }>
+
+/** Records one admin write. Call this from the same action that performs the write, never on its own. */
+export async function insertAuditLogEntry(input: {
+  entityType: string
+  entityId: string
+  changes: AuditChange
+  reportId?: string | null
+  actor?: string
+}) {
+  const [row] = await db
+    .insert(adminAuditLog)
+    .values({
+      id: newAuditLogId(),
+      entityType: input.entityType,
+      entityId: input.entityId,
+      actor: input.actor ?? "Admin",
+      changes: input.changes,
+      reportId: input.reportId ?? null,
+    })
+    .returning()
+  return row
+}
+
+/** Audit history for one entity, most recent first — the "Recent changes" panel on the admin detail page. */
+export async function auditLogForEntity(entityType: string, entityId: string, limit = 20): Promise<AdminAuditLogRow[]> {
+  return db
+    .select()
+    .from(adminAuditLog)
+    .where(and(eq(adminAuditLog.entityType, entityType), eq(adminAuditLog.entityId, entityId)))
+    .orderBy(desc(adminAuditLog.createdAt))
+    .limit(limit)
+}
+
+/** Patch shape for the activity editor's save action, split by which table each field actually lives on. */
+export type OfferingFieldPatch = {
+  program?: Partial<
+    Pick<typeof programs.$inferInsert, "title" | "description" | "minGrade" | "maxGrade" | "beginnerFriendly">
+  >
+  offering?: Partial<
+    Pick<
+      typeof programOfferings.$inferInsert,
+      | "registrationOpenDate"
+      | "registrationCloseDate"
+      | "registrationFee"
+      | "registrationUrl"
+      | "statusOverride"
+      | "verificationStatus"
+      | "published"
+    >
+  >
+}
+
+/**
+ * Applies the activity editor's save to both tables the listing spans:
+ * `programs` (durable identity — title, description, grade range, beginner
+ * flag) and `program_offerings` (the dated instance — registration window,
+ * fee, link, status override, verification, published). A single offering
+ * edit legitimately touches both, so this takes one `programId` +
+ * `offeringId` pair and only writes the half of the patch that's present.
+ *
+ * Returns the updated offering (joined), or null if the offering id doesn't
+ * exist — the caller (the save action) is responsible for the audit log
+ * entry, since only it knows the before-state to diff against.
+ */
+export async function updateOfferingFields(
+  offeringId: string,
+  programId: string,
+  patch: OfferingFieldPatch,
+): Promise<OfferingListing | null> {
+  if (patch.program && Object.keys(patch.program).length > 0) {
+    await db
+      .update(programs)
+      .set({ ...patch.program, updatedAt: new Date() })
+      .where(eq(programs.id, programId))
+  }
+  if (patch.offering && Object.keys(patch.offering).length > 0) {
+    await db
+      .update(programOfferings)
+      .set({ ...patch.offering, updatedAt: new Date() })
+      .where(eq(programOfferings.id, offeringId))
+  }
+  return offeringById(offeringId)
 }
 
 export async function pendingSubmissions(limit = 50) {
