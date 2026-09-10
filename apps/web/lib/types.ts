@@ -41,6 +41,14 @@ export type RegistrationStatus =
   | "waitlist"
   | "unknown"
 
+/**
+ * The 4 states shown to parents (never the finer-grained `RegistrationStatus`
+ * directly, and never a raw "not published" per field). `closing_soon` and
+ * `waitlist` are folded into `open` with a secondary detail line rather than
+ * being their own top-level states — see `customerFacingState()`.
+ */
+export type CustomerFacingState = "open" | "coming_up" | "check_with_org" | "closed"
+
 export type Sport = {
   id: string
   slug: string

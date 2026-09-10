@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/empty"
 import { savedActivityIds } from "@/lib/data/moderation"
 import { allActivities } from "@/lib/queries"
-import { registrationStatus } from "@/lib/registration-status"
+import { CLOSING_SOON_DAYS, customerFacingState, daysBetween, parseDate, startOfDay } from "@/lib/registration-status"
 
 /**
  * Always server-rendered: an admin must see the effect of an edit immediately,
@@ -23,11 +23,17 @@ export const metadata = { title: "Saved activities" }
 
 export default async function SavedPage() {
   const now = new Date()
-  const saved = (await allActivities())
-    .filter((a) => savedActivityIds.includes(a.id))
-    .map((a) => ({ ...a, status: registrationStatus(a, now) }))
+  const saved = (await allActivities()).filter((a) => savedActivityIds.includes(a.id))
 
-  const closingSoon = saved.filter((a) => a.status === "closing_soon")
+  // "Closing soon" is surfaced as a detail line under Open on each card
+  // (see `customerFacingState`) — recomputed here only for this summary count.
+  const closingSoon = saved.filter((a) => {
+    if (customerFacingState(a, now).state !== "open") return false
+    const close = parseDate(a.registration_close_date)
+    if (!close) return false
+    const days = daysBetween(startOfDay(now), close)
+    return days >= 0 && days <= CLOSING_SOON_DAYS
+  })
 
   if (saved.length === 0) {
     return (
@@ -65,7 +71,7 @@ export default async function SavedPage() {
       <ul className="flex flex-col gap-3">
         {saved.map((activity) => (
           <li key={activity.id}>
-            <ActivityCard activity={activity} status={activity.status} />
+            <ActivityCard activity={activity} now={now} />
           </li>
         ))}
       </ul>

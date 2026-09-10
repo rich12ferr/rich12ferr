@@ -1,15 +1,19 @@
 import { Badge } from "@/components/ui/badge"
-import type { Activity, RegistrationStatus } from "@/lib/types"
+import type { Activity } from "@/lib/types"
 import { isRecentlyAdded, isStartingSoon } from "@/lib/registration-status"
 
-/** Optional badges from PRD 14. */
+/**
+ * Optional badges from PRD 14. Deliberately independent of internal
+ * `verification_status` — that vocabulary belongs to the admin console, not
+ * a parent-facing badge (see `TrustNote` for the provenance line that
+ * replaces it). Waitlist/closing-soon urgency also isn't repeated here;
+ * that's already the customer-facing state's detail line, not a separate badge.
+ */
 export function ActivityBadges({
   activity,
-  status,
   now = new Date(),
 }: {
   activity: Activity
-  status: RegistrationStatus
   now?: Date
 }) {
   const badges: { label: string; variant?: "secondary" | "outline" }[] = []
@@ -21,14 +25,7 @@ export function ActivityBadges({
   if (isStartingSoon(activity, now)) badges.push({ label: "Starts soon" })
   if (activity.tryout_required) badges.push({ label: "Tryouts required", variant: "outline" })
   if (activity.beginner_friendly) badges.push({ label: "Beginner friendly", variant: "secondary" })
-  if (activity.verification_status === "organization_verified")
-    badges.push({ label: "Verified", variant: "secondary" })
-  if (activity.verification_status === "community_submitted")
-    badges.push({ label: "Community submitted", variant: "outline" })
-  if (activity.verification_status === "unverified")
-    badges.push({ label: "Needs recheck", variant: "outline" })
   if (isRecentlyAdded(activity, now)) badges.push({ label: "Recently added", variant: "secondary" })
-  if (status === "waitlist") badges.push({ label: "Waitlist", variant: "outline" })
 
   if (badges.length === 0) return null
 

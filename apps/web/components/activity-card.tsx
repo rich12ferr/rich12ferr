@@ -1,18 +1,17 @@
 import Link from "next/link"
 import { CircleAlertIcon, MapPinIcon, TicketIcon } from "lucide-react"
 import { ActivityBadges } from "@/components/activity-badges"
+import { CustomerStatusPill, customerStateAccent } from "@/components/customer-status-pill"
 import { SeasonIcon } from "@/components/season-icons"
 import { SportMarker } from "@/components/sport-marker"
-import { StatusPill, statusAccent } from "@/components/status-pill"
 import { TrustNote } from "@/components/trust-note"
-import type { ActivityWithRelations, RegistrationStatus } from "@/lib/types"
-import { formatFee, registrationStatus, statusDetail } from "@/lib/registration-status"
+import type { ActivityWithRelations } from "@/lib/types"
+import { customerFacingState, formatFee } from "@/lib/registration-status"
 import { distanceLabel, eligibilityLabel, programLabel, seasonLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 export type ActivityCardProps = {
   activity: ActivityWithRelations
-  status?: RegistrationStatus
   eligibilityNote?: string | null
   now?: Date
   className?: string
@@ -22,14 +21,8 @@ export type ActivityCardProps = {
  * The result card from PRD 13. Every field a parent needs to decide whether to
  * click: sport, program, org, eligibility, season, deadline, cost, distance.
  */
-export function ActivityCard({
-  activity,
-  status,
-  eligibilityNote,
-  now = new Date(),
-  className,
-}: ActivityCardProps) {
-  const resolved = status ?? registrationStatus(activity, now)
+export function ActivityCard({ activity, eligibilityNote, now = new Date(), className }: ActivityCardProps) {
+  const { state: resolved, detail } = customerFacingState(activity, now)
 
   return (
     <article
@@ -40,7 +33,7 @@ export function ActivityCard({
     >
       <span
         aria-hidden="true"
-        className={cn("absolute inset-y-0 left-0 w-1.5", statusAccent[resolved])}
+        className={cn("absolute inset-y-0 left-0 w-1.5", customerStateAccent[resolved])}
       />
 
       <div className="flex flex-col gap-3 py-5 pl-6 pr-5">
@@ -61,7 +54,7 @@ export function ActivityCard({
               </Link>
             </p>
           </div>
-          <StatusPill status={resolved} className="ml-auto" />
+          <CustomerStatusPill state={resolved} className="ml-auto" />
         </div>
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
@@ -82,10 +75,12 @@ export function ActivityCard({
               {seasonLabel(activity)} &middot; {programLabel(activity)}
             </dd>
           </div>
-          <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Registration</dt>
-            <dd className="font-medium">{statusDetail(activity, now)}</dd>
-          </div>
+          {detail ? (
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Registration</dt>
+              <dd className="font-medium">{detail}</dd>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground">
             <dt className="sr-only">Cost and location</dt>
             <dd className="inline-flex items-center gap-1.5">
@@ -107,7 +102,7 @@ export function ActivityCard({
           </p>
         ) : null}
 
-        <ActivityBadges activity={activity} status={resolved} now={now} />
+        <ActivityBadges activity={activity} now={now} />
 
         <TrustNote activity={activity} now={now} className="pt-0.5" />
       </div>

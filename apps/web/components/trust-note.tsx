@@ -1,14 +1,20 @@
 import { ExternalLinkIcon, ShieldCheckIcon, ShieldAlertIcon, FlaskConicalIcon } from "lucide-react"
-import type { Activity } from "@/lib/types"
-import { freshnessLabel, isDemoListing, isStale, sourceHost, verificationLabel } from "@/lib/format"
+import type { ActivityWithRelations } from "@/lib/types"
+import { freshnessLabel, isDemoListing, isStale, sourceHost } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 /**
  * PRD 15: every listing states where its information came from, when it was
  * last checked, and links to the original source so parents can confirm.
  *
+ * Deliberately shows only provenance — organization name, freshness, and a
+ * link to the source — never the internal `verification_status` value
+ * (e.g. "Unverified", "Admin reviewed"). That vocabulary is for the admin
+ * console; to a parent it reads as an accusation against small orgs that
+ * simply haven't been individually reviewed yet, not a useful trust signal.
+ *
  * Demo/placeholder listings (no real crawl source yet) never show a
- * verification claim or a fake source link — they get a distinct "Demo
+ * provenance claim or a fake source link — they get a distinct "Demo
  * listing" badge instead, so they can never be mistaken for a verified
  * program at a real organization.
  */
@@ -18,7 +24,7 @@ export function TrustNote({
   withSourceLink = true,
   className,
 }: {
-  activity: Activity
+  activity: ActivityWithRelations
   now?: Date
   withSourceLink?: boolean
   className?: string
@@ -54,7 +60,7 @@ export function TrustNote({
     >
       <span className="inline-flex items-center gap-1.5">
         <Icon className={cn("size-3.5", stale && "text-soon-foreground")} aria-hidden="true" />
-        {verificationLabel(activity)}
+        Source: {activity.organization.name}
       </span>
       <span aria-hidden="true">&middot;</span>
       <span className={cn(stale && "font-medium text-foreground")}>{freshnessLabel(activity, now)}</span>
