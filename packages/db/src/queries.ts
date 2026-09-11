@@ -37,6 +37,7 @@ import {
   adminAuditLog,
   alerts,
   fieldProvenance,
+  handoffEvents,
   organizations,
   programOfferings,
   programs,
@@ -48,6 +49,7 @@ import {
   weeklyStories,
   weeklyStoryCandidates,
   type AdminAuditLogRow,
+  type NewHandoffEvent,
   type ReportRow,
 } from "./schema"
 
@@ -1315,4 +1317,57 @@ export async function listWeeklyEditions() {
     .from(weeklyEditions)
     .where(eq(weeklyEditions.published, true))
     .orderBy(desc(weeklyEditions.weekStart))
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Registration handoff events (write + reporting path)                     */
+/* -------------------------------------------------------------------------- */
+
+function newHandoffEventId(): string {
+  return `evt_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`
+}
+
+/**
+ * Records one registration/website handoff click. Called from the "use
+ * server" action behind every `RegistrationHandoffButton` and the weekly
+ * story CTA's external branch — see `handoffEvents` in `schema.ts` for why
+ * the row is flattened rather than a bare `offeringId` FK.
+ */
+export async function createHandoffEvent(input: Omit<NewHandoffEvent, "id" | "occurredAt">) {
+  const [row] = await db
+    .insert(handoffEvents)
+    .values({ id: newHandoffEventId(), ...input })
+    .returning()
+  return row
+}
+
+/**
+ * Daily click counts per organization within a date range — the direct
+ * answer to "how many registrations is the site driving for an organization,
+ * by date." Grouped on the flattened `organizationId`/`organizationName`
+ * columns, so this never has to join back through
+ * `program_offerings`/`programs` to reach an organization.
+ */
+export async function handoffEventCountsByOrganization(opts: { since: Date; until?: Date }) {
+  const until = opts.until ?? new Date()
+  return db
+    .select({
+      organizationId: handoffEvents.organizationId,
+      organizationName: handoffEvents.organizationName,
+      date: sql<string>`date_trunc('day', ${handoffEvents.occurredAt})::date`,
+      clicks: sql<number>`count(*)::int`,
+    })
+    .from(handoffEvents)
+    .where(
+      and(
+        isNotNull(handoffEvents.organizationId),
+        gte(handoffEvents.occurredAt, opts.since),
+        lte(handoffEvents.occurredAt, until),
+      ),
+    )
+    .groupBy(handoffEvents.organizationId, handoffEvents.organizationName, sql`date_trunc('day', ${handoffEvents.occurredAt})`)
+    .orderBy(
+      sql`date_trunc('day', ${handoffEvents.occurredAt}) desc`,
+      desc(sql`count(*)`),
+    )
 }

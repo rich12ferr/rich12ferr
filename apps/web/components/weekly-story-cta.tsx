@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { recordRegistrationHandoff } from "@/lib/actions/handoff-events"
 import { trackEvent } from "@/lib/analytics"
 import type { WeeklyStory } from "@/lib/types"
 
@@ -16,12 +17,23 @@ export function WeeklyStoryCta({ story }: { story: WeeklyStory }) {
 
   function handleClick() {
     if (isExternal) {
-      trackEvent("registration_handoff_clicked", {
+      // No offeringId/programId/location on `WeeklyStory` (see its comment in
+      // `lib/types.ts`) — a story like the Fifth Grade Passport's
+      // `missingActivity` case has no single offering behind it at all, so
+      // those columns land null here; org and sport are still real taxonomy.
+      const payload = {
         cta_label: story.ctaLabel,
-        cta_location: "weekly_update_detail",
+        cta_location: "weekly_update_detail" as const,
+        destination_url: story.ctaHref,
         organization_id: story.organizationId,
+        organization_name: story.organizationName,
+        sport_id: story.sport?.id ?? null,
+        sport_slug: story.sport?.slug ?? null,
+        sport_name: story.sport?.name ?? null,
         registration_status: story.registrationStatus,
-      })
+      }
+      trackEvent("registration_handoff_clicked", payload)
+      void recordRegistrationHandoff(payload).catch(() => {})
     } else {
       trackEvent("weekly_update_activity_clicked", {
         story_id: story.id,

@@ -37,6 +37,12 @@ export type CtaLocation =
  * optional because some handoff sites (an organization's own website, a weekly
  * story that points off-site) have no single offering behind them.
  *
+ * This is also, unchanged, the shape persisted to the `handoff_events` table
+ * (see `schema.ts` for why) — `RegistrationHandoffButton` forwards this same
+ * object to both the Vercel Analytics beacon and the `recordHandoffEvent`
+ * server action, so the canonical-taxonomy fields below (organization/sport/
+ * location) only need to be assembled once per click site.
+ *
  * Spec mapping notes: the spec's `activity_taxonomy_*` has no equivalent here —
  * the only taxonomy in this app is Sport, so it maps to `sport_id`/`sport_name`.
  * The spec's `source_authority` maps to the offering's `source_type`.
@@ -44,11 +50,19 @@ export type CtaLocation =
 export type RegistrationHandoffProps = {
   cta_label: string
   cta_location: CtaLocation
+  /** The outbound URL clicked. Set by `RegistrationHandoffButton` from its own `href` prop — callers do not need to supply this. */
+  destination_url?: string
   offering_id?: string | null
   program_id?: string | null
   organization_id?: string | null
+  organization_name?: string | null
+  organization_type?: string | null
   sport_id?: string | null
+  sport_slug?: string | null
   sport_name?: string | null
+  town?: string | null
+  state?: string | null
+  zip?: string | null
   source_type?: SourceType | null
   registration_provider?: string | null
   registration_status?: RegistrationStatus | null
@@ -199,8 +213,18 @@ export function buildHandoffProps(
     offering_id: activity.id,
     program_id: activity.program_id,
     organization_id: activity.organization_id,
+    organization_name: activity.organization.name,
+    organization_type: activity.organization.organization_type,
     sport_id: activity.sport_id,
+    sport_slug: activity.sport.slug,
     sport_name: activity.sport.name,
+    // The offering's own location, which overrides the organization's when a
+    // specific offering meets elsewhere (see `Activity.town`/`state` in
+    // `lib/types.ts`) — the same location a parent sees on the card/detail
+    // page, not necessarily the organization's registered address.
+    town: activity.town,
+    state: activity.state,
+    zip: activity.zip,
     source_type: activity.source_type,
     registration_provider: activity.registration_provider,
     registration_status: opts.status,
