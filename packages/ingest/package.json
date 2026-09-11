@@ -11,6 +11,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "register-sources": "tsx scripts/register-sources.ts",
+    "register-newly-discovered-sources": "tsx scripts/register-newly-discovered-sources.ts",
     "generate-source-registry-seed": "tsx scripts/generate-source-registry-seed.ts",
     "import-source-registry": "tsx scripts/import-source-registry.ts",
     "approve-source": "tsx scripts/approve-source.ts",
