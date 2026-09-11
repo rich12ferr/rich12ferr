@@ -26,6 +26,7 @@ export type DiscoveryOrigin =
 
 /** Where a registration/website handoff was clicked. */
 export type CtaLocation =
+  | "activity_card"
   | "activity_detail_primary"
   | "activity_detail_source"
   | "weekly_update_detail"

@@ -1,13 +1,15 @@
 import Link from "next/link"
-import { CircleAlertIcon, MapPinIcon, TicketIcon } from "lucide-react"
+import { CircleAlertIcon, ExternalLinkIcon, MapPinIcon, TicketIcon } from "lucide-react"
 import { ActivityBadges } from "@/components/activity-badges"
 import { CustomerStatusPill, customerStateAccent } from "@/components/customer-status-pill"
+import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
 import { SeasonIcon } from "@/components/season-icons"
 import { SportMarker } from "@/components/sport-marker"
 import { TrustNote } from "@/components/trust-note"
 import type { ActivityWithRelations } from "@/lib/types"
-import { customerFacingState, formatFee } from "@/lib/registration-status"
-import { distanceLabel, eligibilityLabel, programLabel, seasonLabel } from "@/lib/format"
+import { customerFacingState, formatFee, registrationStatus } from "@/lib/registration-status"
+import { distanceLabel, eligibilityLabel, isDemoListing, programLabel, seasonLabel } from "@/lib/format"
+import { buildHandoffProps } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 
 export type ActivityCardProps = {
@@ -23,6 +25,12 @@ export type ActivityCardProps = {
  */
 export function ActivityCard({ activity, eligibilityNote, now = new Date(), className }: ActivityCardProps) {
   const { state: resolved, detail } = customerFacingState(activity, now)
+  const canRegister = resolved === "open"
+  const demo = isDemoListing(activity)
+  // Kept only for analytics attribution, mirroring the activity detail page —
+  // every label/branch below reads `resolved` (the collapsed 4-state value)
+  // instead.
+  const analyticsStatus = registrationStatus(activity, now)
 
   return (
     <article
@@ -104,7 +112,49 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
 
         <ActivityBadges activity={activity} now={now} />
 
-        <TrustNote activity={activity} now={now} className="pt-0.5" />
+        {/*
+         * Every field above answers "is this worth it?" — this row answers
+         * "where do I click?" On a dense results list a parent skims cards,
+         * not detail pages, so the same registration/source handoff the
+         * detail page's rail offers must be one click from here too, not
+         * two. Only rendered when there's a real destination: unlike the
+         * detail rail, a disabled placeholder button on every closed/demo
+         * card in a long list would just be noise the status pill already
+         * covers.
+         */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+          <TrustNote activity={activity} now={now} className="min-w-0" />
+          {!demo && canRegister && activity.registration_url ? (
+            <RegistrationHandoffButton
+              href={activity.registration_url}
+              handoff={buildHandoffProps(activity, {
+                ctaLabel: "Register",
+                ctaLocation: "activity_card",
+                status: analyticsStatus,
+              })}
+              size="sm"
+              className="shrink-0"
+            >
+              Register
+              <ExternalLinkIcon data-icon="inline-end" />
+            </RegistrationHandoffButton>
+          ) : !demo && resolved !== "closed" && activity.source_url ? (
+            <RegistrationHandoffButton
+              href={activity.source_url}
+              handoff={buildHandoffProps(activity, {
+                ctaLabel: "View program page",
+                ctaLocation: "activity_card",
+                status: analyticsStatus,
+              })}
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+            >
+              View program page
+              <ExternalLinkIcon data-icon="inline-end" />
+            </RegistrationHandoffButton>
+          ) : null}
+        </div>
       </div>
     </article>
   )
