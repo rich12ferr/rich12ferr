@@ -131,6 +131,11 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
                   cta_label: sourceHost(organization.website_url),
                   cta_location: "organization_website",
                   organization_id: organization.id,
+                  organization_name: organization.name,
+                  organization_type: organization.organization_type,
+                  town: organization.town,
+                  state: organization.state,
+                  zip: organization.zip,
                 }}
                 variant="outline"
                 size="sm"

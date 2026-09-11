@@ -883,6 +883,77 @@ export const weeklyStoryCandidates = pgTable(
 )
 
 /* -------------------------------------------------------------------------- */
+/*  Registration handoff events (product analytics)                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One row per click on a registration/website handoff (the "Register" /
+ * "View program page" / org-website buttons — see `RegistrationHandoffButton`
+ * and `weekly-story-cta.tsx`). This is the durable, queryable counterpart to
+ * the same click's `registration_handoff_clicked` beacon sent to Vercel
+ * Analytics: that beacon answers product-analytics questions in the Vercel
+ * dashboard, this table answers operational ones ("how many clicks did
+ * Organization X get last week?") with plain SQL against our own database.
+ *
+ * Deliberately flattened rather than a pure `offering_id` FK: every field
+ * needed to slice by the canonical taxonomy (organization, sport, location,
+ * activity) is captured as its own column at click time, mirroring the same
+ * snapshot approach `weekly_stories` already uses (see that table's comment)
+ * and for the same reason — grouping by `organization_id`/`sport_id`/
+ * `town`+`state`/`occurred_at` must never require a join back through
+ * `program_offerings` -> `programs` -> `organizations`/`sports`, both because
+ * that join can change out from under a historical click (a program's sport
+ * gets recategorized, an org gets renamed/merged) and because a handoff can
+ * legitimately have no offering at all (an organization's own website, a
+ * weekly story pointing off-site). No FK constraints, matching the
+ * `admin_audit_log`/`reports` convention for event/log tables: this is a
+ * historical record of what was true at click time, not a live reference.
+ */
+export const handoffEvents = pgTable(
+  "handoff_events",
+  {
+    id: text("id").primaryKey(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+
+    ctaLabel: text("cta_label").notNull(),
+    /** `CtaLocation` from `apps/web/lib/analytics.ts`, e.g. "activity_card" | "activity_detail_primary" | "organization_website". */
+    ctaLocation: text("cta_location").notNull(),
+    /** The actual outbound URL clicked — an org's registration link, source page, or website. */
+    destinationUrl: text("destination_url").notNull(),
+
+    /** `RegistrationStatus` at click time; null when the handoff has no offering behind it (e.g. organization_website). */
+    registrationStatus: text("registration_status"),
+    registrationProvider: text("registration_provider"),
+    /** `SourceType` from `apps/web/lib/types.ts`. */
+    sourceType: text("source_type"),
+
+    offeringId: text("offering_id"),
+    programId: text("program_id"),
+
+    organizationId: text("organization_id"),
+    /** Denormalized at click time so a later org rename/merge never rewrites this event's history. */
+    organizationName: text("organization_name"),
+    organizationType: text("organization_type"),
+
+    sportId: text("sport_id"),
+    sportSlug: text("sport_slug"),
+    sportName: text("sport_name"),
+
+    /** Denormalized location the click's activity/organization was tied to. */
+    town: text("town"),
+    state: text("state"),
+    zip: text("zip"),
+  },
+  (t) => [
+    index("handoff_events_org_idx").on(t.organizationId, t.occurredAt),
+    index("handoff_events_sport_idx").on(t.sportId, t.occurredAt),
+    index("handoff_events_offering_idx").on(t.offeringId),
+    index("handoff_events_occurred_at_idx").on(t.occurredAt),
+    index("handoff_events_location_idx").on(t.town, t.state),
+  ],
+)
+
+/* -------------------------------------------------------------------------- */
 /*  Admin audit log                                                          */
 /* -------------------------------------------------------------------------- */
 
@@ -932,6 +1003,7 @@ export type WeeklyEditionRow = typeof weeklyEditions.$inferSelect
 export type WeeklyStoryRow = typeof weeklyStories.$inferSelect
 export type WeeklyStoryCandidateRow = typeof weeklyStoryCandidates.$inferSelect
 export type AdminAuditLogRow = typeof adminAuditLog.$inferSelect
+export type HandoffEventRow = typeof handoffEvents.$inferSelect
 
 export type NewSport = typeof sports.$inferInsert
 export type NewOrganization = typeof organizations.$inferInsert
@@ -944,3 +1016,4 @@ export type NewAlert = typeof alerts.$inferInsert
 export type NewWeeklyEdition = typeof weeklyEditions.$inferInsert
 export type NewWeeklyStory = typeof weeklyStories.$inferInsert
 export type NewWeeklyStoryCandidate = typeof weeklyStoryCandidates.$inferInsert
+export type NewHandoffEvent = typeof handoffEvents.$inferInsert
