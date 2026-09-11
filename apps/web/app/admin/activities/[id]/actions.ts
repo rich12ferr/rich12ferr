@@ -10,6 +10,7 @@ import {
   type AuditChange,
   type OfferingFieldPatch,
 } from "@openplay/db"
+import { requireAdminAction } from "@/lib/require-admin"
 
 export type SaveActivityInput = {
   offeringId: string
@@ -29,6 +30,8 @@ export type SaveActivityResult = { ok: true } | { ok: false; error: string }
  * resolve on save" rather than a separate manual step).
  */
 export async function saveActivity(input: SaveActivityInput): Promise<SaveActivityResult> {
+  await requireAdminAction()
+
   const { offeringId, programId, patch, reportId } = input
 
   const before = await offeringById(offeringId)

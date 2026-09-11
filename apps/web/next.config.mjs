@@ -11,6 +11,11 @@ const nextConfig = {
   transpilePackages: ["@openplay/core", "@openplay/db", "@openplay/ingest"],
   // Keep the pg driver on the Node runtime rather than bundling it.
   serverExternalPackages: ["pg"],
+  // The v0 sandbox reaches `next dev` through a *.vercel.run tunnel rather
+  // than the literal `localhost` Host header, which Next.js's dev-asset
+  // guard otherwise blocks as cross-origin. Dev-only; has no effect on
+  // production builds.
+  allowedDevOrigins: ["*.vercel.run"],
   async headers() {
     return [
       {
