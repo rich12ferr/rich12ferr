@@ -209,6 +209,30 @@ export default async function HomePage() {
         </section>
       ) : null}
 
+      {/* Weekly digest — the newsletter opt-in, TLDR-style. A themed card
+          rather than a bg-foreground/text-background band: those tokens
+          invert between light/dark mode, which previously left the input
+          styled for a dark band that had turned light. */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
+        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-secondary/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8">
+          <div className="flex max-w-xl flex-col gap-1.5">
+            <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
+              Free weekly email
+            </p>
+            <h2 className="font-display text-xl font-extrabold tracking-tight text-balance sm:text-2xl">
+              The week in Vermont youth activities, in five minutes.
+            </h2>
+            <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+              Bite-sized summaries of new programs, registration openings, and deadlines. One
+              email a week, one-click unsubscribe.
+            </p>
+          </div>
+          <div className="w-full max-w-md sm:shrink-0">
+            <NewsletterForm source="homepage" />
+          </div>
+        </div>
+      </section>
+
       {/* Browse by sport */}
       <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
         <SectionHeading
@@ -270,28 +294,6 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-
-      {/* Weekly digest — the newsletter opt-in, TLDR-style */}
-      <section className="border-t border-border bg-foreground text-background">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex max-w-xl flex-col gap-2">
-            <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
-              Free weekly email
-            </p>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
-              The week in Vermont youth activities, in five minutes.
-            </h2>
-            <p className="text-sm leading-relaxed text-background/70 text-pretty">
-              Bite-sized summaries of new programs, registration openings, and deadlines &mdash; plus
-              a few things worth knowing about around the state. One email a week, one-click
-              unsubscribe.
-            </p>
-          </div>
-          <div className="w-full max-w-md lg:shrink-0">
-            <NewsletterForm source="homepage" tone="onDark" />
-          </div>
         </div>
       </section>
 
