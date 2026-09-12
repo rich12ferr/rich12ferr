@@ -43,6 +43,7 @@ import {
   programs,
   reports,
   reviewCandidates,
+  sources,
   sports,
   submissions,
   weeklyEditions,
@@ -707,10 +708,38 @@ export async function provenanceFor(entityType: string, entityId: string) {
 /*  Admin                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * A pending candidate joined to the organization name and source URL a human
+ * reviewer needs to make a decision — the raw `review_candidates` row alone
+ * has neither (it only has `sourceId`, and `proposedOrganizationName` is only
+ * set for `new_organization` candidates). Left joins because a candidate can
+ * exist with a null `sourceId` (e.g. a community submission converted
+ * directly) or point at a source whose organization link hasn't resolved yet.
+ */
+export type PendingReviewCandidateRow = Awaited<ReturnType<typeof pendingReviewCandidates>>[number]
+
 export async function pendingReviewCandidates(limit = 50) {
   return db
-    .select()
+    .select({
+      id: reviewCandidates.id,
+      kind: reviewCandidates.kind,
+      sourceId: reviewCandidates.sourceId,
+      targetProgramId: reviewCandidates.targetProgramId,
+      targetOfferingId: reviewCandidates.targetOfferingId,
+      proposedTitle: reviewCandidates.proposedTitle,
+      proposedOrganizationName: reviewCandidates.proposedOrganizationName,
+      payload: reviewCandidates.payload,
+      changes: reviewCandidates.changes,
+      validationIssues: reviewCandidates.validationIssues,
+      confidence: reviewCandidates.confidence,
+      duplicateAssessment: reviewCandidates.duplicateAssessment,
+      discoveredAt: reviewCandidates.discoveredAt,
+      sourceUrl: sources.url,
+      organizationName: organizations.name,
+    })
     .from(reviewCandidates)
+    .leftJoin(sources, eq(sources.id, reviewCandidates.sourceId))
+    .leftJoin(organizations, eq(organizations.id, sources.organizationId))
     .where(eq(reviewCandidates.status, "pending"))
     .orderBy(asc(reviewCandidates.discoveredAt))
     .limit(limit)

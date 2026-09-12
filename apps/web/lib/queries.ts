@@ -19,6 +19,7 @@ import {
   offeringsByProgramSlug,
   offeringsBySportSlug,
   organizationByIdOrSlug,
+  pendingReviewCandidates,
   pendingWeeklyStoryCandidateCount,
   pendingWeeklyStoryCandidates,
   programSlugsForStaticParams,
@@ -26,6 +27,7 @@ import {
   searchOfferings,
   weeklyEditionBySlug as weeklyEditionBySlugRow,
   type OfferingListing,
+  type PendingReviewCandidateRow,
   type ReportRow,
   type ReportStatus,
   type WeeklyEditionRow,
@@ -49,6 +51,7 @@ import type {
   CustomerFacingState,
   Organization,
   RegistrationStatus,
+  ReviewCandidate,
   Season,
   Sport,
   WeeklyEdition,
@@ -910,6 +913,84 @@ export async function reportQueue(): Promise<ReportQueueItem[]> {
       offeringId: offering?.offeringId ?? null,
     }
   })
+}
+
+type StoredFieldChange = {
+  field: string
+  kind: "filled" | "cleared" | "changed"
+  previous: unknown
+  next: unknown
+  requiresReview: boolean
+  note: string | null
+}
+
+/**
+ * The fields shown in a synthesized preview, in display order. Only for
+ * brand-new `new_program`/`new_offering` candidates, whose `changes` array
+ * is empty — there is nothing to diff against, but a reviewer still needs to
+ * see what they are approving instead of an empty panel.
+ */
+const PREVIEW_PAYLOAD_FIELDS = [
+  "title",
+  "sportName",
+  "minAge",
+  "maxAge",
+  "minGrade",
+  "maxGrade",
+  "registrationOpenDate",
+  "registrationCloseDate",
+  "registrationFee",
+  "registrationUrl",
+] as const
+
+function synthesizePreviewFromPayload(payload: Record<string, unknown>): ReviewCandidate["changes"] {
+  return PREVIEW_PAYLOAD_FIELDS.filter((field) => payload[field] != null).map((field) => ({
+    field,
+    current_value: null,
+    proposed_value: String(payload[field]),
+    inferred: false,
+  }))
+}
+
+/**
+ * Maps a live `review_candidates` row (see `pendingReviewCandidates` in
+ * `@openplay/db`) onto the `ReviewCandidate` shape the `/admin/review` UI
+ * renders. The UI type predates the live pipeline and only distinguishes
+ * "new_activity" vs "field_update" — `new_program`, `new_offering`, and
+ * `new_organization` all read as a brand-new listing to a reviewer, so they
+ * collapse to "new_activity" here.
+ */
+function toReviewCandidate(row: PendingReviewCandidateRow): ReviewCandidate {
+  const storedChanges = (row.changes ?? []) as StoredFieldChange[]
+  const changes =
+    storedChanges.length > 0
+      ? storedChanges.map((change) => ({
+          field: change.field,
+          current_value: change.previous == null ? null : String(change.previous),
+          proposed_value: change.next == null ? "empty" : String(change.next),
+          inferred: false,
+        }))
+      : synthesizePreviewFromPayload((row.payload ?? {}) as Record<string, unknown>)
+
+  return {
+    id: row.id,
+    kind: row.kind === "field_update" ? "field_update" : "new_activity",
+    activity_id: row.targetOfferingId,
+    activity_title: row.proposedTitle,
+    organization_name: row.organizationName ?? row.proposedOrganizationName ?? "Unknown organization",
+    source_url: row.sourceUrl ?? "",
+    confidence: row.confidence ? Number(row.confidence) : 0,
+    discovered_at: toDateString(row.discoveredAt) ?? "",
+    changes,
+    validation_issues: (row.validationIssues ?? []) as string[],
+    duplicate_assessment: row.duplicateAssessment as ReviewCandidate["duplicate_assessment"],
+  }
+}
+
+/** The live AI-extraction review queue behind `/admin/review`. */
+export async function reviewQueue(): Promise<ReviewCandidate[]> {
+  const rows = await pendingReviewCandidates()
+  return rows.map(toReviewCandidate)
 }
 
 /**
