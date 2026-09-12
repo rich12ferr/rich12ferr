@@ -1018,6 +1018,112 @@ export const handoffEvents = pgTable(
 )
 
 /* -------------------------------------------------------------------------- */
+/*  Newsletter                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A single opt-in for the weekly digest email, independent of `alerts`.
+ * Alerts are per-activity watch triggers with their own targeting criteria;
+ * the newsletter is one flat opt-in per email address with its own
+ * subscribe/unsubscribe lifecycle, so the two are kept as separate tables
+ * rather than another `alerts.kind`.
+ */
+export const newsletterSubscribers = pgTable(
+  "newsletter_subscribers",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull().unique(),
+    /** "subscribed" | "unsubscribed". Rows are kept (not deleted) on unsubscribe so history/KPIs stay intact. */
+    status: text("status").notNull().default("subscribed"),
+    /** Where the signup happened, e.g. "homepage" | "alerts_page" — for funnel reporting. */
+    source: text("source"),
+    /** Opaque token behind the one-click, no-login unsubscribe link every issue's footer must carry. */
+    unsubscribeToken: text("unsubscribe_token").notNull(),
+    subscribedAt: timestamp("subscribed_at", { withTimezone: true }).notNull().defaultNow(),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("newsletter_subscribers_status_idx").on(t.status, t.subscribedAt),
+    uniqueIndex("newsletter_subscribers_unsubscribe_token_idx").on(t.unsubscribeToken),
+  ],
+)
+
+/**
+ * One weekly digest send. `editionId` links to the existing `weekly_editions`
+ * editorial content (the same "What's happening this week" stories) so the
+ * newsletter never maintains a second copy of that curated content — it
+ * layers a subject line, intro, and a single labeled sponsorship block on
+ * top of an edition that already exists.
+ */
+export const newsletterIssues = pgTable(
+  "newsletter_issues",
+  {
+    id: text("id").primaryKey(),
+    /** The weekly edition this issue's story content is drawn from; nullable so a standalone issue is still possible. */
+    editionId: text("edition_id").references(() => weeklyEditions.id),
+
+    subject: text("subject").notNull(),
+    intro: text("intro"),
+
+    // A single labeled sponsorship block per issue — deliberately simple
+    // fields entered by hand each week rather than a separate sponsors
+    // table, matching how few, manually-sold slots this actually is.
+    sponsorName: text("sponsor_name"),
+    sponsorBlurb: text("sponsor_blurb"),
+    sponsorUrl: text("sponsor_url"),
+    sponsorImageUrl: text("sponsor_image_url"),
+
+    /** "draft" | "sent". Admin-triggered send only — nothing here ever sends itself. */
+    status: text("status").notNull().default("draft"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    /** Snapshot of how many subscribers this issue went to, taken at send time. */
+    recipientCount: integer("recipient_count").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("newsletter_issues_status_idx").on(t.status, t.createdAt)],
+)
+
+/**
+ * One row per (issue, subscriber) — the per-recipient send record that open-rate
+ * KPIs are computed from. `resendEmailId` is the id Resend's send API returns;
+ * the webhook handler matches incoming `email.delivered`/`email.opened`/
+ * `email.bounced` events back to a row by that id, not by email address, since
+ * an address can appear across many issues.
+ */
+export const newsletterSends = pgTable(
+  "newsletter_sends",
+  {
+    id: text("id").primaryKey(),
+    issueId: text("issue_id")
+      .notNull()
+      .references(() => newsletterIssues.id, { onDelete: "cascade" }),
+    subscriberId: text("subscriber_id")
+      .notNull()
+      .references(() => newsletterSubscribers.id, { onDelete: "cascade" }),
+    /** Denormalized at send time so a later subscriber-email change never rewrites this row's history. */
+    email: text("email").notNull(),
+    resendEmailId: text("resend_email_id"),
+
+    /** "queued" | "sent" | "delivered" | "opened" | "bounced" | "failed". */
+    status: text("status").notNull().default("queued"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    bouncedAt: timestamp("bounced_at", { withTimezone: true }),
+    error: text("error"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("newsletter_sends_issue_subscriber_idx").on(t.issueId, t.subscriberId),
+    index("newsletter_sends_issue_idx").on(t.issueId),
+    index("newsletter_sends_resend_email_idx").on(t.resendEmailId),
+  ],
+)
+
+/* -------------------------------------------------------------------------- */
 /*  Admin audit log                                                          */
 /* -------------------------------------------------------------------------- */
 
@@ -1068,6 +1174,9 @@ export type WeeklyStoryRow = typeof weeklyStories.$inferSelect
 export type WeeklyStoryCandidateRow = typeof weeklyStoryCandidates.$inferSelect
 export type AdminAuditLogRow = typeof adminAuditLog.$inferSelect
 export type HandoffEventRow = typeof handoffEvents.$inferSelect
+export type NewsletterSubscriberRow = typeof newsletterSubscribers.$inferSelect
+export type NewsletterIssueRow = typeof newsletterIssues.$inferSelect
+export type NewsletterSendRow = typeof newsletterSends.$inferSelect
 
 export type NewSport = typeof sports.$inferInsert
 export type NewOrganization = typeof organizations.$inferInsert
@@ -1081,3 +1190,6 @@ export type NewWeeklyEdition = typeof weeklyEditions.$inferInsert
 export type NewWeeklyStory = typeof weeklyStories.$inferInsert
 export type NewWeeklyStoryCandidate = typeof weeklyStoryCandidates.$inferInsert
 export type NewHandoffEvent = typeof handoffEvents.$inferInsert
+export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert
+export type NewNewsletterIssue = typeof newsletterIssues.$inferInsert
+export type NewNewsletterSend = typeof newsletterSends.$inferInsert

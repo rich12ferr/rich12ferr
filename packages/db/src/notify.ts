@@ -77,6 +77,104 @@ export async function sendEmail(message: EmailMessage): Promise<SendResult> {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Newsletter batch mailer                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Newsletter sender. Falls back through the alert sender to Resend's test
+ * address so a preview without a verified domain still "sends" (in log mode).
+ */
+const NEWSLETTER_FROM_ADDRESS =
+  process.env.NEWSLETTER_FROM_EMAIL ?? process.env.ALERT_FROM_EMAIL ?? "Sign Up Vermont <onboarding@resend.dev>"
+
+export type NewsletterEmail = { to: string; subject: string; html: string; text: string }
+
+export type NewsletterSendOutcome = {
+  to: string
+  ok: boolean
+  /** Resend's per-email id — the key the webhook later matches engagement events on. */
+  id?: string
+  error?: string
+}
+
+export type NewsletterBatchResult = {
+  mode: "resend" | "log"
+  results: NewsletterSendOutcome[]
+}
+
+/**
+ * Sends one distinct email per recipient via Resend's batch endpoint (each gets
+ * its own subject/html and, crucially, its own unsubscribe link), chunked at
+ * 100 per request per Resend's batch limit. Open tracking is a
+ * domain/account-level Resend setting, so no per-send flag is needed here —
+ * the `email.opened` webhook fires for HTML sends once tracking is enabled.
+ *
+ * Mirrors `sendEmail`'s log-mode contract: with no `RESEND_API_KEY` it logs and
+ * returns synthetic ids, so the whole compose→send→analytics loop is testable
+ * before a domain is verified. Order of `results` matches the input array so
+ * callers can zip outcomes back to their per-recipient send rows by index.
+ */
+export async function sendNewsletterBatch(
+  emails: NewsletterEmail[],
+): Promise<NewsletterBatchResult> {
+  if (emails.length === 0) return { mode: "log", results: [] }
+
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.log(
+      `[v0] [newsletter-email:log] sending ${emails.length} email(s); first subject=${JSON.stringify(emails[0]?.subject)}`,
+    )
+    return {
+      mode: "log",
+      results: emails.map((e) => ({ to: e.to, ok: true, id: `log_${crypto.randomUUID()}` })),
+    }
+  }
+
+  const results: NewsletterSendOutcome[] = []
+  for (let i = 0; i < emails.length; i += 100) {
+    const chunk = emails.slice(i, i + 100)
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          chunk.map((e) => ({
+            from: NEWSLETTER_FROM_ADDRESS,
+            to: e.to,
+            subject: e.subject,
+            html: e.html,
+            text: e.text,
+          })),
+        ),
+      })
+
+      if (!res.ok) {
+        const detail = await res.text()
+        console.error(`[v0] [newsletter-email:resend] batch failed ${res.status}: ${detail}`)
+        for (const e of chunk) results.push({ to: e.to, ok: false, error: `Resend ${res.status}` })
+        continue
+      }
+
+      // Resend batch response: { data: [{ id }, ...] } in the same order sent.
+      const body = (await res.json()) as { data?: { id?: string }[] }
+      const ids = body.data ?? []
+      chunk.forEach((e, idx) => {
+        const id = ids[idx]?.id
+        results.push(id ? { to: e.to, ok: true, id } : { to: e.to, ok: false, error: "No id returned" })
+      })
+    } catch (error) {
+      console.error("[v0] [newsletter-email:resend] batch threw:", error)
+      for (const e of chunk) results.push({ to: e.to, ok: false, error: String(error) })
+    }
+  }
+
+  return { mode: "resend", results }
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Trigger mapping                                                           */
 /* -------------------------------------------------------------------------- */
 
