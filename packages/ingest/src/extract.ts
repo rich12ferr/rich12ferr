@@ -37,7 +37,7 @@ ABSOLUTE RULES
 2. Never convert vague timing into a date. "Registration opens in the spring", "sign up soon", and "TBD" are all null — not a made-up date.
 3. Copy dates exactly as stated, converted to YYYY-MM-DD. If a year is not stated anywhere on the page, return null rather than assuming the current year.
 4. A fee of 0 means the page explicitly says free, no charge, or $0. Unstated cost is null, never 0.
-5. registrationUrl must be a link that actually starts registration. A link to the organization's homepage or a generic "learn more" is null.
+5. registrationUrl must be a link that actually starts registration. A link to the organization's homepage or a generic "learn more" is null. Copy it verbatim from the LINKS ON THIS PAGE list — never type out or reconstruct a URL from memory, even one that looks familiar (e.g. a Google Form). If the right link isn't in that list, the value is null.
 6. Grade values: kindergarten = 0, 1st grade = 1, and so on. Do not translate grades into ages or ages into grades — report only what the page states.
 7. If the page lists several distinct programs, return one entry per program. Do not merge them, and do not split a single program into several entries per age group unless the page itself separates them with different dates or fees.
 8. For every date, fee, and URL you populate, put the exact supporting text from the page in sourceQuotes. If you cannot quote it, the value must be null.
@@ -55,6 +55,17 @@ export type ExtractInput = {
   /** Fetch date, so relative phrasing like "next Monday" can be rejected. */
   fetchedAt?: Date
   model?: string
+  /**
+   * Every `<a>` on the page (text + absolute href), when the caller has raw
+   * HTML available. `content` is plain readable text — `htmlToText` strips
+   * every tag, `href`s included — so a registration link whose visible text
+   * is generic ("Registration Form") has no URL anywhere in `content` at all.
+   * Without this, at least two Gemini model variants were observed trying to
+   * reproduce that missing URL character-by-character and degenerating into
+   * an infinite repetition loop instead of returning null per rule 1 — a
+   * failure this list closes off by giving the model something to copy.
+   */
+  links?: { text: string; url: string }[]
 }
 
 export type ExtractOutput = {
@@ -78,6 +89,16 @@ function buildUserPrompt(input: ExtractInput): string {
   if (input.organizationHint) {
     parts.push(
       `KNOWN ORGANIZATION: ${input.organizationHint} (use this only if the page agrees; do not overwrite a different org named on the page)`,
+    )
+  }
+
+  // Capped well below the schema's own field-count concerns: this is here so
+  // a real registrationUrl exists to copy, not to be an exhaustive sitemap.
+  if (input.links && input.links.length > 0) {
+    parts.push(
+      "",
+      "LINKS ON THIS PAGE (link text -> exact URL; copy verbatim, never retype):",
+      ...input.links.slice(0, 40).map((link) => `- ${link.text || "(no text)"} -> ${link.url}`),
     )
   }
 
@@ -116,7 +137,16 @@ export async function extractPrograms(input: ExtractInput): Promise<ExtractOutpu
     system: SYSTEM_PROMPT,
     prompt: buildUserPrompt(input),
     temperature: 0,
-    maxOutputTokens: 8_000,
+    // `google/gemini-3.5-flash` is a reasoning model: its (hidden) reasoning
+    // tokens draw from this same budget before the visible JSON body starts.
+    // Found live on a page with several distinct programs (each carrying a
+    // full 40-ish-field record plus per-field confidence/quotes): reasoning
+    // alone ran ~5.7k tokens, leaving too little of an 8k cap for the JSON to
+    // close, which surfaced as "extraction_failed — could not parse the
+    // response" rather than a clean validation/confidence signal. 24k keeps
+    // real headroom for a many-program page without materially changing cost
+    // for the common one-or-two-program case.
+    maxOutputTokens: 24_000,
   })
 
   return {
