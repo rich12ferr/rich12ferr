@@ -49,6 +49,12 @@ export function renderNewsletterEmail(input: RenderInput): { html: string; text:
 
   const preheader = issue.intro?.trim() || `${stories.length} things worth knowing this week.`
 
+  // The brand lockup is a black wordmark + yellow mark on transparency, so it
+  // needs a light backing to stay legible on the dark header — same white-pill
+  // treatment the site header/footer use. Served from /public off the caller's
+  // resolved origin (emails can't reference relative /public paths).
+  const logoUrl = `${appUrl}/images/signup-vermont-logo.png`
+
   /* ----------------------------- story blocks ---------------------------- */
 
   const storyHtml = stories
@@ -122,8 +128,14 @@ export function renderNewsletterEmail(input: RenderInput): { html: string; text:
           <!-- header -->
           <tr>
             <td style="background:#111111;padding:22px 28px;">
-              <div style="font:800 18px/1 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#ffffff;">${esc(BRAND)}</div>
-              <div style="font:600 12px/1.4 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#F5B642;margin-top:4px;letter-spacing:.03em;text-transform:uppercase;">The Weekly Digest</div>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td style="background:#ffffff;border-radius:8px;padding:8px 12px;">
+                    <img src="${esc(logoUrl)}" alt="${esc(BRAND)}" width="150" height="62" style="display:block;width:150px;height:auto;border:0;" />
+                  </td>
+                </tr>
+              </table>
+              <div style="font:600 12px/1.4 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#F5B642;margin-top:12px;letter-spacing:.03em;text-transform:uppercase;">The Weekly Digest</div>
             </td>
           </tr>
           <!-- intro -->
