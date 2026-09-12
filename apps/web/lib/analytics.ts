@@ -111,6 +111,11 @@ export interface AnalyticsEventMap {
     trigger_count: number | null
     source: "activity_detail" | "alerts_page"
   }
+  newsletter_subscribed: {
+    source: "homepage" | "alerts_page"
+    /** "subscribed" for a brand-new address, "resubscribed" for a returning one; "already_subscribed" isn't tracked (no state change). */
+    outcome: "subscribed" | "resubscribed"
+  }
   activity_submission_started: Record<string, never>
   activity_submission_completed: {
     has_registration_url: boolean

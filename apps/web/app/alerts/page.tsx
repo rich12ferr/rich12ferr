@@ -1,4 +1,5 @@
 import { AlertForm } from "@/components/alert-form"
+import { NewsletterManage } from "@/components/newsletter-manage"
 
 export const metadata = {
   title: "Create an alert",
@@ -23,6 +24,10 @@ export default async function AlertsPage({
       </header>
 
       <AlertForm initialSport={sport} />
+
+      <div className="mt-12 border-t border-border pt-10">
+        <NewsletterManage />
+      </div>
     </div>
   )
 }

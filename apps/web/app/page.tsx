@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
+import { NewsletterForm } from "@/components/newsletter-form"
 import { QuickSearch } from "@/components/quick-search"
 import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
@@ -269,6 +270,28 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      {/* Weekly digest — the newsletter opt-in, TLDR-style */}
+      <section className="border-t border-border bg-foreground text-background">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-12 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex max-w-xl flex-col gap-2">
+            <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
+              Free weekly email
+            </p>
+            <h2 className="font-display text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
+              The week in Vermont youth activities, in five minutes.
+            </h2>
+            <p className="text-sm leading-relaxed text-background/70 text-pretty">
+              Bite-sized summaries of new programs, registration openings, and deadlines &mdash; plus
+              a few things worth knowing about around the state. One email a week, one-click
+              unsubscribe.
+            </p>
+          </div>
+          <div className="w-full max-w-md lg:shrink-0">
+            <NewsletterForm source="homepage" tone="onDark" />
+          </div>
         </div>
       </section>
 
