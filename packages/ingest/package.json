@@ -11,6 +11,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "register-sources": "tsx scripts/register-sources.ts",
+    "register-barre-figure-skating": "tsx scripts/register-barre-figure-skating.ts",
     "register-newly-discovered-sources": "tsx scripts/register-newly-discovered-sources.ts",
     "replace-story-fifth-grade-passport": "tsx scripts/replace-story-fifth-grade-passport.ts",
     "generate-source-registry-seed": "tsx scripts/generate-source-registry-seed.ts",

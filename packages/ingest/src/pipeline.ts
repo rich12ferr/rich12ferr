@@ -44,7 +44,7 @@ import {
   requiresReview,
   type FieldChange,
 } from "./change-detection"
-import { findProgramLinks } from "./discover-links"
+import { extractLinks, findProgramLinks } from "./discover-links"
 import {
   findBestMatch,
   organizationMatchKey,
@@ -315,6 +315,16 @@ export async function ingestSource(
       organizationHint,
       fetchedAt: startedAt,
       model: options.model,
+      // `htmlToText` strips every tag, hrefs included, so a registration
+      // link with generic visible text ("Registration Form") otherwise has
+      // no URL anywhere in `content` for the model to cite — see the
+      // `links` doc in extract.ts for the failure mode this closes off.
+      links: fetched.rawHtml
+        ? extractLinks(fetched.rawHtml, fetched.finalUrl).map((link) => ({
+            text: link.linkText,
+            url: link.url,
+          }))
+        : undefined,
     })
 
     const tokensUsed =
