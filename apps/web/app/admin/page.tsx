@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusPill } from "@/components/status-pill"
-import { reviewQueue, submissions } from "@/lib/data/moderation"
-import { adminMetrics, weeklyStoryCandidateCount } from "@/lib/queries"
+import { submissions } from "@/lib/data/moderation"
+import { adminMetrics, reviewQueue, weeklyStoryCandidateCount } from "@/lib/queries"
 import { registrationStatus } from "@/lib/registration-status"
 
 /**
@@ -35,10 +35,14 @@ const TRUSTED_STATUSES = new Set(["admin_reviewed", "organization_verified"])
 
 export default async function AdminDashboardPage() {
   const now = new Date()
-  const [metrics, weeklyCandidates] = await Promise.all([adminMetrics(now), weeklyStoryCandidateCount()])
+  const [metrics, weeklyCandidates, candidates] = await Promise.all([
+    adminMetrics(now),
+    weeklyStoryCandidateCount(),
+    reviewQueue(),
+  ])
 
   const pendingSubmissions = submissions.filter((s) => s.status === "pending").length
-  const lowConfidence = reviewQueue.filter((c) => c.confidence < 0.7).length
+  const lowConfidence = candidates.filter((c) => c.confidence < 0.7).length
 
   const healthCards = [
     {
@@ -76,7 +80,7 @@ export default async function AdminDashboardPage() {
   const queues = [
     {
       label: "Review queue",
-      count: reviewQueue.length,
+      count: candidates.length,
       description: `${lowConfidence} below the 0.70 confidence line`,
       href: "/admin/review",
     },

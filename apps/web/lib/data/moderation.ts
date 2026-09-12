@@ -1,4 +1,4 @@
-import type { ChildProfile, ParentAlert, ReviewCandidate, Submission } from "@/lib/types"
+import type { ChildProfile, ParentAlert, Submission } from "@/lib/types"
 
 /** Community submissions awaiting review (PRD 23). */
 export const submissions: Submission[] = [
@@ -57,87 +57,6 @@ export const submissions: Submission[] = [
     source_url: "https://example.org/waterbury-rec/fall",
     comments: "Duplicate of an existing listing, sending in case dates changed.",
     status: "approved",
-  },
-]
-
-/** AI-extracted candidates awaiting human approval (PRD 25 and 30). */
-export const reviewQueue: ReviewCandidate[] = [
-  {
-    id: "rev_001",
-    kind: "field_update",
-    activity_id: "act_mpr_soccer_56",
-    activity_title: "Fall Rec Soccer, Grades 5-6",
-    organization_name: "Montpelier Parks & Recreation",
-    source_url: "https://example.org/montpelier-rec/fall-programs",
-    confidence: 0.94,
-    discovered_at: "2026-08-25",
-    changes: [
-      {
-        field: "registration_close_date",
-        current_value: "2026-08-29",
-        proposed_value: "2026-09-02",
-        inferred: false,
-      },
-    ],
-    validation_issues: [],
-    duplicate_assessment: "likely_update",
-  },
-  {
-    id: "rev_002",
-    kind: "new_activity",
-    activity_id: null,
-    activity_title: "Middle School Alpine Ski Club",
-    organization_name: "Winooski Valley Union Middle School",
-    source_url: "https://example.org/wvums-athletics/winter",
-    confidence: 0.61,
-    discovered_at: "2026-08-24",
-    changes: [
-      { field: "sport", current_value: null, proposed_value: "Not in current taxonomy", inferred: false },
-      { field: "min_grade", current_value: null, proposed_value: "6", inferred: true },
-      { field: "max_grade", current_value: null, proposed_value: "8", inferred: true },
-      { field: "registration_fee", current_value: null, proposed_value: "0", inferred: true },
-    ],
-    validation_issues: [
-      "Sport is not in the supported taxonomy",
-      "Registration dates could not be determined",
-    ],
-    duplicate_assessment: "new",
-  },
-  {
-    id: "rev_003",
-    kind: "new_activity",
-    activity_id: null,
-    activity_title: "Winter Rec Basketball, Grades 5-6",
-    organization_name: "Waterbury Recreation Department",
-    source_url: "https://example.org/waterbury-rec/winter",
-    confidence: 0.72,
-    discovered_at: "2026-08-23",
-    changes: [
-      { field: "title", current_value: null, proposed_value: "Winter Rec Basketball, Grades 5/6", inferred: false },
-      { field: "registration_fee", current_value: null, proposed_value: "55", inferred: false },
-    ],
-    validation_issues: ["Matches an existing published activity on organization, sport, and season"],
-    duplicate_assessment: "possible_duplicate",
-  },
-  {
-    id: "rev_004",
-    kind: "field_update",
-    activity_id: "act_wvums_girls_basketball",
-    activity_title: "Girls Middle School Basketball",
-    organization_name: "Winooski Valley Union Middle School",
-    source_url: "https://example.org/wvums-athletics/winter",
-    confidence: 0.48,
-    discovered_at: "2026-08-22",
-    changes: [
-      {
-        field: "registration_open_date",
-        current_value: null,
-        proposed_value: "2026-10-15",
-        inferred: true,
-      },
-    ],
-    validation_issues: ["Date inferred from last season's page, not stated on the source"],
-    duplicate_assessment: "likely_update",
   },
 ]
 

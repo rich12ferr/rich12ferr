@@ -1,10 +1,15 @@
 import { ReviewQueue } from "@/components/review-queue"
-import { reviewQueue } from "@/lib/data/moderation"
+import { reviewQueue } from "@/lib/queries"
 
 export const metadata = {
   title: "Review queue",
 }
 
-export default function AdminReviewPage() {
-  return <ReviewQueue candidates={reviewQueue} />
+// Always reflects the latest crawl/approval state, matching the other
+// admin work-queue pages (e.g. /admin/weekly-candidates).
+export const dynamic = "force-dynamic"
+
+export default async function AdminReviewPage() {
+  const candidates = await reviewQueue()
+  return <ReviewQueue candidates={candidates} />
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
@@ -13,6 +13,7 @@ import {
   XIcon,
 } from "lucide-react"
 
+import { approveCandidateAction, rejectCandidateAction } from "@/app/admin/review/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,11 +32,19 @@ const duplicateLabels: Record<ReviewCandidate["duplicate_assessment"], string> =
 const fieldLabels: Record<string, string> = {
   title: "Title",
   sport: "Sport",
-  min_grade: "Minimum grade",
-  max_grade: "Maximum grade",
-  registration_fee: "Registration fee",
-  registration_open_date: "Registration opens",
-  registration_close_date: "Registration closes",
+  sportName: "Sport",
+  minGrade: "Minimum grade",
+  maxGrade: "Maximum grade",
+  minAge: "Minimum age",
+  maxAge: "Maximum age",
+  registrationFee: "Registration fee",
+  registrationOpenDate: "Registration opens",
+  registrationCloseDate: "Registration closes",
+  registrationUrl: "Registration link",
+  seasonStartDate: "Season starts",
+  seasonEndDate: "Season ends",
+  tryoutDate: "Tryout date",
+  tryoutRequired: "Tryout required",
 }
 
 /**
@@ -45,19 +54,33 @@ const fieldLabels: Record<string, string> = {
  */
 export function ReviewQueue({ candidates }: { candidates: ReviewCandidate[] }) {
   const [pending, setPending] = useState(candidates)
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
-  function resolve(id: string, action: "approved" | "rejected" | "edited") {
+  function resolve(id: string, action: "approved" | "rejected") {
     const candidate = pending.find((c) => c.id === id)
-    setPending((prev) => prev.filter((c) => c.id !== id))
-    const verb =
-      action === "approved" ? "Published" : action === "rejected" ? "Rejected" : "Sent to the editor"
-    toast.success(`${verb}: ${candidate?.activity_title ?? "candidate"}`, {
-      description:
+    setPendingActionId(id)
+
+    startTransition(async () => {
+      const result =
         action === "approved"
-          ? "The listing is now visible to parents and marked verified."
-          : action === "rejected"
-            ? "The source will not be re-proposed for this activity."
-            : "Open the activity editor to finish the corrections.",
+          ? await approveCandidateAction(id)
+          : await rejectCandidateAction(id, "Rejected from the review queue.")
+
+      setPendingActionId(null)
+
+      if (!result.ok) {
+        toast.error("Couldn't complete that action", { description: result.error })
+        return
+      }
+
+      setPending((prev) => prev.filter((c) => c.id !== id))
+      toast.success(`${action === "approved" ? "Published" : "Rejected"}: ${candidate?.activity_title ?? "candidate"}`, {
+        description:
+          action === "approved"
+            ? "The listing is now visible to parents and marked verified."
+            : "The source will not be re-proposed for this activity.",
+      })
     })
   }
 
@@ -88,7 +111,12 @@ export function ReviewQueue({ candidates }: { candidates: ReviewCandidate[] }) {
       ) : (
         <div className="flex flex-col gap-4">
           {pending.map((candidate) => (
-            <CandidateCard key={candidate.id} candidate={candidate} onResolve={resolve} />
+            <CandidateCard
+              key={candidate.id}
+              candidate={candidate}
+              onResolve={resolve}
+              busy={isPending && pendingActionId === candidate.id}
+            />
           ))}
         </div>
       )}
@@ -99,9 +127,11 @@ export function ReviewQueue({ candidates }: { candidates: ReviewCandidate[] }) {
 function CandidateCard({
   candidate,
   onResolve,
+  busy,
 }: {
   candidate: ReviewCandidate
-  onResolve: (id: string, action: "approved" | "rejected" | "edited") => void
+  onResolve: (id: string, action: "approved" | "rejected") => void
+  busy: boolean
 }) {
   const confident = candidate.confidence >= 0.7
   const percent = Math.round(candidate.confidence * 100)
@@ -210,11 +240,16 @@ function CandidateCard({
           </Button>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => onResolve(candidate.id, "rejected")}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => onResolve(candidate.id, "rejected")}
+            >
               <XIcon data-icon="inline-start" />
               Reject
             </Button>
-            {candidate.activity_id ? (
+            {candidate.activity_id && (
               <Button
                 render={<Link href={`/admin/activities/${candidate.activity_id}`} />}
                 nativeButton={false}
@@ -223,12 +258,8 @@ function CandidateCard({
               >
                 Edit then publish
               </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => onResolve(candidate.id, "edited")}>
-                Edit then publish
-              </Button>
             )}
-            <Button size="sm" onClick={() => onResolve(candidate.id, "approved")}>
+            <Button size="sm" disabled={busy} onClick={() => onResolve(candidate.id, "approved")}>
               <CheckIcon data-icon="inline-start" />
               Approve
             </Button>
