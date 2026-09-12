@@ -84,6 +84,70 @@ const confidenceScore = (name: string) =>
   numeric(name, { precision: 4, scale: 3, mode: "number" })
 
 /* -------------------------------------------------------------------------- */
+/*  Authentication (Better Auth)                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Better Auth's four required tables, column names verbatim (camelCase) since
+ * Better Auth generates and queries them directly — do not rename columns.
+ *
+ * Deliberately in `public`, distinct from the `neon_auth` schema Neon's own
+ * auth product created earlier: that schema is unrelated to this app's login
+ * and is left alone. This is the actual identity layer for both the admin
+ * console (gated by `ADMIN_EMAIL` in `lib/auth.ts`) and, later, parent
+ * accounts — see that file for why one login system serves both.
+ */
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("emailVerified").notNull().default(false),
+  image: text("image"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const session = pgTable("session", {
+  id: text("id").primaryKey(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  ipAddress: text("ipAddress"),
+  userAgent: text("userAgent"),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+})
+
+export const account = pgTable("account", {
+  id: text("id").primaryKey(),
+  accountId: text("accountId").notNull(),
+  providerId: text("providerId").notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: text("accessToken"),
+  refreshToken: text("refreshToken"),
+  idToken: text("idToken"),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+})
+
+export const verification = pgTable("verification", {
+  id: text("id").primaryKey(),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
+})
+
+/* -------------------------------------------------------------------------- */
 /*  Reference data                                                            */
 /* -------------------------------------------------------------------------- */
 

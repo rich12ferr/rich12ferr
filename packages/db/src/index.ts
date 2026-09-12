@@ -6,7 +6,7 @@
  * leak the connection string if it did not.
  */
 
-export { db, pool, type Database } from "./client"
+export { db, pool, getPool, type Database } from "./client"
 export * from "./schema"
 export * from "./queries"
 export * from "./notify"

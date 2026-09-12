@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { setReportStatus, type ReportStatus } from "@openplay/db"
+import { requireAdminAction } from "@/lib/require-admin"
 
 const VALID_STATUSES: ReportStatus[] = ["new", "investigating", "resolved", "dismissed"]
 
@@ -18,6 +19,8 @@ export async function updateReportStatus(
   status: ReportStatus,
   note?: string,
 ): Promise<UpdateReportStatusResult> {
+  await requireAdminAction()
+
   if (!id) {
     return { ok: false, error: "Missing report id." }
   }
