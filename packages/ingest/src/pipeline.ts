@@ -289,6 +289,18 @@ export async function ingestSource(
       .limit(1)
 
     if (previous?.contentHash === fetched.contentHash) {
+      // The page is byte-for-byte unchanged, so extraction is skipped to save
+      // tokens — but we DID just verify every offering on this page is still
+      // live. "Checked N days ago" is a freshness promise to parents, and it
+      // must track *last verified*, not *last changed*; without this bump a
+      // stable page's timestamp would creep even though we re-check it weekly.
+      // Cheap metadata write, no model tokens. contentHash is left alone since
+      // it reflects extracted content and no extraction ran this pass.
+      const now = new Date()
+      await db
+        .update(programOfferings)
+        .set({ dateLastChecked: now, updatedAt: now })
+        .where(eq(programOfferings.sourceUrl, source.url))
       await recordSuccess(source, startedAt)
       return { ...base, status: "unchanged", rawDocumentId, error: null, discoveredSourceIds }
     }
