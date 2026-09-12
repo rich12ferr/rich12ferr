@@ -219,6 +219,12 @@ export async function approveReviewCandidate(
       programId,
       season,
       seasonYear,
+      // extraction-schema.ts's audienceTypeEnum; defaults to "youth" since
+      // that's this directory's primary scope (PRD) and every homepage rail
+      // filters on it — a null here makes an otherwise-valid offering
+      // invisible on the homepage while still showing on /sports and
+      // /organizations, which query without that filter.
+      audienceType: (payload.audienceType as string | null) ?? "youth",
       registrationOpenDate: (payload.registrationOpenDate as string | null) ?? null,
       registrationCloseDate: (payload.registrationCloseDate as string | null) ?? null,
       seasonStartDate: (payload.seasonStartDate as string | null) ?? null,
