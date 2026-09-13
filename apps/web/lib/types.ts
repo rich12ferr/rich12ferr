@@ -209,6 +209,8 @@ export type ReportCategory =
   | "suggested_edit"
   /** Filed from the general /contact form rather than an activity page — not tied to a listing. */
   | "general_inquiry"
+  /** Filed from the "Do you run this organization?" claim/update form — tied to an organization, not a listing. */
+  | "organization_claim"
 
 /**
  * An incorrect-information report (PRD 24). This mirrors the mock moderation

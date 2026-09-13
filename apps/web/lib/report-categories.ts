@@ -16,6 +16,7 @@ export const reportCategories: { value: ReportCategory; label: string }[] = [
   { value: "other", label: "Something else" },
   { value: "suggested_edit", label: "Suggested edit" },
   { value: "general_inquiry", label: "General question" },
+  { value: "organization_claim", label: "Organization claim/update request" },
 ]
 
 export const reportCategoryLabels = Object.fromEntries(

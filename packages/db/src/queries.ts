@@ -1055,6 +1055,13 @@ export type NewReportInput = {
   programId?: string | null
   offeringId?: string | null
   field?: string | null
+  /**
+   * Generic pointer for report targets `programId`/`offeringId` can't
+   * express — e.g. an organization-level claim/update request. Set both or
+   * neither.
+   */
+  entityType?: string | null
+  entityId?: string | null
 }
 
 /**
@@ -1071,6 +1078,8 @@ export async function createReport(input: NewReportInput) {
       id: newReportId(),
       programId: input.programId ?? null,
       offeringId: input.offeringId ?? null,
+      entityType: input.entityType ?? null,
+      entityId: input.entityId ?? null,
       category: input.category,
       field: input.field ?? null,
       details: input.details,

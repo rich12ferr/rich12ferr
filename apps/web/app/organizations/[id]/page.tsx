@@ -196,7 +196,13 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           Claiming your listing lets you confirm details and update registration dates directly, so
           families always see the current information.
         </p>
-        <Button render={<Link href="/about" />} nativeButton={false} variant="outline" size="sm" className="mt-1">
+        <Button
+          render={<Link href={`/organizations/claim?org=${organization.id}`} />}
+          nativeButton={false}
+          variant="outline"
+          size="sm"
+          className="mt-1"
+        >
           How organizations work with Sign Up Vermont
         </Button>
       </div>
