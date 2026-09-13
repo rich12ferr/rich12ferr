@@ -62,6 +62,7 @@ import {
 import { EXTRACTION_VERSION, type ExtractedProgram } from "./extraction-schema"
 import { fetchPage, type FetchPageOptions } from "./fetch"
 import { geocode } from "./geocode"
+import { expandCivicRecCatalog, isCivicRecCatalogUrl, type CivicRecDetail } from "./civicrec"
 import { expandMyrecListing, isMyrecListingUrl, type MyrecDetail } from "./myrec"
 
 /* -------------------------------------------------------------------------- */
@@ -235,6 +236,64 @@ function mergeExtractOutputs(outputs: ExtractOutput[], model?: string): ExtractO
 }
 
 /* -------------------------------------------------------------------------- */
+/*  CivicRec catalog extraction                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Extracts a CivicRec catalog one program group at a time (same rationale as
+ * `extractMyrecDetailPrograms`: a whole catalog in one call overruns the
+ * model's output budget), then drops anything the model did not recognize as
+ * a sport.
+ *
+ * The catalog groups everything registerable under one API — youth soccer
+ * next to pottery classes and CPR certification — with no sport field to
+ * filter on ahead of time (see civicrec.ts). `sportName` is exactly the
+ * judgment call the deterministic JSON mapping cannot make, so this is the
+ * one point where the model's classification is load-bearing rather than a
+ * transcription of a fact already in the text: a null here means "not a
+ * sport," and that program never reaches the review queue.
+ */
+async function extractCivicRecPrograms(
+  details: CivicRecDetail[],
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string },
+): Promise<ExtractOutput> {
+  const outputs: ExtractOutput[] = []
+
+  for (const detail of details) {
+    const input = {
+      content: detail.text,
+      sourceUrl: detail.url,
+      organizationHint: common.organizationHint,
+      fetchedAt: common.fetchedAt,
+      model: common.model,
+      links: [{ text: "Register on the catalog", url: detail.registrationUrl }],
+    }
+
+    let output: ExtractOutput | null = null
+    for (let attempt = 1; attempt <= 2 && !output; attempt++) {
+      try {
+        output = await extractPrograms(input)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(
+          `[v0] [civicrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
+        )
+      }
+    }
+    if (output) outputs.push(output)
+  }
+
+  const merged = mergeExtractOutputs(outputs, common.model)
+  return {
+    ...merged,
+    result: {
+      ...merged.result,
+      programs: merged.result.programs.filter((program) => program.sportName !== null),
+    },
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Result types                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -343,6 +402,15 @@ export async function ingestSource(
   const expansion = await expandMyrecListing(source.url, fetched, options.fetchOptions)
   fetched = expansion.fetched
 
+  // CivicRec catalogs (Burlington, South Burlington) are a client-rendered
+  // app: the fetch above only ever sees an empty shell, and every program's
+  // dates, fees, and ages live behind a small JSON API instead of any markup
+  // `fetchPage` could read. This drives that API directly and replaces the
+  // shell's content with the resolved catalog — a no-op for any URL that
+  // isn't a CivicRec catalog (see civicrec.ts).
+  const civicRecExpansion = await expandCivicRecCatalog(source.url, fetched, options.fetchOptions)
+  fetched = civicRecExpansion.fetched
+
   // Every fetch attempt is persisted, including failures — the failure history
   // is what drives the exponential crawl back-off.
   const rawDocumentId = newId("raw")
@@ -372,9 +440,12 @@ export async function ingestSource(
   // A myrec listing's program_details.aspx links are already folded into this
   // extraction by expandMyrecListing above, so they must NOT also be registered
   // as separate pending sources — that is the old path that produced date-less
-  // orphan programs. Generic discovery still runs for every other kind of page.
+  // orphan programs. The same applies to a CivicRec catalog's programs, which
+  // have no `<a href>` at all to discover — they only exist as JSON records
+  // already folded in above. Generic discovery still runs for every other
+  // kind of page.
   const discoveredSourceIds =
-    fetched.rawHtml && !isMyrecListingUrl(source.url)
+    fetched.rawHtml && !isMyrecListingUrl(source.url) && !isCivicRecCatalogUrl(source.url)
       ? await discoverSubpageSources(source, fetched.rawHtml, fetched.finalUrl)
       : []
 
@@ -426,10 +497,11 @@ export async function ingestSource(
   })
 
   try {
-    // A myrec listing is extracted one program-detail page at a time (each is a
-    // small, self-contained program); every other page is a single extraction
-    // over its own content. See extractMyrecDetailPrograms for why folding a
-    // whole town into one model call is not viable.
+    // A myrec listing or CivicRec catalog is extracted one program at a time
+    // (each is a small, self-contained program); every other page is a single
+    // extraction over its own content. See extractMyrecDetailPrograms and
+    // extractCivicRecPrograms for why folding a whole town into one model
+    // call is not viable.
     const extraction =
       expansion.details.length > 0
         ? await extractMyrecDetailPrograms(expansion.details, {
@@ -437,7 +509,13 @@ export async function ingestSource(
             fetchedAt: startedAt,
             model: options.model,
           })
-        : await extractPrograms({
+        : civicRecExpansion.details.length > 0
+          ? await extractCivicRecPrograms(civicRecExpansion.details, {
+              organizationHint,
+              fetchedAt: startedAt,
+              model: options.model,
+            })
+          : await extractPrograms({
             content: fetched.content,
             sourceUrl: fetched.finalUrl,
             organizationHint,

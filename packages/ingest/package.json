@@ -17,6 +17,7 @@
     "fix-montpelier-registration-urls": "tsx scripts/fix-montpelier-registration-urls.ts",
     "register-montpelier-soccer-fall-2026": "tsx scripts/register-montpelier-soccer-fall-2026.ts",
     "register-newly-discovered-sources": "tsx scripts/register-newly-discovered-sources.ts",
+    "restructure-burlington-civicrec-sources": "tsx scripts/restructure-burlington-civicrec-sources.ts",
     "replace-story-fifth-grade-passport": "tsx scripts/replace-story-fifth-grade-passport.ts",
     "generate-source-registry-seed": "tsx scripts/generate-source-registry-seed.ts",
     "import-source-registry": "tsx scripts/import-source-registry.ts",
