@@ -52,10 +52,18 @@ import {
   resolveSportSlug,
   type ProgramCandidate,
 } from "./entity-resolution"
-import { hasBlockingIssues, extractPrograms, validateExtraction } from "./extract"
-import type { ExtractedProgram } from "./extraction-schema"
+import {
+  DEFAULT_EXTRACTION_MODEL,
+  hasBlockingIssues,
+  extractPrograms,
+  validateExtraction,
+  type ExtractOutput,
+} from "./extract"
+import { EXTRACTION_VERSION, type ExtractedProgram } from "./extraction-schema"
 import { fetchPage, type FetchPageOptions } from "./fetch"
 import { geocode } from "./geocode"
+import { expandCivicRecCatalog, isCivicRecCatalogUrl, type CivicRecDetail } from "./civicrec"
+import { expandMyrecListing, isMyrecListingUrl, type MyrecDetail } from "./myrec"
 
 /* -------------------------------------------------------------------------- */
 /*  Identifiers                                                               */
@@ -144,6 +152,148 @@ function programConfidence(program: ExtractedProgram): number {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  myrec detail-page extraction                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Extracts a myrec listing's programs one detail page at a time, then merges
+ * the per-page results into a single run-level ExtractOutput.
+ *
+ * Each myrec detail page is small, but a listing links to many of them
+ * (Norwich has 15). Folding them all into one `generateObject` call reliably
+ * overruns the model's output budget and fails as "response did not match
+ * schema" — the truncated-JSON failure mode `extract.ts` already documents for
+ * many-program pages. One call per detail page keeps every response small and
+ * lets a single unparseable page fail on its own instead of taking the whole
+ * town's programs down with it.
+ */
+async function extractMyrecDetailPrograms(
+  details: MyrecDetail[],
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string },
+): Promise<ExtractOutput> {
+  const outputs: ExtractOutput[] = []
+
+  for (const detail of details) {
+    const input = {
+      content: detail.text,
+      sourceUrl: detail.url,
+      organizationHint: common.organizationHint,
+      fetchedAt: common.fetchedAt,
+      model: common.model,
+      links: detail.rawHtml
+        ? extractLinks(detail.rawHtml, detail.url).map((link) => ({
+            text: link.linkText,
+            url: link.url,
+          }))
+        : undefined,
+    }
+
+    // One retry: the flash model intermittently returns JSON that fails schema
+    // validation ("No object generated") on a page it handles fine on a second
+    // pass. These pages are small, so a retry is cheap insurance against
+    // silently dropping a whole program's dates over transient model noise.
+    let output: ExtractOutput | null = null
+    for (let attempt = 1; attempt <= 2 && !output; attempt++) {
+      try {
+        output = await extractPrograms(input)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(
+          `[v0] [myrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
+        )
+      }
+    }
+    if (output) outputs.push(output)
+  }
+
+  return mergeExtractOutputs(outputs, common.model)
+}
+
+/** Combines per-detail-page extractions into one run-level result. */
+function mergeExtractOutputs(outputs: ExtractOutput[], model?: string): ExtractOutput {
+  const programs = outputs.flatMap((output) => output.result.programs)
+  const summaries = outputs
+    .map((output) => output.result.pageSummary)
+    .filter((summary): summary is string => Boolean(summary))
+  const scores = programs.flatMap((program) => Object.values(program.fieldConfidence ?? {}))
+
+  return {
+    result: {
+      // Any detail page that reads as a program makes the listing a listing.
+      isProgramListing: outputs.some((output) => output.result.isProgramListing),
+      pageSummary: summaries.length > 0 ? summaries.join(" ") : null,
+      programs,
+    },
+    usage: {
+      inputTokens: outputs.reduce((sum, output) => sum + (output.usage.inputTokens ?? 0), 0),
+      outputTokens: outputs.reduce((sum, output) => sum + (output.usage.outputTokens ?? 0), 0),
+    },
+    model: outputs[0]?.model ?? model ?? DEFAULT_EXTRACTION_MODEL,
+    promptVersion: outputs[0]?.promptVersion ?? EXTRACTION_VERSION,
+    meanConfidence:
+      scores.length > 0 ? scores.reduce((sum, value) => sum + value, 0) / scores.length : null,
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  CivicRec catalog extraction                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Extracts a CivicRec catalog one program group at a time (same rationale as
+ * `extractMyrecDetailPrograms`: a whole catalog in one call overruns the
+ * model's output budget), then drops anything the model did not recognize as
+ * a sport.
+ *
+ * The catalog groups everything registerable under one API — youth soccer
+ * next to pottery classes and CPR certification — with no sport field to
+ * filter on ahead of time (see civicrec.ts). `sportName` is exactly the
+ * judgment call the deterministic JSON mapping cannot make, so this is the
+ * one point where the model's classification is load-bearing rather than a
+ * transcription of a fact already in the text: a null here means "not a
+ * sport," and that program never reaches the review queue.
+ */
+async function extractCivicRecPrograms(
+  details: CivicRecDetail[],
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string },
+): Promise<ExtractOutput> {
+  const outputs: ExtractOutput[] = []
+
+  for (const detail of details) {
+    const input = {
+      content: detail.text,
+      sourceUrl: detail.url,
+      organizationHint: common.organizationHint,
+      fetchedAt: common.fetchedAt,
+      model: common.model,
+      links: [{ text: "Register on the catalog", url: detail.registrationUrl }],
+    }
+
+    let output: ExtractOutput | null = null
+    for (let attempt = 1; attempt <= 2 && !output; attempt++) {
+      try {
+        output = await extractPrograms(input)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(
+          `[v0] [civicrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
+        )
+      }
+    }
+    if (output) outputs.push(output)
+  }
+
+  const merged = mergeExtractOutputs(outputs, common.model)
+  return {
+    ...merged,
+    result: {
+      ...merged.result,
+      programs: merged.result.programs.filter((program) => program.sportName !== null),
+    },
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Result types                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -223,7 +373,7 @@ export async function ingestSource(
     discoveredSourceIds: [],
   }
 
-  const fetched = await fetchPage(source.url, options.fetchOptions)
+  let fetched = await fetchPage(source.url, options.fetchOptions)
 
   // Record the robots verdict whether or not it changed, so the legality of
   // every crawl is auditable after the fact.
@@ -242,6 +392,24 @@ export async function ingestSource(
     await recordFailure(source, fetched.fetchError ?? "Disallowed by robots.txt", startedAt)
     return { ...base, status: "skipped_robots", error: fetched.fetchError }
   }
+
+  // myrec.com listing pages carry only program names; the dates and fees a
+  // parent needs live on each program's detail page. Fold those detail pages
+  // into the fetch result *before* anything downstream runs, so the content we
+  // hash, store, and extract is the fully-populated version. A no-op for any
+  // page that is not a myrec listing (see myrec.ts). `details` carries each
+  // program's detail page for one-at-a-time extraction below.
+  const expansion = await expandMyrecListing(source.url, fetched, options.fetchOptions)
+  fetched = expansion.fetched
+
+  // CivicRec catalogs (Burlington, South Burlington) are a client-rendered
+  // app: the fetch above only ever sees an empty shell, and every program's
+  // dates, fees, and ages live behind a small JSON API instead of any markup
+  // `fetchPage` could read. This drives that API directly and replaces the
+  // shell's content with the resolved catalog — a no-op for any URL that
+  // isn't a CivicRec catalog (see civicrec.ts).
+  const civicRecExpansion = await expandCivicRecCatalog(source.url, fetched, options.fetchOptions)
+  fetched = civicRecExpansion.fetched
 
   // Every fetch attempt is persisted, including failures — the failure history
   // is what drives the exponential crawl back-off.
@@ -269,9 +437,17 @@ export async function ingestSource(
   // (like cvtll.org's) never gets a chance to have its links discovered,
   // even on the crawl right after this feature ships. A source that never
   // changes would otherwise never be scanned for subpages at all.
-  const discoveredSourceIds = fetched.rawHtml
-    ? await discoverSubpageSources(source, fetched.rawHtml, fetched.finalUrl)
-    : []
+  // A myrec listing's program_details.aspx links are already folded into this
+  // extraction by expandMyrecListing above, so they must NOT also be registered
+  // as separate pending sources — that is the old path that produced date-less
+  // orphan programs. The same applies to a CivicRec catalog's programs, which
+  // have no `<a href>` at all to discover — they only exist as JSON records
+  // already folded in above. Generic discovery still runs for every other
+  // kind of page.
+  const discoveredSourceIds =
+    fetched.rawHtml && !isMyrecListingUrl(source.url) && !isCivicRecCatalogUrl(source.url)
+      ? await discoverSubpageSources(source, fetched.rawHtml, fetched.finalUrl)
+      : []
 
   // --- Hash gate: the cost control that makes frequent crawling viable. -----
   if (!options.force) {
@@ -321,23 +497,41 @@ export async function ingestSource(
   })
 
   try {
-    const extraction = await extractPrograms({
-      content: fetched.content,
-      sourceUrl: fetched.finalUrl,
-      organizationHint,
-      fetchedAt: startedAt,
-      model: options.model,
-      // `htmlToText` strips every tag, hrefs included, so a registration
-      // link with generic visible text ("Registration Form") otherwise has
-      // no URL anywhere in `content` for the model to cite — see the
-      // `links` doc in extract.ts for the failure mode this closes off.
-      links: fetched.rawHtml
-        ? extractLinks(fetched.rawHtml, fetched.finalUrl).map((link) => ({
-            text: link.linkText,
-            url: link.url,
-          }))
-        : undefined,
-    })
+    // A myrec listing or CivicRec catalog is extracted one program at a time
+    // (each is a small, self-contained program); every other page is a single
+    // extraction over its own content. See extractMyrecDetailPrograms and
+    // extractCivicRecPrograms for why folding a whole town into one model
+    // call is not viable.
+    const extraction =
+      expansion.details.length > 0
+        ? await extractMyrecDetailPrograms(expansion.details, {
+            organizationHint,
+            fetchedAt: startedAt,
+            model: options.model,
+          })
+        : civicRecExpansion.details.length > 0
+          ? await extractCivicRecPrograms(civicRecExpansion.details, {
+              organizationHint,
+              fetchedAt: startedAt,
+              model: options.model,
+            })
+          : await extractPrograms({
+            content: fetched.content,
+            sourceUrl: fetched.finalUrl,
+            organizationHint,
+            fetchedAt: startedAt,
+            model: options.model,
+            // `htmlToText` strips every tag, hrefs included, so a registration
+            // link with generic visible text ("Registration Form") otherwise has
+            // no URL anywhere in `content` for the model to cite — see the
+            // `links` doc in extract.ts for the failure mode this closes off.
+            links: fetched.rawHtml
+              ? extractLinks(fetched.rawHtml, fetched.finalUrl).map((link) => ({
+                  text: link.linkText,
+                  url: link.url,
+                }))
+              : undefined,
+          })
 
     const tokensUsed =
       (extraction.usage.inputTokens ?? 0) + (extraction.usage.outputTokens ?? 0)

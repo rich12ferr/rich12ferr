@@ -141,8 +141,12 @@ export const extractedProgramSchema = z.object({
 
   // ---- Eligibility --------------------------------------------------------
   gender: genderEnum.nullable(),
-  minAge: z.number().int().min(0).max(21).nullable(),
-  maxAge: z.number().int().min(0).max(21).nullable(),
+  // Ceiling is adult-inclusive, not youth-only: the model now extracts adult
+  // and all-ages programs (see audienceType), whose pages state ranges like
+  // "18-99". A 21 cap silently failed the whole object's schema validation for
+  // any such program ("response did not match schema"), dropping it entirely.
+  minAge: z.number().int().min(0).max(120).nullable(),
+  maxAge: z.number().int().min(0).max(120).nullable(),
   minGrade: z
     .number()
     .int()
@@ -276,4 +280,4 @@ export type ExtractionResult = z.infer<typeof extractionResultSchema>
 export const HIGH_STAKES_CONFIDENCE_FLOOR = 0.85
 
 /** Bumped whenever the prompt or schema changes, and recorded per run. */
-export const EXTRACTION_VERSION = "2026.09.1"
+export const EXTRACTION_VERSION = "2026.09.2"
