@@ -4,11 +4,12 @@
  * A parent-reported gap: this program is already running (registration
  * windows for all three sections opened before this was caught) but had no
  * row in `programs`/`program_offerings`. The org's real registration page
- * lives on WebTrac behind Cloudflare bot-management (see
- * `src-montpelier-webtrac-tennis-ar` below) — automated crawling of it was
- * already ruled out, so this is a one-time manual entry transcribed directly
- * from the live WebTrac listing, following the same curated pattern as the
- * org's existing Tae Kwon Do programs (also hand-entered, not yet crawled).
+ * lives on WebTrac behind Cloudflare bot-management (see SOURCE_ID below) —
+ * automated crawling of it was already ruled out, so this is a one-time
+ * manual entry transcribed directly from the live WebTrac listing, following
+ * the same curated pattern as the org's existing Tae Kwon Do programs (also
+ * hand-entered; see fix-montpelier-registration-urls.ts, which points those
+ * at the same corrected WebTrac search URL used here).
  *
  * The WebTrac page lists three sections (Tue-only, Thu-only, Tue+Thu) under
  * one durable program — modeled as one program + one Fall 2026 offering,
@@ -26,12 +27,22 @@ const SPORT_ID = "sp_tennis"
 const PROGRAM_ID = "prog-montpelier-recreation-tennis-vt-academy-youth"
 const PROGRAM_SLUG = "org-us-vt-montpelier-recreation-tennis-vt-academy-youth"
 const OFFERING_ID = "offer-montpelier-recreation-tennis-vt-academy-youth-fall-2026"
-const SOURCE_ID = "src-montpelier-webtrac-tennis-ar"
 
-// CSRF token query param stripped — it's per-session and would be stale on
-// the very next page load, unlike the rest of the URL.
+// Shared across every Montpelier Recreation offering, not tennis-specific —
+// see SOURCE_ID's comment and fix-montpelier-registration-urls.ts, which
+// points the org's other programs (Tae Kwon Do) at the same source/URL. Keep
+// this literal in sync with that file if it ever changes.
+const SOURCE_ID = "src-montpelier-webtrac-search"
+
+// Confirmed working by direct user testing in a real browser (2026-09-12),
+// replacing an earlier guessed webtrac.montpelier-vt.org URL that was never
+// real. The CSRF token query param is stripped — it's tied to the browser
+// session that generated it and would be stale on the very next page load —
+// but the rest of WebTrac's search params are kept because, per the org,
+// WebTrac's search is unreliable without them: type=YPROG,YSPOR,YTENN casts
+// a wide net across all Montpelier Rec program types rather than one sport.
 const REGISTRATION_URL =
-  "https://webtrac.montpelier-vt.org/wbwsc/webtrac.wsc/search.html?module=AR&type=YPROG,YTENN"
+  "https://vtmontpelierweb.myvscloud.com/webtrac/web/search.html?Action=Start&SubAction=&type=YPROG&type=YSPOR&type=YTENN&beginmonth=&endmonth=&category=&grade=&location=&keyword=&keywordoption=Match+One&dayoption=All&gender=&spotsavailable=&bydayonly=No&beginyear=&season=&primarycode=&timeblock=&age=&module=AR&multiselectlist_value=&arwebsearch_buttonsearch=yes"
 
 const now = new Date()
 
@@ -43,7 +54,7 @@ async function main() {
       organizationId: ORG_ID,
       url: REGISTRATION_URL,
       sourceType: "registration_platform",
-      label: "Montpelier Recreation — WebTrac activity search (Youth Programs / Tennis)",
+      label: "Montpelier Recreation — WebTrac activity search (all program types)",
       platform: "webtrac",
       authoritativeLevel: "primary",
       crawlIntervalHours: 720,
@@ -60,7 +71,7 @@ async function main() {
       target: sources.id,
       set: {
         url: REGISTRATION_URL,
-        label: "Montpelier Recreation — WebTrac activity search (Youth Programs / Tennis)",
+        label: "Montpelier Recreation — WebTrac activity search (all program types)",
         robotsCheckedAt: now,
         updatedAt: now,
       },
@@ -137,24 +148,28 @@ async function main() {
   ]
 
   for (const [field, value] of tracked) {
+    const provenanceValues = {
+      id: `prov_${OFFERING_ID}_${field}`,
+      entityType: "program_offering" as const,
+      entityId: OFFERING_ID,
+      field,
+      value,
+      sourceId: SOURCE_ID,
+      sourceType: "registration_platform" as const,
+      extractionMethod: "manual_entry" as const,
+      // Human entry carries its own trust tier; model confidence doesn't apply.
+      confidence: null,
+      verificationStatus: "admin_reviewed" as const,
+      verifiedAt: now,
+      verifiedBy: "admin",
+    }
     await db
       .insert(fieldProvenance)
-      .values({
-        id: `prov_${OFFERING_ID}_${field}`,
-        entityType: "program_offering",
-        entityId: OFFERING_ID,
-        field,
-        value,
-        sourceId: SOURCE_ID,
-        sourceType: "registration_platform",
-        extractionMethod: "manual_entry",
-        // Human entry carries its own trust tier; model confidence doesn't apply.
-        confidence: null,
-        verificationStatus: "admin_reviewed",
-        verifiedAt: now,
-        verifiedBy: "admin",
-      })
-      .onConflictDoNothing({ target: fieldProvenance.id })
+      .values(provenanceValues)
+      // Was onConflictDoNothing, which silently kept stale values (e.g. the
+      // old guessed registration URL) on every rerun instead of correcting
+      // them — this script is meant to reflect the current known-good values.
+      .onConflictDoUpdate({ target: fieldProvenance.id, set: provenanceValues })
   }
 
   console.log(`Program ${PROGRAM_ID} and offering ${OFFERING_ID} registered.`)
