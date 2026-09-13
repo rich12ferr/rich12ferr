@@ -250,7 +250,11 @@ export type ReviewCandidate = {
     proposed_value: string
     inferred: boolean
   }[]
-  validation_issues: string[]
+  validation_issues: {
+    field: string
+    severity: "error" | "warning"
+    message: string
+  }[]
   duplicate_assessment: "new" | "possible_duplicate" | "likely_update" | "duplicate"
 }
 

@@ -982,7 +982,7 @@ function toReviewCandidate(row: PendingReviewCandidateRow): ReviewCandidate {
     confidence: row.confidence ? Number(row.confidence) : 0,
     discovered_at: toDateString(row.discoveredAt) ?? "",
     changes,
-    validation_issues: (row.validationIssues ?? []) as string[],
+    validation_issues: (row.validationIssues ?? []) as ReviewCandidate["validation_issues"],
     duplicate_assessment: row.duplicateAssessment as ReviewCandidate["duplicate_assessment"],
   }
 }
