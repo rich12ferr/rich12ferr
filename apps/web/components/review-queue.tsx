@@ -216,9 +216,14 @@ function CandidateCard({
               Validation issues
             </h3>
             <ul className="flex flex-col gap-1 text-sm">
-              {candidate.validation_issues.map((issue) => (
-                <li key={issue} className="text-muted-foreground">
-                  {issue}
+              {candidate.validation_issues.map((issue, index) => (
+                <li
+                  key={`${issue.field}-${index}`}
+                  className={cn(
+                    issue.severity === "error" ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  <span className="font-medium">{issue.field}:</span> {issue.message}
                 </li>
               ))}
             </ul>
