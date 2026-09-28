@@ -325,6 +325,17 @@ export const SPORTS: Sport[] = [
     synonyms: [],
   },
   {
+    id: "sp_dance",
+    slug: "dance",
+    name: "Dance",
+    monogram: "DA",
+    icon_key: "sport.dance",
+    tone: "chart-4",
+    primary_seasons: ["fall", "winter", "spring", "summer"],
+    blurb: "Ballet, tap, jazz, hip hop, and other studio dance programs.",
+    synonyms: ["ballet", "tap", "jazz dance", "hip hop dance", "dance team"],
+  },
+  {
     id: "sp_snow_sports",
     slug: "snow-sports",
     name: "Snow Sports",
