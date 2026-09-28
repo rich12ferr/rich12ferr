@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { SiteLogo } from "@/components/site-logo"
+import { InstagramLink } from "@/components/instagram-link"
 
 const columns = [
   {
@@ -54,6 +55,7 @@ export function SiteFooter() {
             Sign Up Vermont never processes registrations or payments. Registration always happens on
             the organization&apos;s own site.
           </p>
+          <InstagramLink />
         </div>
 
         <div className="grid flex-1 grid-cols-2 gap-8 sm:grid-cols-4">

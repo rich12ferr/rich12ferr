@@ -1,4 +1,5 @@
 import { ContactForm } from "@/components/contact-form"
+import { InstagramLink } from "@/components/instagram-link"
 
 export const metadata = {
   title: "Contact us",
@@ -17,6 +18,19 @@ export default function ContactPage() {
       </header>
 
       <ContactForm />
+
+      <section
+        aria-labelledby="follow-us-heading"
+        className="mt-10 flex flex-col gap-2 border-t border-border pt-6"
+      >
+        <h2 id="follow-us-heading" className="font-display text-lg font-bold tracking-tight">
+          Follow along
+        </h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Registration reminders and new activities, posted on Instagram.
+        </p>
+        <InstagramLink className="text-base" />
+      </section>
     </div>
   )
 }
