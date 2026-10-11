@@ -115,6 +115,106 @@ export function findMyrecDetailUrls(
 }
 
 /**
+ * Category names that mark a block of programs as youth sports. Matching is by
+ * keyword because every town names its categories differently ("Youth
+ * Athletics", "Fall Sports", "Bristol Youth Sports", "Wendell A. Barwood Ice
+ * Arena"). Deliberately inclusive: a false positive costs one extra detail
+ * fetch (the extractor still discards non-sports), a false negative drops a
+ * real program from the directory.
+ */
+const YOUTH_SPORTS_CATEGORY =
+  /sport|athletic|team|league|basketball|soccer|baseball|softball|hockey|lacrosse|football|volleyball|swim|aquatic|\bski|skat|gymnast|dance|cheer|wrestl|tennis|\bice\b|rink|arena|youth|teen|kid|junior/i
+
+/** Categories that are never youth sports, unless they also say "youth"/"teen"/"kid". */
+const NON_YOUTH_CATEGORY =
+  /adult|senior|elder|50\+|active ager|donation|scholarship|membership|rental|part(y|ies)|event|info\b|theat|culinary|trail|video|organization|licens/i
+
+const YOUTH_WORD = /youth|teen|kid|junior/i
+
+/**
+ * Program-name rescue for sports filed under a generic category such as
+ * "Classes & Activities" (Hartland, Woodstock, Barre).
+ */
+const SPORT_PROGRAM_NAME =
+  /basketball|soccer|baseball|softball|hockey|lacrosse|football|volleyball|swim|\bski\b|skating|gymnastics|dance|cheer|wrestling|tennis|rugby|track|cross country/i
+const NON_YOUTH_PROGRAM_NAME =
+  /adult|senior|men's|women's|donation|memorial|fund\b|scholarship|membership|season pass|rental|meditation|drivers ed|sitter/i
+
+export function isYouthSportsCategory(name: string): boolean {
+  if (!YOUTH_SPORTS_CATEGORY.test(name)) return false
+  if (NON_YOUTH_CATEGORY.test(name) && !YOUTH_WORD.test(name)) return false
+  return true
+}
+
+export function isYouthSportsProgramName(name: string): boolean {
+  return SPORT_PROGRAM_NAME.test(name) && !NON_YOUTH_PROGRAM_NAME.test(name)
+}
+
+function decodeHtmlText(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+export type MyrecListingSelection = {
+  urls: string[]
+  /** Distinct programs the listing links to, before filtering. */
+  totalPrograms: number
+  /** False when the page had no category blocks and the filter could not run. */
+  filtered: boolean
+}
+
+/**
+ * Selects the youth-sports program-detail URLs from a myrec listing.
+ *
+ * A listing groups programs under category headings
+ * (`<div class="category">` with a `category-name` link and a `<ul>` of
+ * `program_details.aspx` links). A program is kept when its category reads as
+ * youth sports, or when its own name names a sport (and is not adult-only).
+ * This keeps a town's crawl to the handful of programs the directory actually
+ * lists instead of fetching and model-extracting every donation page, pottery
+ * class, and trail map on the site.
+ *
+ * When the page carries no category blocks (a different myrec template) the
+ * filter cannot run, so this falls back to every detail link, capped as before.
+ */
+export function selectMyrecYouthSportsUrls(
+  rawHtml: string,
+  baseUrl: string,
+  limit = MAX_MYREC_DETAIL_PAGES,
+): MyrecListingSelection {
+  const all = findMyrecDetailUrls(rawHtml, baseUrl, Number.MAX_SAFE_INTEGER)
+  const blocks = [...rawHtml.matchAll(/<div class="category">([\s\S]*?)<\/ul>/gi)]
+
+  if (blocks.length === 0) {
+    return { urls: all.slice(0, limit), totalPrograms: all.length, filtered: false }
+  }
+
+  const kept: string[] = []
+  for (const block of blocks) {
+    const html = block[1] ?? ""
+    const categoryName = decodeHtmlText(
+      (html.match(/category-name[^>]*>\s*<a[^>]*>([^<]*)/i) ?? [])[1] ?? "",
+    )
+    const categoryQualifies = isYouthSportsCategory(categoryName)
+
+    for (const link of html.matchAll(/<a[^>]*href="([^"]*program_details\.aspx[^"]*)"[^>]*>([^<]*)/gi)) {
+      const programName = decodeHtmlText(link[2] ?? "")
+      if (NON_YOUTH_PROGRAM_NAME.test(programName)) continue
+      if (!categoryQualifies && !isYouthSportsProgramName(programName)) continue
+      const [url] = findMyrecDetailUrls(`"${link[1]}"`, baseUrl, 1)
+      if (url) kept.push(url)
+    }
+  }
+
+  const urls = [...new Set(kept)].slice(0, limit)
+  return { urls, totalPrograms: all.length, filtered: true }
+}
+
+/**
  * Builds the extraction input for an expanded myrec listing: one clearly
  * delimited section per detail page, each headed by its own source URL so the
  * extractor can attribute the right registration link to the right program.
@@ -188,7 +288,13 @@ export async function expandMyrecListing(
     return { fetched, details: [] }
   }
 
-  const detailUrls = findMyrecDetailUrls(fetched.rawHtml, fetched.finalUrl)
+  const selection = selectMyrecYouthSportsUrls(fetched.rawHtml, fetched.finalUrl)
+  const detailUrls = selection.urls
+  console.log(
+    selection.filtered
+      ? `[v0] [myrec] ${listingUrl}: ${detailUrls.length} youth-sports program(s) of ${selection.totalPrograms} listed`
+      : `[v0] [myrec] ${listingUrl}: no category blocks found, using all ${detailUrls.length} program link(s)`,
+  )
   if (detailUrls.length === 0) return { fetched, details: [] }
 
   const delayMs = Math.min(

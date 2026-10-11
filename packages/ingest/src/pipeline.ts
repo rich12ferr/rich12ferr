@@ -169,44 +169,84 @@ function programConfidence(program: ExtractedProgram): number {
  */
 async function extractMyrecDetailPrograms(
   details: MyrecDetail[],
-  common: { organizationHint: string | null; fetchedAt: Date; model?: string },
+  common: {
+    organizationHint: string | null
+    fetchedAt: Date
+    model?: string
+    /** Epoch ms after which no new model call starts; finished pages are kept. */
+    deadline?: number
+  },
 ): Promise<ExtractOutput> {
-  const outputs: ExtractOutput[] = []
+  const results: (ExtractOutput | null)[] = new Array(details.length).fill(null)
+  let next = 0
 
-  for (const detail of details) {
-    const input = {
-      content: detail.text,
-      sourceUrl: detail.url,
-      organizationHint: common.organizationHint,
-      fetchedAt: common.fetchedAt,
-      model: common.model,
-      links: detail.rawHtml
-        ? extractLinks(detail.rawHtml, detail.url).map((link) => ({
-            text: link.linkText,
-            url: link.url,
-          }))
-        : undefined,
+  // Detail pages are independent, so a few run at once; sequential calls on a
+  // reasoning model could not finish a 7-page town inside the source budget.
+  const worker = async () => {
+    while (next < details.length) {
+      const index = next++
+      const detail = details[index]
+      if (!detail) break
+      results[index] = await extractMyrecDetail(detail, common)
     }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(MYREC_EXTRACTION_CONCURRENCY, details.length) }, worker),
+  )
 
-    // One retry: the flash model intermittently returns JSON that fails schema
-    // validation ("No object generated") on a page it handles fine on a second
-    // pass. These pages are small, so a retry is cheap insurance against
-    // silently dropping a whole program's dates over transient model noise.
-    let output: ExtractOutput | null = null
-    for (let attempt = 1; attempt <= 2 && !output; attempt++) {
-      try {
-        output = await extractPrograms(input)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        console.error(
-          `[v0] [myrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
-        )
-      }
-    }
-    if (output) outputs.push(output)
+  return mergeExtractOutputs(
+    results.filter((output): output is ExtractOutput => output !== null),
+    common.model,
+  )
+}
+
+const MYREC_EXTRACTION_CONCURRENCY = 8
+
+async function extractMyrecDetail(
+  detail: MyrecDetail,
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string; deadline?: number },
+): Promise<ExtractOutput | null> {
+  const input = {
+    timeoutMs: undefined as number | undefined,
+    content: detail.text,
+    sourceUrl: detail.url,
+    organizationHint: common.organizationHint,
+    fetchedAt: common.fetchedAt,
+    model: common.model,
+    links: detail.rawHtml
+      ? extractLinks(detail.rawHtml, detail.url).map((link) => ({
+          text: link.linkText,
+          url: link.url,
+        }))
+      : undefined,
   }
 
-  return mergeExtractOutputs(outputs, common.model)
+  // One retry: the flash model intermittently returns JSON that fails schema
+  // validation ("No object generated") on a page it handles fine on a second
+  // pass. These pages are small, so a retry is cheap insurance against
+  // silently dropping a whole program's dates over transient model noise.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const startedAt = Date.now()
+    if (common.deadline !== undefined) {
+      const remaining = common.deadline - startedAt
+      if (remaining < 10_000) {
+        console.error(`[v0] [myrec] skipping ${detail.url}: source time budget exhausted`)
+        return null
+      }
+      input.timeoutMs = Math.min(remaining, 120_000)
+    }
+    try {
+      const output = await extractPrograms(input)
+      console.log(`[v0] [myrec] extracted ${detail.url} in ${Date.now() - startedAt}ms`)
+      return output
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(
+        `[v0] [myrec] extraction attempt ${attempt}/2 failed for ${detail.url} after ${Date.now() - startedAt}ms: ${message}`,
+      )
+    }
+  }
+  return null
 }
 
 /** Combines per-detail-page extractions into one run-level result. */
@@ -514,6 +554,10 @@ export async function ingestSource(
             organizationHint,
             fetchedAt: startedAt,
             model: options.model,
+            // Finish 30s inside the source budget so a late page costs only
+            // itself, not the pages that already extracted.
+            deadline:
+              startedAt.getTime() + (options.sourceTimeoutMs ?? DEFAULT_SOURCE_TIMEOUT_MS) - 30_000,
           })
         : civicRecExpansion.details.length > 0
           ? await extractCivicRecPrograms(civicRecExpansion.details, {
