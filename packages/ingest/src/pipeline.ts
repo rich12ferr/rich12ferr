@@ -322,6 +322,8 @@ export type IngestResult = {
     | "extraction_failed"
     | "not_a_listing"
     | "skipped_robots"
+    /** The whole source exceeded its time budget; see `ingestSourceWithTimeout`. */
+    | "timed_out"
   rawDocumentId: string | null
   extractionRunId: string | null
   /** Null when extraction was skipped; token cost is only spent when needed. */
@@ -347,7 +349,11 @@ export type IngestOptions = {
   force?: boolean
   /** Confidence below which an additive change still needs review. */
   confidenceThreshold?: number
+  /** Time budget for one whole source in `ingestSourceWithTimeout`. Default 5 minutes. */
+  sourceTimeoutMs?: number
 }
+
+const DEFAULT_SOURCE_TIMEOUT_MS = 5 * 60_000
 
 /**
  * Runs the full pipeline for one source.
@@ -1153,6 +1159,47 @@ async function recordFailure(
 /*  Batch runner                                                              */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Runs `ingestSource` under a hard time budget so one stuck source (a hung
+ * model call, a detail page that never finishes) cannot stall a whole batch.
+ *
+ * On timeout the source is recorded as a failure, which feeds the normal
+ * back-off, and the batch moves on. The abandoned work is not cancelled; it may
+ * still write review candidates if it finishes later, which is safe because
+ * nothing it writes is published without a human.
+ */
+export async function ingestSourceWithTimeout(
+  source: SourceRow,
+  options: IngestOptions = {},
+): Promise<IngestResult> {
+  const timeoutMs = options.sourceTimeoutMs ?? DEFAULT_SOURCE_TIMEOUT_MS
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), timeoutMs)
+  })
+
+  const work = ingestSource(source, options)
+  work.catch(() => {})
+
+  const winner = await Promise.race([work, timeout])
+  clearTimeout(timer)
+  if (winner !== "timeout") return winner
+
+  const message = `Timed out after ${timeoutMs}ms`
+  await recordFailure(source, message, new Date())
+  return {
+    sourceId: source.id,
+    url: source.url,
+    status: "timed_out",
+    rawDocumentId: null,
+    extractionRunId: null,
+    tokensUsed: null,
+    programs: [],
+    error: message,
+    discoveredSourceIds: [],
+  }
+}
+
 /** Sources whose next crawl is due, most-overdue first. */
 export async function dueSources(limit = 25): Promise<SourceRow[]> {
   return db
@@ -1189,7 +1236,7 @@ export async function runDueSources(
   const results: IngestResult[] = []
 
   for (const [index, source] of sourcesToCrawl.entries()) {
-    results.push(await ingestSource(source, options))
+    results.push(await ingestSourceWithTimeout(source, options))
     if (index < sourcesToCrawl.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, options.delayMs ?? 1_000))
     }
