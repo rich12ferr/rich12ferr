@@ -18,6 +18,7 @@ import { ActivityBadges } from "@/components/activity-badges"
 import { ActivityCard } from "@/components/activity-card"
 import { CustomerStatusPill } from "@/components/customer-status-pill"
 import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
+import { RegisterCta } from "@/components/register-cta"
 import { TrackView } from "@/components/track-view"
 import { ReportDialog } from "@/components/report-dialog"
 import { SectionHeading } from "@/components/section-heading"
@@ -145,6 +146,8 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 </p>
               </div>
             </div>
+
+            <RegisterCta activity={activity} now={now} placement="header" />
 
             <ActivityBadges activity={activity} now={now} />
 
@@ -274,6 +277,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 </ul>
               </DetailRow>
             </dl>
+            <RegisterCta activity={activity} now={now} placement="inline" className="mt-4" />
           </section>
 
           <section
@@ -434,6 +438,8 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
           </div>
         </aside>
       </div>
+
+      <RegisterCta activity={activity} now={now} placement="sticky" />
     </div>
   )
 }

@@ -29,6 +29,9 @@ export type CtaLocation =
   | "activity_card"
   | "activity_detail_primary"
   | "activity_detail_source"
+  | "activity_detail_header"
+  | "activity_detail_inline"
+  | "activity_detail_sticky"
   | "weekly_update_detail"
   | "organization_website"
 
@@ -104,6 +107,12 @@ export interface AnalyticsEventMap {
     destination: string
   }
   registration_handoff_clicked: RegistrationHandoffProps
+  /** Parent-side money event: a click from a listing out to the org's registration page. */
+  register_clickout: {
+    listing_id: string
+    cta_location: CtaLocation
+    destination_url: string
+  }
   alert_created: {
     alert_type: "activity" | "sport" | "child_match"
     sport_id: string | null
