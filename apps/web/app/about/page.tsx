@@ -27,8 +27,8 @@ export const metadata = {
 const principles = [
   {
     icon: ScaleIcon,
-    title: "Results are ordered on neutral criteria only",
-    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. There is no paid placement.",
+    title: "Results are ordered on neutral criteria only.",
+    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. No one can pay to change this order. Any clearly-labeled sponsored placements we offer in the future appear on a separate surface and never affect rankings.",
   },
   {
     icon: ShieldCheckIcon,

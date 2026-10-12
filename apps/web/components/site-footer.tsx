@@ -16,6 +16,7 @@ const columns = [
     heading: "Contribute",
     links: [
       { href: "/submit", label: "Submit an activity" },
+      { href: "/for-organizations", label: "For organizations" },
       { href: "/alerts", label: "Get signup alerts" },
       { href: "/about", label: "How Sign Up Vermont works" },
       { href: "/about-us", label: "About us" },
