@@ -27,7 +27,8 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { allPublishedActivitySlugs, activityBySlug, activitiesForSport, genderLabels, programTypeLabels } from "@/lib/queries"
 import { distanceLabel, eligibilityLabel, freshnessLabel, isDemoListing, seasonLabel, sourceHost } from "@/lib/format"
-import { customerFacingState, formatDate, formatFee, registrationStatus } from "@/lib/registration-status"
+import { customerFacingState, formatDate, formatFee, hasSeasonEnded, registrationStatus } from "@/lib/registration-status"
+import { VerificationBadge } from "@/components/verification-badge"
 import { buildHandoffProps } from "@/lib/analytics"
 
 /**
@@ -86,7 +87,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
   const analyticsStatus = registrationStatus(activity, now)
 
   const similar = (await activitiesForSport(activity.sport.slug))
-    .filter((a) => a.id !== activity.id)
+    .filter((a) => a.id !== activity.id && !hasSeasonEnded(a, now))
     .slice(0, 2)
 
   return (
@@ -132,6 +133,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 <h1 className="font-display text-3xl leading-tight font-extrabold tracking-tight text-balance">
                   {activity.title}
                 </h1>
+                {!isDemoListing(activity) ? <VerificationBadge status={activity.verification_status} /> : null}
                 <p className="text-muted-foreground">
                   <Link
                     href={`/organizations/${activity.organization_id}`}

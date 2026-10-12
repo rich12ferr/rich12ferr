@@ -62,6 +62,25 @@ export const verificationLabels = {
   organization_verified: "Organization verified",
 } as const
 
+export type VerificationStatusKey = keyof typeof verificationLabels
+
+/** Shown verbatim on /about and in the badge popover — keep the two in sync by editing only here. */
+export const verificationDefinitions: Record<VerificationStatusKey, string> = {
+  organization_verified: "The organization itself confirmed these details.",
+  admin_reviewed: "A reviewer checked the source and confirmed the details.",
+  community_submitted: "A parent or coach submitted it and a reviewer accepted it.",
+  ai_extracted: "Read automatically from a public page, pending human review.",
+  unverified: "Listed from a public source with no confirmation yet.",
+}
+
+export const verificationOrder: VerificationStatusKey[] = [
+  "organization_verified",
+  "admin_reviewed",
+  "community_submitted",
+  "ai_extracted",
+  "unverified",
+]
+
 /**
  * Launch-region towns used as the filter dropdown's initial options.
  *

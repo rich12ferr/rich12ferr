@@ -40,6 +40,7 @@ import {
   CLOSING_SOON_DAYS,
   customerFacingState,
   daysBetween,
+  hasSeasonEnded,
   parseDate,
   registrationStatus,
   startOfDay,
@@ -617,7 +618,7 @@ export function countActiveFilters(filters: SearchFilters) {
  */
 export async function closingSoon(now = new Date(), limit = 4) {
   const rows = await closingSoonOfferings(CLOSING_SOON_DAYS, limit * 4)
-  return prioritizeYouth(rows.map(listingToActivity)).slice(0, limit)
+  return prioritizeYouth(rows.map(listingToActivity).filter((a) => !hasSeasonEnded(a, now))).slice(0, limit)
 }
 
 export async function recentlyOpened(now = new Date(), limit = 4) {

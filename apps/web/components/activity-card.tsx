@@ -6,6 +6,7 @@ import { RegistrationHandoffButton } from "@/components/registration-handoff-but
 import { SeasonIcon } from "@/components/season-icons"
 import { SportMarker } from "@/components/sport-marker"
 import { TrustNote } from "@/components/trust-note"
+import { VerificationBadge } from "@/components/verification-badge"
 import type { ActivityWithRelations } from "@/lib/types"
 import { customerFacingState, formatFee, registrationStatus } from "@/lib/registration-status"
 import { distanceLabel, eligibilityLabel, isDemoListing, programLabel, seasonLabel } from "@/lib/format"
@@ -61,6 +62,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
                 {activity.organization.name}
               </Link>
             </p>
+            {!demo ? <VerificationBadge status={activity.verification_status} className="mt-0.5" /> : null}
           </div>
           <CustomerStatusPill state={resolved} className="ml-auto" />
         </div>

@@ -34,6 +34,16 @@ export function daysBetween(from: Date, to: Date) {
 }
 
 /**
+ * True once the season's last day is behind us. Used to keep finished
+ * programs out of browse and recommendation modules; they stay reachable by
+ * direct URL. A missing end date never counts as ended.
+ */
+export function hasSeasonEnded(activity: Activity, now = new Date()) {
+  const end = parseDate(activity.season_end_date)
+  return end !== null && end < startOfDay(now)
+}
+
+/**
  * Deterministic registration status. Computed from dates unless an
  * administrator has set an explicit override.
  */

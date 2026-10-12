@@ -8,7 +8,7 @@ import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
 import { sports, getSportBySlug } from "@/lib/data/sports"
 import { activitiesForSport, seasonLabels } from "@/lib/queries"
-import { registrationStatus } from "@/lib/registration-status"
+import { hasSeasonEnded, registrationStatus } from "@/lib/registration-status"
 import type { Season } from "@/lib/types"
 
 /**
@@ -37,7 +37,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
   if (!sport) notFound()
 
   const now = new Date()
-  const all = await activitiesForSport(sport.slug)
+  const all = (await activitiesForSport(sport.slug)).filter((a) => !hasSeasonEnded(a, now))
   const openNow = all.filter((a) => ["open", "closing_soon"].includes(registrationStatus(a, now)))
 
   const bySeason = order

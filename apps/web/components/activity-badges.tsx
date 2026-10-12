@@ -3,10 +3,9 @@ import type { Activity } from "@/lib/types"
 import { isRecentlyAdded, isStartingSoon } from "@/lib/registration-status"
 
 /**
- * Optional badges from PRD 14. Deliberately independent of internal
- * `verification_status` — that vocabulary belongs to the admin console, not
- * a parent-facing badge (see `TrustNote` for the provenance line that
- * replaces it). Waitlist/closing-soon urgency also isn't repeated here;
+ * Optional badges from PRD 14. The verification label is its own pill
+ * (`VerificationBadge`) beside the title, not part of this row.
+ * Waitlist/closing-soon urgency also isn't repeated here;
  * that's already the customer-facing state's detail line, not a separate badge.
  */
 export function ActivityBadges({
