@@ -164,7 +164,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
             title={seasonLabels[season]}
             icon={<SeasonMarker season={season} />}
           />
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {items.map((activity) => (
               <li key={activity.id}>
                 <ActivityCard activity={activity} now={now} />
@@ -180,7 +180,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
             eyebrow={`${ongoing.length} ${ongoing.length === 1 ? "program" : "programs"}`}
             title="Year-round & ongoing"
           />
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {ongoing.map((activity) => (
               <li key={activity.id}>
                 <ActivityCard activity={activity} now={now} />

@@ -37,7 +37,7 @@ export default async function OrganizationsPage() {
         </p>
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {rows.map(({ organization, total, openNow }) => (
           <li key={organization.id}>
             <Link

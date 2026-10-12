@@ -36,7 +36,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md",
+        "group relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md",
         className,
       )}
     >
@@ -48,7 +48,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
       <div className="flex flex-col gap-3 py-5 pl-6 pr-5">
         <div className="flex items-start gap-3">
           <SportMarker slug={activity.sport.slug} name={activity.sport.name} />
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <h3 className="font-display text-base leading-snug font-bold text-pretty">
               <Link
                 href={`/activities/${activity.slug}`}

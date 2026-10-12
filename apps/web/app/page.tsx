@@ -134,7 +134,7 @@ export default async function HomePage() {
           }
         />
         {deadlines.length > 0 ? (
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {deadlines.map((activity) => (
               <li key={activity.id}>
                 <ActivityCard activity={activity} now={now} />
@@ -175,7 +175,7 @@ export default async function HomePage() {
               title="Newly open registration"
               description="Programs that started accepting signups in the last three weeks."
             />
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {opened.map((activity) => (
                 <li key={activity.id}>
                   <ActivityCard activity={activity} now={now} />
