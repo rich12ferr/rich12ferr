@@ -232,7 +232,13 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+  @apply bg-background text-foreground;
+  }
+  /* Keep the footer clear of the mobile sticky Register bar on listing pages. */
+  @media (width < 64rem) {
+    body:has([data-sticky-register]) {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
   }
   h1,
   h2,

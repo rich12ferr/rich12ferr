@@ -19,6 +19,7 @@ export function RegistrationHandoffButton({
   size,
   variant,
   className,
+  registerClickout = false,
   children,
 }: {
   href: string
@@ -26,11 +27,20 @@ export function RegistrationHandoffButton({
   size?: React.ComponentProps<typeof Button>["size"]
   variant?: React.ComponentProps<typeof Button>["variant"]
   className?: string
+  /** Also fire `register_clickout` (the listing-level registration event). */
+  registerClickout?: boolean
   children: ReactNode
 }) {
   function handleClick() {
     const payload = { ...handoff, destination_url: href }
     trackEvent("registration_handoff_clicked", payload)
+    if (registerClickout && handoff.offering_id) {
+      trackEvent("register_clickout", {
+        listing_id: handoff.offering_id,
+        cta_location: handoff.cta_location,
+        destination_url: href,
+      })
+    }
     void recordRegistrationHandoff(payload).catch(() => {})
   }
 

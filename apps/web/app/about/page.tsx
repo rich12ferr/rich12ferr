@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { verificationLabels } from "@/lib/queries"
+import { verificationDefinitions, verificationOrder } from "@/lib/labels"
 
 /**
  * Registration status and "checked N days ago" are computed from the current
@@ -26,8 +27,8 @@ export const metadata = {
 const principles = [
   {
     icon: ScaleIcon,
-    title: "Results are ordered on neutral criteria only",
-    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. There is no paid placement.",
+    title: "Results are ordered on neutral criteria only.",
+    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. No one can pay to change this order. Any clearly-labeled sponsored placements we offer in the future appear on a separate surface and never affect rankings.",
   },
   {
     icon: ShieldCheckIcon,
@@ -62,13 +63,7 @@ const steps = [
   },
 ]
 
-const statuses: { key: keyof typeof verificationLabels; body: string }[] = [
-  { key: "organization_verified", body: "The organization itself confirmed these details." },
-  { key: "admin_reviewed", body: "A reviewer checked the source and confirmed the details." },
-  { key: "community_submitted", body: "A parent or coach submitted it and a reviewer accepted it." },
-  { key: "ai_extracted", body: "Read automatically from a public page, pending human review." },
-  { key: "unverified", body: "Listed from a public source with no confirmation yet." },
-]
+const statuses = verificationOrder.map((key) => ({ key, body: verificationDefinitions[key] }))
 
 export default function AboutPage() {
   return (

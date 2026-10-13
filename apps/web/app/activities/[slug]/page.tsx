@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import {
+  AlertTriangleIcon,
   BuildingIcon,
   CalendarIcon,
   ClipboardListIcon,
@@ -18,6 +19,7 @@ import { ActivityBadges } from "@/components/activity-badges"
 import { ActivityCard } from "@/components/activity-card"
 import { CustomerStatusPill } from "@/components/customer-status-pill"
 import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
+import { RegisterCta } from "@/components/register-cta"
 import { TrackView } from "@/components/track-view"
 import { ReportDialog } from "@/components/report-dialog"
 import { SectionHeading } from "@/components/section-heading"
@@ -26,7 +28,15 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { allPublishedActivitySlugs, activityBySlug, activitiesForSport, genderLabels, programTypeLabels } from "@/lib/queries"
 import { distanceLabel, eligibilityLabel, freshnessLabel, isDemoListing, seasonLabel, sourceHost } from "@/lib/format"
-import { customerFacingState, formatDate, formatFee, registrationStatus } from "@/lib/registration-status"
+import {
+  customerFacingState,
+  formatDate,
+  formatFee,
+  hasSeasonEnded,
+  registrationStatus,
+  showStaleDetailsNudge,
+} from "@/lib/registration-status"
+import { VerificationBadge } from "@/components/verification-badge"
 import { buildHandoffProps } from "@/lib/analytics"
 
 /**
@@ -85,7 +95,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
   const analyticsStatus = registrationStatus(activity, now)
 
   const similar = (await activitiesForSport(activity.sport.slug))
-    .filter((a) => a.id !== activity.id)
+    .filter((a) => a.id !== activity.id && !hasSeasonEnded(a, now))
     .slice(0, 2)
 
   return (
@@ -123,7 +133,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
-        <article className="flex flex-col gap-6">
+        <article className="flex min-w-0 flex-col gap-6">
           <header className="flex flex-col gap-4">
             <div className="flex items-start gap-4">
               <SportMarker slug={activity.sport.slug} name={activity.sport.name} size="lg" />
@@ -131,6 +141,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 <h1 className="font-display text-3xl leading-tight font-extrabold tracking-tight text-balance">
                   {activity.title}
                 </h1>
+                {!isDemoListing(activity) ? <VerificationBadge status={activity.verification_status} /> : null}
                 <p className="text-muted-foreground">
                   <Link
                     href={`/organizations/${activity.organization_id}`}
@@ -145,6 +156,8 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 </p>
               </div>
             </div>
+
+            <RegisterCta activity={activity} now={now} placement="header" />
 
             <ActivityBadges activity={activity} now={now} />
 
@@ -203,6 +216,15 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                     parent doesn't read two different accounts of the same gap. */}
                 {status === "check_with_org" ? (
                   <p className="mt-1 text-muted-foreground">{statusDetail}</p>
+                ) : null}
+                {showStaleDetailsNudge(activity, now) ? (
+                  <p className="mt-2 flex items-start gap-2 rounded-md border border-soon/40 bg-soon/10 px-3 py-2 text-sm leading-relaxed text-foreground">
+                    <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-soon" aria-hidden="true" />
+                    <span>
+                      Details not confirmed recently — double-check times on the org&apos;s site before you
+                      register.
+                    </span>
+                  </p>
                 ) : null}
               </DetailRow>
 
@@ -274,6 +296,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                 </ul>
               </DetailRow>
             </dl>
+            <RegisterCta activity={activity} now={now} placement="inline" className="mt-4" />
           </section>
 
           <section
@@ -346,7 +369,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               <h2 id="similar-heading" className="sr-only">
                 Similar activities
               </h2>
-              <ul className="grid gap-4">
+              <ul className="grid gap-4 [&>li]:min-w-0">
                 {similar.map((item) => (
                   <li key={item.id}>
                     <ActivityCard activity={item} now={now} />
@@ -434,6 +457,8 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
           </div>
         </aside>
       </div>
+
+      <RegisterCta activity={activity} now={now} placement="sticky" />
     </div>
   )
 }

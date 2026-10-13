@@ -66,6 +66,8 @@ export type ExtractInput = {
    * failure this list closes off by giving the model something to copy.
    */
   links?: { text: string; url: string }[]
+  /** Cap for this model call; defaults to EXTRACTION_CALL_TIMEOUT_MS. */
+  timeoutMs?: number
 }
 
 export type ExtractOutput = {
@@ -122,6 +124,8 @@ function computeMeanConfidence(result: ExtractionResult): number | null {
   return scores.reduce((sum, value) => sum + value, 0) / scores.length
 }
 
+const EXTRACTION_CALL_TIMEOUT_MS = 120_000
+
 /**
  * Run extraction over one document.
  *
@@ -147,6 +151,10 @@ export async function extractPrograms(input: ExtractInput): Promise<ExtractOutpu
     // real headroom for a many-program page without materially changing cost
     // for the common one-or-two-program case.
     maxOutputTokens: 24_000,
+    // Without a cap, one stalled model call can consume a source's whole
+    // crawl budget and surface only as a source-level timeout.
+    abortSignal: AbortSignal.timeout(input.timeoutMs ?? EXTRACTION_CALL_TIMEOUT_MS),
+    maxRetries: 1,
   })
 
   return {

@@ -6,6 +6,7 @@ import { RegistrationHandoffButton } from "@/components/registration-handoff-but
 import { SeasonIcon } from "@/components/season-icons"
 import { SportMarker } from "@/components/sport-marker"
 import { TrustNote } from "@/components/trust-note"
+import { VerificationBadge } from "@/components/verification-badge"
 import type { ActivityWithRelations } from "@/lib/types"
 import { customerFacingState, formatFee, registrationStatus } from "@/lib/registration-status"
 import { distanceLabel, eligibilityLabel, isDemoListing, programLabel, seasonLabel } from "@/lib/format"
@@ -35,7 +36,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
   return (
     <article
       className={cn(
-        "group relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md",
+        "group relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md",
         className,
       )}
     >
@@ -47,7 +48,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
       <div className="flex flex-col gap-3 py-5 pl-6 pr-5">
         <div className="flex items-start gap-3">
           <SportMarker slug={activity.sport.slug} name={activity.sport.name} />
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <h3 className="font-display text-base leading-snug font-bold text-pretty">
               <Link
                 href={`/activities/${activity.slug}`}
@@ -61,6 +62,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
                 {activity.organization.name}
               </Link>
             </p>
+            {!demo ? <VerificationBadge status={activity.verification_status} className="mt-0.5" /> : null}
           </div>
           <CustomerStatusPill state={resolved} className="ml-auto" />
         </div>

@@ -18,7 +18,7 @@
 import { db, pool, sources } from "@openplay/db"
 import { eq } from "drizzle-orm"
 
-import { ingestSource, runDueSources, dueSources } from "../src/pipeline"
+import { ingestSourceWithTimeout, runDueSources, dueSources } from "../src/pipeline"
 
 function flag(name: string): boolean {
   return process.argv.includes(`--${name}`)
@@ -47,7 +47,7 @@ async function main() {
       await pool.end()
       process.exit(1)
     }
-    results = [await ingestSource(row, { force })]
+    results = [await ingestSourceWithTimeout(row, { force })]
   } else {
     results = await runDueSources({ force })
   }
@@ -90,6 +90,8 @@ async function main() {
   }
 
   await pool.end()
+  // A timed-out source's abandoned work can keep the event loop alive.
+  process.exit(0)
 }
 
 main().catch((error) => {

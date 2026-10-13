@@ -14,7 +14,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatusPill } from "@/components/status-pill"
 import { submissions } from "@/lib/data/moderation"
 import { adminMetrics, reviewQueue, weeklyStoryCandidateCount } from "@/lib/queries"
-import { registrationStatus } from "@/lib/registration-status"
+import {
+  RECHECK_AFTER_DAYS,
+  RECHECK_DEADLINE_DAYS,
+  daysSinceLastChecked,
+  formatShortDate,
+  needsDeadlineRecheck,
+  registrationStatus,
+} from "@/lib/registration-status"
 
 /**
  * Always server-rendered: an admin must see the effect of an edit immediately,
@@ -113,6 +120,10 @@ export default async function AdminDashboardPage() {
     )
     .slice(0, 6)
 
+  const recheck = metrics.all
+    .filter((a) => a.published && needsDeadlineRecheck(a, now))
+    .sort((a, b) => (a.registration_close_date ?? "").localeCompare(b.registration_close_date ?? ""))
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
@@ -173,6 +184,52 @@ export default async function AdminDashboardPage() {
             </Card>
           ))}
         </div>
+      </section>
+
+      <section aria-labelledby="recheck" className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 id="recheck" className="flex items-baseline gap-2 font-display text-xl font-semibold">
+            Re-review before deadline
+            <Badge variant="secondary" className="tabular-nums">
+              {recheck.length}
+            </Badge>
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {`Registration closes within ${RECHECK_DEADLINE_DAYS} days and the listing hasn't been checked in over ${RECHECK_AFTER_DAYS}. Confirm times and dates against the org's site.`}
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col gap-0 p-0">
+            {recheck.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">Nothing to re-check right now.</p>
+            ) : (
+              recheck.map((activity, index) => (
+                <div
+                  key={activity.id}
+                  className={`flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:gap-4 ${
+                    index > 0 ? "border-t" : ""
+                  }`}
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <Link
+                      href={`/admin/activities/${activity.id}`}
+                      className="truncate text-sm font-semibold hover:underline"
+                    >
+                      {activity.title}
+                    </Link>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {activity.organization.name} &middot; closes {formatShortDate(activity.registration_close_date)}{" "}
+                      &middot;{" "}
+                      {activity.date_last_checked
+                        ? `checked ${daysSinceLastChecked(activity, now)} days ago`
+                        : "never checked"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section aria-labelledby="attention" className="flex flex-col gap-4">

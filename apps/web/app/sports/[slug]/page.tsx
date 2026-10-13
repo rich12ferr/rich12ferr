@@ -8,7 +8,7 @@ import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
 import { sports, getSportBySlug } from "@/lib/data/sports"
 import { activitiesForSport, seasonLabels } from "@/lib/queries"
-import { registrationStatus } from "@/lib/registration-status"
+import { hasSeasonEnded, registrationStatus } from "@/lib/registration-status"
 import type { Season } from "@/lib/types"
 
 /**
@@ -37,7 +37,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
   if (!sport) notFound()
 
   const now = new Date()
-  const all = await activitiesForSport(sport.slug)
+  const all = (await activitiesForSport(sport.slug)).filter((a) => !hasSeasonEnded(a, now))
   const openNow = all.filter((a) => ["open", "closing_soon"].includes(registrationStatus(a, now)))
 
   const bySeason = order
@@ -104,7 +104,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
             title={seasonLabels[season]}
             icon={<SeasonMarker season={season} />}
           />
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {items.map((activity) => (
               <li key={activity.id}>
                 <ActivityCard activity={activity} now={now} />
@@ -120,7 +120,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
             eyebrow={`${ongoing.length} ${ongoing.length === 1 ? "program" : "programs"}`}
             title="Year-round & ongoing"
           />
-          <ul className="grid gap-4 lg:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {ongoing.map((activity) => (
               <li key={activity.id}>
                 <ActivityCard activity={activity} now={now} />

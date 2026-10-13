@@ -7,11 +7,9 @@ import { cn } from "@/lib/utils"
  * PRD 15: every listing states where its information came from, when it was
  * last checked, and links to the original source so parents can confirm.
  *
- * Deliberately shows only provenance — organization name, freshness, and a
- * link to the source — never the internal `verification_status` value
- * (e.g. "Unverified", "Admin reviewed"). That vocabulary is for the admin
- * console; to a parent it reads as an accusation against small orgs that
- * simply haven't been individually reviewed yet, not a useful trust signal.
+ * Shows only provenance — organization name, freshness, and a link to the
+ * source. The verification label is rendered separately by
+ * `VerificationBadge`, next to the title.
  *
  * Demo/placeholder listings (no real crawl source yet) never show a
  * provenance claim or a fake source link — they get a distinct "Demo

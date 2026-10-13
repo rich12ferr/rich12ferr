@@ -34,6 +34,16 @@ export function daysBetween(from: Date, to: Date) {
 }
 
 /**
+ * True once the season's last day is behind us. Used to keep finished
+ * programs out of browse and recommendation modules; they stay reachable by
+ * direct URL. A missing end date never counts as ended.
+ */
+export function hasSeasonEnded(activity: Activity, now = new Date()) {
+  const end = parseDate(activity.season_end_date)
+  return end !== null && end < startOfDay(now)
+}
+
+/**
  * Deterministic registration status. Computed from dates unless an
  * administrator has set an explicit override.
  */
@@ -274,4 +284,34 @@ export function daysSinceLastChecked(activity: Activity, now = new Date()) {
   const checked = parseDate(activity.date_last_checked)
   if (!checked) return null
   return daysBetween(checked, now)
+}
+
+/** Admin re-review window: deadline this close, checked longer ago than this. */
+export const RECHECK_DEADLINE_DAYS = 14
+export const RECHECK_AFTER_DAYS = 7
+/** Parent-facing nudge threshold for closing-soon listings. */
+export const NUDGE_STALE_DAYS = 14
+
+function daysUntilClose(activity: Activity, now: Date) {
+  const close = parseDate(activity.registration_close_date)
+  return close ? daysBetween(startOfDay(now), close) : null
+}
+
+/**
+ * Admin rule: the registration deadline is within the next 14 days and the
+ * listing hasn't been re-checked in over 7 (or ever). These are the listings
+ * where a wrong time or date costs a family a spot.
+ */
+export function needsDeadlineRecheck(activity: Activity, now = new Date()) {
+  const daysLeft = daysUntilClose(activity, now)
+  if (daysLeft === null || daysLeft < 0 || daysLeft > RECHECK_DEADLINE_DAYS) return false
+  const sinceChecked = daysSinceLastChecked(activity, now)
+  return sinceChecked === null || sinceChecked > RECHECK_AFTER_DAYS
+}
+
+/** Parent-facing: a closing-soon listing whose last check is over 14 days old. */
+export function showStaleDetailsNudge(activity: Activity, now = new Date()) {
+  if (registrationStatus(activity, now) !== "closing_soon") return false
+  const sinceChecked = daysSinceLastChecked(activity, now)
+  return sinceChecked === null || sinceChecked > NUDGE_STALE_DAYS
 }
