@@ -320,6 +320,12 @@ export const programOfferings = pgTable(
     registrationCloseDate: date("registration_close_date"),
     seasonStartDate: date("season_start_date"),
     seasonEndDate: date("season_end_date"),
+  /**
+   * Set by an admin who checked the source and confirmed the dates are
+   * genuinely absent (year-round, rolling enrollment) or just filled them in.
+   * Takes the listing out of the missing-dates cleanup queue.
+   */
+  datesReviewedAt: timestamp("dates_reviewed_at", { withTimezone: true }),
 
     registrationUrl: text("registration_url"),
     registrationProvider: text("registration_provider"),

@@ -121,6 +121,8 @@ export type Activity = {
   registration_close_date: string | null
   season_start_date: string | null
   season_end_date: string | null
+  /** ISO timestamp of an admin confirming the dates; optional so fixtures stay valid. */
+  dates_reviewed_at?: string | null
 
   registration_url: string | null
   registration_provider: string | null

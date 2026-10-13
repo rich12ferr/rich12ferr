@@ -160,6 +160,7 @@ export function listingToActivity(listing: OfferingListing): ActivityWithRelatio
     registration_close_date: listing.registrationCloseDate,
     season_start_date: listing.seasonStartDate,
     season_end_date: listing.seasonEndDate,
+    dates_reviewed_at: listing.datesReviewedAt ? listing.datesReviewedAt.toISOString() : null,
     registration_url: listing.registrationUrl,
     registration_provider: listing.registrationProvider,
     status_override: listing.statusOverride as Activity["status_override"],

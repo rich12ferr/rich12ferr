@@ -4,7 +4,9 @@ import { PencilIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { DateCleanupRow } from "@/components/date-cleanup-row"
 import { StatusPill } from "@/components/status-pill"
+import { matchesDateFilter, parseDateFilter, type DateFilter } from "@/lib/date-gaps"
 import { allActivities } from "@/lib/queries"
 import { registrationStatus } from "@/lib/registration-status"
 
@@ -18,58 +20,118 @@ export const metadata = {
   title: "Activities",
 }
 
-export default async function AdminActivitiesPage() {
+const filterHrefs: Record<DateFilter, string> = {
+  all: "/admin/activities",
+  season: "/admin/activities?dates=season",
+  registration: "/admin/activities?dates=registration",
+}
+
+export default async function AdminActivitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dates?: string }>
+}) {
+  const filter = parseDateFilter((await searchParams).dates)
   const now = new Date()
-  const rows = (await allActivities())
+  const all = await allActivities()
+
+  const counts: Record<DateFilter, number> = {
+    all: all.length,
+    season: all.filter((a) => matchesDateFilter(a, "season")).length,
+    registration: all.filter((a) => matchesDateFilter(a, "registration")).length,
+  }
+
+  const cleanupMode = filter !== "all"
+  const rows = all
+    .filter((activity) => matchesDateFilter(activity, filter))
     .map((activity) => ({ activity, status: registrationStatus(activity, now) }))
-    .sort((a, b) => a.activity.title.localeCompare(b.activity.title))
+    .sort((a, b) =>
+      cleanupMode
+        ? a.activity.organization.name.localeCompare(b.activity.organization.name) ||
+          a.activity.title.localeCompare(b.activity.title)
+        : a.activity.title.localeCompare(b.activity.title),
+    )
+
+  const filterLabels: Record<DateFilter, string> = {
+    all: "All listings",
+    season: "Missing season dates",
+    registration: "Missing registration dates",
+  }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">Activities</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {rows.length} listings in the catalog. Open any one to edit its details, change its
-          verification state, or unpublish it.
+          {cleanupMode
+            ? `${rows.length} listings to clean up, grouped by organization. Check the source page, enter the dates, then save. If the program has no fixed dates, confirm it to clear it from this list.`
+            : `${rows.length} listings in the catalog. Open any one to edit its details, change its verification state, or unpublish it.`}
         </p>
       </header>
 
+      <nav aria-label="Filter activities" className="flex flex-wrap items-center gap-2">
+        {(Object.keys(filterHrefs) as DateFilter[]).map((key) => (
+          <Button
+            key={key}
+            render={<Link href={filterHrefs[key]} aria-current={filter === key ? "page" : undefined} />}
+            nativeButton={false}
+            variant={filter === key ? "default" : "outline"}
+            size="sm"
+          >
+            {filterLabels[key]}
+            <span className="tabular-nums opacity-70">{counts[key]}</span>
+          </Button>
+        ))}
+      </nav>
+
       <Card>
         <CardContent className="flex flex-col gap-0 p-0">
-          {rows.map(({ activity, status }, index) => (
-            <div
-              key={activity.id}
-              className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 ${
-                index > 0 ? "border-t" : ""
-              }`}
-            >
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-semibold">{activity.title}</span>
-                  {!activity.published && <Badge variant="outline">draft</Badge>}
+          {rows.length === 0 && (
+            <p className="p-6 text-sm text-muted-foreground">
+              Nothing left in this list. Every listing has dates or has been confirmed.
+            </p>
+          )}
+          {rows.map(({ activity, status }, index) =>
+            cleanupMode ? (
+              <div key={activity.id} className={index > 0 ? "border-t" : ""}>
+                <DateCleanupRow activity={activity} />
+              </div>
+            ) : (
+              <div
+                key={activity.id}
+                className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 ${
+                  index > 0 ? "border-t" : ""
+                }`}
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-semibold">{activity.title}</span>
+                    {!activity.published && <Badge variant="outline">draft</Badge>}
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {activity.organization.name} &middot; {activity.sport.name} &middot;{" "}
+                    {activity.town}
+                  </p>
                 </div>
-                <p className="truncate text-xs text-muted-foreground">
-                  {activity.organization.name} &middot; {activity.sport.name} &middot; {activity.town}
-                </p>
-              </div>
 
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {activity.verification_status.replace(/_/g, " ")}
-                </Badge>
-                <StatusPill status={status} size="sm" />
-                <Button
-                  render={<Link href={`/admin/activities/${activity.id}`} />}
-                  nativeButton={false}
-                  variant="outline"
-                  size="sm"
-                >
-                  <PencilIcon data-icon="inline-start" />
-                  Edit
-                </Button>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {activity.verification_status.replace(/_/g, " ")}
+                  </Badge>
+                  <StatusPill status={status} size="sm" />
+                  <Button
+                    render={<Link href={`/admin/activities/${activity.id}`} />}
+                    nativeButton={false}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <PencilIcon data-icon="inline-start" />
+                    Edit
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            ),
+          )}
         </CardContent>
       </Card>
     </div>

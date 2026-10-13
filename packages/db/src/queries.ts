@@ -73,6 +73,7 @@ export type OfferingListing = {
   registrationCloseDate: string | null
   seasonStartDate: string | null
   seasonEndDate: string | null
+  datesReviewedAt: Date | null
   registrationUrl: string | null
   registrationFee: number | null
   currency: string
@@ -166,6 +167,7 @@ const listingColumns = {
   registrationCloseDate: programOfferings.registrationCloseDate,
   seasonStartDate: programOfferings.seasonStartDate,
   seasonEndDate: programOfferings.seasonEndDate,
+  datesReviewedAt: programOfferings.datesReviewedAt,
   registrationUrl: programOfferings.registrationUrl,
   registrationFee: programOfferings.registrationFee,
   currency: programOfferings.currency,
@@ -886,6 +888,9 @@ export type OfferingFieldPatch = {
       typeof programOfferings.$inferInsert,
       | "registrationOpenDate"
       | "registrationCloseDate"
+      | "seasonStartDate"
+      | "seasonEndDate"
+      | "datesReviewedAt"
       | "registrationFee"
       | "registrationUrl"
       | "statusOverride"
