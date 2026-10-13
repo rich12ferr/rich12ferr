@@ -741,7 +741,7 @@ export async function pendingReviewCandidates(limit = 50) {
     .leftJoin(sources, eq(sources.id, reviewCandidates.sourceId))
     .leftJoin(organizations, eq(organizations.id, sources.organizationId))
     .where(eq(reviewCandidates.status, "pending"))
-    .orderBy(asc(reviewCandidates.discoveredAt))
+    .orderBy(desc(reviewCandidates.discoveredAt))
     .limit(limit)
 }
 
