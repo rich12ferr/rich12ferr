@@ -118,8 +118,14 @@ export interface AnalyticsEventMap {
     sport_id: string | null
     has_zip: boolean
     trigger_count: number | null
-    source: "activity_detail" | "alerts_page"
+    source: "activity_detail" | "alerts_page" | "homepage_hero"
   }
+  /** First focus of a search field, before any submit — separates "engaged with search" from "bounced". */
+  search_focused: { source: "home_quick_search" | "home_alert_form" }
+  /** Furthest point reached on the homepage, fired once per threshold per page view. */
+  homepage_scrolled: { depth_percent: 25 | 50 | 75 | 100 }
+  /** A homepage section scrolled at least halfway into view, fired once per section per page view. */
+  homepage_section_viewed: { section: string }
   newsletter_subscribed: {
     source: "homepage" | "alerts_page"
     /** "subscribed" for a brand-new address, "resubscribed" for a returning one; "already_subscribed" isn't tracked (no state change). */
@@ -187,6 +193,12 @@ function getSessionContext(): SessionContext {
     discovery_origin: window.sessionStorage.getItem(ORIGIN_KEY) as DiscoveryOrigin | null,
     alert_assisted: window.sessionStorage.getItem(ALERT_KEY) === "true",
   }
+}
+
+/** The session fields persisted alongside a handoff click in `handoff_events`. */
+export function getHandoffSessionFields(): { session_id: string | null; discovery_origin: DiscoveryOrigin | null } {
+  const { session_id, discovery_origin } = getSessionContext()
+  return { session_id, discovery_origin }
 }
 
 /** Maps a landing pathname to the discovery surface it represents. */

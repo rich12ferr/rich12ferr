@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { SearchIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -30,6 +30,7 @@ export function QuickSearch() {
   const [sport, setSport] = useState("any")
   const [grade, setGrade] = useState("any")
   const [zip, setZip] = useState("")
+  const focusReported = useRef(false)
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -50,6 +51,11 @@ export function QuickSearch() {
   return (
     <form
       onSubmit={onSubmit}
+      onFocusCapture={() => {
+        if (focusReported.current) return
+        focusReported.current = true
+        trackEvent("search_focused", { source: "home_quick_search" })
+      }}
       className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5"
       aria-label="Find youth sports activities"
     >

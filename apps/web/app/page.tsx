@@ -1,7 +1,9 @@
 import Link from "next/link"
-import { ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
+import { HeroAlertForm } from "@/components/hero-alert-form"
+import { HomepageEngagementTracker } from "@/components/homepage-engagement-tracker"
 import { NewsletterForm } from "@/components/newsletter-form"
 import { QuickSearch } from "@/components/quick-search"
 import { SeasonMarker } from "@/components/season-marker"
@@ -48,6 +50,7 @@ export default async function HomePage() {
   ])
   const total = all.length
   const orgCount = orgRows.length
+  const openNowTotal = sportRows.reduce((sum, row) => sum + row.openNow, 0)
   // Never manufacture stories to fill the module — show only the stories an
   // editor actually marked featured (rank 1-3), and hide the section
   // entirely once there is no published edition at all.
@@ -63,9 +66,10 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col">
       <TrackView discoveryOrigin="homepage" />
+      <HomepageEngagementTracker />
       {/* Hero — full-bleed looping video montage, dark scrim for text legibility over
           moving footage, poster frame as the low-data / legacy-browser fallback. */}
-      <section className="relative isolate flex min-h-[34rem] items-center overflow-hidden border-b border-border sm:min-h-[38rem]">
+      <section className="relative isolate flex items-center overflow-hidden border-b border-border">
         <video
           className="absolute inset-0 -z-10 size-full object-cover"
           poster="/images/hero-poster.png"
@@ -78,12 +82,12 @@ export default async function HomePage() {
         </video>
         <div className="absolute inset-0 -z-10 bg-black/50" aria-hidden="true" />
 
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6 lg:py-16">
-          <div className="flex max-w-3xl flex-col gap-4">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-8 sm:px-6">
+          <div className="flex max-w-3xl flex-col gap-3">
             <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
               Starting in Central Vermont
             </p>
-            <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance text-white sm:text-5xl lg:text-6xl">
+            <h1 className="font-display text-4xl leading-[1.05] font-extrabold tracking-tight text-balance text-white sm:text-5xl">
               Vermont activities, without the signup scramble.
             </h1>
             <p className="text-lg leading-relaxed text-white/90 text-pretty">
@@ -92,8 +96,9 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4">
             <QuickSearch />
+            <HeroAlertForm />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/80">
               <span className="font-medium text-white">Popular right now:</span>
               {sportRows.slice(0, 5).map(({ sport }) => (
@@ -112,16 +117,37 @@ export default async function HomePage() {
 
       {/* Directory stats — moved below the search so the hero leads with the search itself */}
       <section className="w-full bg-[#F5B642]">
-        <div className="mx-auto w-full max-w-6xl px-4 py-3 sm:px-6">
-          <p className="leading-relaxed text-pretty text-neutral-900">
-            {total} youth programs from {orgCount} local schools, rec departments, leagues, and clubs
-            &mdash; sports, camps, arts, and community recreation together in one place.
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 font-semibold text-neutral-900">
+            {openNowTotal > 0 ? (
+              <Link
+                href="/search?status=open"
+                className="inline-flex items-center gap-1.5 underline decoration-neutral-900/40 underline-offset-4 hover:decoration-neutral-900"
+              >
+                {openNowTotal} open now
+                <ArrowRightIcon className="size-3.5" aria-hidden="true" />
+              </Link>
+            ) : null}
+            <a
+              href="#closing-soon"
+              className="inline-flex items-center gap-1.5 underline decoration-neutral-900/40 underline-offset-4 hover:decoration-neutral-900"
+            >
+              Closing soon
+              <ArrowDownIcon className="size-3.5" aria-hidden="true" />
+            </a>
+          </div>
+          <p className="text-sm leading-relaxed text-pretty text-neutral-900">
+            {total} youth programs from {orgCount} local schools, rec departments, leagues, and clubs.
           </p>
         </div>
       </section>
 
       {/* Deadlines — the signature section */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+      <section
+        id="closing-soon"
+        data-home-section="closing_soon"
+        className="mx-auto w-full max-w-6xl scroll-mt-4 px-4 py-12 sm:px-6"
+      >
         <SectionHeading
           eyebrow="Don't miss these"
           title="Registration closing soon"
@@ -168,7 +194,7 @@ export default async function HomePage() {
 
       {/* Recently opened */}
       {opened.length > 0 ? (
-        <section className="border-y border-border bg-secondary/60">
+        <section data-home-section="newly_open" className="border-y border-border bg-secondary/60">
           <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
             <SectionHeading
               eyebrow="Just opened"
@@ -188,7 +214,7 @@ export default async function HomePage() {
 
       {/* What's happening this week — timely editorial context, not a blog. */}
       {featuredStories.length > 0 ? (
-        <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+        <section data-home-section="weekly_stories" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
           <SectionHeading
             title="What's happening this week"
             description="New programs, registration openings, and deadlines worth knowing about around Vermont."
@@ -213,7 +239,7 @@ export default async function HomePage() {
           rather than a bg-foreground/text-background band: those tokens
           invert between light/dark mode, which previously left the input
           styled for a dark band that had turned light. */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
+      <section data-home-section="newsletter" className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-secondary/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8">
           <div className="flex max-w-xl flex-col gap-1.5">
             <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
@@ -234,7 +260,7 @@ export default async function HomePage() {
       </section>
 
       {/* Browse by sport */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+      <section data-home-section="by_sport" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
         <SectionHeading
           eyebrow="Browse"
           title="By sport"
@@ -268,7 +294,7 @@ export default async function HomePage() {
       </section>
 
       {/* Seasons */}
-      <section className="border-t border-border bg-secondary/60">
+      <section data-home-section="by_season" className="border-t border-border bg-secondary/60">
         <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
           <SectionHeading eyebrow="Plan ahead" title="By season" />
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -298,7 +324,7 @@ export default async function HomePage() {
       </section>
 
       {/* Trust + contribute */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+      <section data-home-section="trust_and_contribute" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-6">
             <h3 className="font-display text-lg font-bold">Where this comes from</h3>
