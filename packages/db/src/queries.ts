@@ -718,7 +718,7 @@ export async function provenanceFor(entityType: string, entityId: string) {
  */
 export type PendingReviewCandidateRow = Awaited<ReturnType<typeof pendingReviewCandidates>>[number]
 
-export async function pendingReviewCandidates(limit = 50) {
+export async function pendingReviewCandidates() {
   return db
     .select({
       id: reviewCandidates.id,
@@ -741,8 +741,7 @@ export async function pendingReviewCandidates(limit = 50) {
     .leftJoin(sources, eq(sources.id, reviewCandidates.sourceId))
     .leftJoin(organizations, eq(organizations.id, sources.organizationId))
     .where(eq(reviewCandidates.status, "pending"))
-    .orderBy(asc(reviewCandidates.discoveredAt))
-    .limit(limit)
+    .orderBy(desc(reviewCandidates.discoveredAt))
 }
 
 /**

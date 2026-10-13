@@ -28,6 +28,7 @@
     "scan-weekly-story-candidates": "tsx scripts/scan-weekly-story-candidates.ts",
     "draft-weekly-story": "tsx scripts/draft-weekly-story.ts",
     "publish-weekly-edition": "tsx scripts/publish-weekly-edition.ts",
+    "publish-edition-october-12-2026": "tsx scripts/publish-edition-october-12-2026.ts",
     "crawl": "tsx scripts/crawl.ts",
     "verify-fetch": "tsx scripts/verify-fetch.ts",
     "verify-pipeline": "tsx scripts/verify-pipeline.ts"
