@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ArrowRightIcon, ExternalLinkIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { recordRegistrationHandoff } from "@/lib/actions/handoff-events"
-import { trackEvent } from "@/lib/analytics"
+import { getHandoffSessionFields, trackEvent } from "@/lib/analytics"
 import type { WeeklyStory } from "@/lib/types"
 
 /**
@@ -33,7 +33,7 @@ export function WeeklyStoryCta({ story }: { story: WeeklyStory }) {
         registration_status: story.registrationStatus,
       }
       trackEvent("registration_handoff_clicked", payload)
-      void recordRegistrationHandoff(payload).catch(() => {})
+      void recordRegistrationHandoff({ ...payload, ...getHandoffSessionFields() }).catch(() => {})
     } else {
       trackEvent("weekly_update_activity_clicked", {
         story_id: story.id,

@@ -18,7 +18,11 @@ import type { RegistrationHandoffProps } from "@/lib/analytics"
  * visitor or block the outbound navigation the button already started.
  */
 export async function recordRegistrationHandoff(
-  props: RegistrationHandoffProps & { destination_url: string },
+  props: RegistrationHandoffProps & {
+    destination_url: string
+    session_id?: string | null
+    discovery_origin?: string | null
+  },
 ): Promise<void> {
   try {
     await createHandoffEvent({
@@ -39,6 +43,8 @@ export async function recordRegistrationHandoff(
       town: props.town ?? null,
       state: props.state ?? null,
       zip: props.zip ?? null,
+      sessionId: props.session_id ?? null,
+      discoveryOrigin: props.discovery_origin ?? null,
     })
   } catch (error) {
     console.error("[v0] Failed to record handoff event:", error)

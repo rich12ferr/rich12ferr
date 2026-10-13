@@ -3,7 +3,7 @@
 import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { recordRegistrationHandoff } from "@/lib/actions/handoff-events"
-import { trackEvent, type RegistrationHandoffProps } from "@/lib/analytics"
+import { getHandoffSessionFields, trackEvent, type RegistrationHandoffProps } from "@/lib/analytics"
 
 /**
  * The one outbound-CTA primitive for every registration/website handoff. It
@@ -41,7 +41,7 @@ export function RegistrationHandoffButton({
         destination_url: href,
       })
     }
-    void recordRegistrationHandoff(payload).catch(() => {})
+    void recordRegistrationHandoff({ ...payload, ...getHandoffSessionFields() }).catch(() => {})
   }
 
   return (

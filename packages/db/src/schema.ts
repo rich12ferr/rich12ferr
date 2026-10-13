@@ -1007,6 +1007,11 @@ export const handoffEvents = pgTable(
     town: text("town"),
     state: text("state"),
     zip: text("zip"),
+
+    /** Per-visit id from sessionStorage, so clicks can be joined to the same visit's other events. Null for clicks before this column existed. */
+    sessionId: text("session_id"),
+    /** `DiscoveryOrigin` from `apps/web/lib/analytics.ts` — the surface the visitor was last on ("homepage", "search", ...). */
+    discoveryOrigin: text("discovery_origin"),
   },
   (t) => [
     index("handoff_events_org_idx").on(t.organizationId, t.occurredAt),
