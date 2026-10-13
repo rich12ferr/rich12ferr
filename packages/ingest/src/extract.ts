@@ -43,6 +43,9 @@ ABSOLUTE RULES
 8. For every date, fee, and URL you populate, put the exact supporting text from the page in sourceQuotes. If you cannot quote it, the value must be null.
 9. Set fieldConfidence per field: 1.0 only for values stated plainly and unambiguously; 0.5 or below when you had to interpret layout, footnotes, or tables.
 10. Put anything a human should double-check in ambiguities. An honest ambiguity is more valuable than a confident guess.
+11. seasonStartDate and seasonEndDate are when the program actually runs, separate from registration dates. When the page states one overall session range that covers the program (for example "Summer session: June 16 - July 31" above several camps), use that range for each program it covers, even if the individual program lists no dates of its own, and note that in ambiguities. Never use a registration deadline as a season date, or the reverse.
+12. A year stated anywhere that clearly governs the program (a "Summer 2026" heading, a "2026-27 season" label, a date range that includes the year) applies to the month-and-day dates on that page. If no year governs a month-and-day date, return null per rule 3. Never take the year from the FETCHED date.
+13. Whenever seasonStartDate or seasonEndDate is null, add an ambiguities entry that starts with "Season dates missing:" followed by a short reason (for example "no year stated", "only a weekday schedule given", "page lists no dates"). Reviewers use these to triage.
 
 Set isProgramListing to false for contact pages, news posts, staff directories, and general information pages that do not describe a specific program with its own registration.`
 
@@ -126,6 +129,50 @@ function computeMeanConfidence(result: ExtractionResult): number | null {
 
 const EXTRACTION_CALL_TIMEOUT_MS = 120_000
 
+const datePart = (value: string | null): string | null =>
+  value && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null
+
+/**
+ * Fill a missing season start/end from the structured sessions the model did
+ * extract. This is arithmetic over dates the page stated, not inference, so it
+ * is safe where a guess would not be.
+ *
+ * The end date is only derived when no session recurs: a recurring session's
+ * own end is just its first occurrence, which would understate the season.
+ */
+export function deriveSeasonDates(program: ExtractedProgram): ExtractedProgram {
+  if (program.seasonStartDate && program.seasonEndDate) return program
+
+  const sessions = (program.sessions ?? []).filter(
+    (session) => session.type !== "tryout" && session.type !== "meeting",
+  )
+  const starts = sessions.map((s) => datePart(s.startDatetime)).filter((d): d is string => d !== null)
+  if (starts.length === 0) return program
+
+  const ends = sessions.map((s) => datePart(s.endDatetime)).filter((d): d is string => d !== null)
+  const hasRecurring = sessions.some((session) => session.recurrenceRule)
+  const lastDates = hasRecurring ? [] : [...starts, ...ends]
+
+  const derivedStart = program.seasonStartDate ?? starts.reduce((a, b) => (a < b ? a : b))
+  const derivedEnd =
+    program.seasonEndDate ??
+    (lastDates.length > 0 ? lastDates.reduce((a, b) => (a > b ? a : b)) : null)
+
+  if (derivedStart === program.seasonStartDate && derivedEnd === program.seasonEndDate) {
+    return program
+  }
+
+  return {
+    ...program,
+    seasonStartDate: derivedStart,
+    seasonEndDate: derivedEnd,
+    ambiguities: [
+      ...program.ambiguities,
+      `Season dates derived from the listed sessions (${derivedStart ?? "no start"} to ${derivedEnd ?? "no end"}); confirm against the page.`,
+    ],
+  }
+}
+
 /**
  * Run extraction over one document.
  *
@@ -158,7 +205,7 @@ export async function extractPrograms(input: ExtractInput): Promise<ExtractOutpu
   })
 
   return {
-    result: object,
+    result: { ...object, programs: object.programs.map(deriveSeasonDates) },
     usage: {
       inputTokens: usage?.inputTokens ?? null,
       outputTokens: usage?.outputTokens ?? null,
@@ -208,6 +255,14 @@ export function validateExtraction(program: ExtractedProgram): ValidationIssue[]
       field: "seasonEndDate",
       severity: "error",
       message: "Season ends before it starts",
+    })
+  }
+
+  if (!start || !end) {
+    issues.push({
+      field: !start ? "seasonStartDate" : "seasonEndDate",
+      severity: "warning",
+      message: "Season start or end date not stated; the listing will need date cleanup",
     })
   }
 

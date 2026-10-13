@@ -45,6 +45,9 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
     maxGrade: activity.max_grade === null ? "" : String(activity.max_grade),
     openDate: activity.registration_open_date ?? "",
     closeDate: activity.registration_close_date ?? "",
+    seasonStart: activity.season_start_date ?? "",
+    seasonEnd: activity.season_end_date ?? "",
+    datesReviewed: Boolean(activity.dates_reviewed_at),
     fee: activity.registration_fee === null ? "" : String(activity.registration_fee),
     registrationUrl: activity.registration_url ?? "",
     statusOverride: activity.status_override ?? "auto",
@@ -61,7 +64,18 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
   const computed = registrationStatus(activity, now)
   const effective = form.statusOverride === "auto" ? computed : (form.statusOverride as RegistrationStatus)
 
+  const seasonOrderInvalid =
+    form.seasonStart !== "" && form.seasonEnd !== "" && form.seasonEnd < form.seasonStart
+  const seasonDatesMissing = form.seasonStart === "" || form.seasonEnd === ""
+
   function handleSave() {
+    if (seasonOrderInvalid) {
+      toast.error("Season ends before it starts", {
+        description: "Check the season start and end dates.",
+      })
+      return
+    }
+
     const patch: SaveActivityInput["patch"] = {
       program: {
         title: form.title,
@@ -73,6 +87,11 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
       offering: {
         registrationOpenDate: form.openDate === "" ? null : form.openDate,
         registrationCloseDate: form.closeDate === "" ? null : form.closeDate,
+        seasonStartDate: form.seasonStart === "" ? null : form.seasonStart,
+        seasonEndDate: form.seasonEnd === "" ? null : form.seasonEnd,
+        ...(form.datesReviewed !== initial.datesReviewed && {
+          datesReviewedAt: form.datesReviewed ? new Date() : null,
+        }),
         registrationFee: form.fee === "" ? null : Number(form.fee),
         registrationUrl: form.registrationUrl === "" ? null : form.registrationUrl,
         statusOverride: form.statusOverride === "auto" ? null : form.statusOverride,
@@ -191,6 +210,82 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
                 />
                 <FieldLabel htmlFor="e-beginner">Beginner friendly</FieldLabel>
               </Field>
+            </FieldGroup>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+              Season dates
+              {seasonDatesMissing && !form.datesReviewed && (
+                <Badge variant="outline" className="text-xs">
+                  dates missing
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              When the program actually runs. Check the{" "}
+              {activity.source_url ? (
+                <a
+                  href={activity.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  source page
+                  <ExternalLinkIcon className="size-3" />
+                </a>
+              ) : (
+                "source page"
+              )}{" "}
+              and enter what it states; leave blank if it states none.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="e-season-start">Season starts</FieldLabel>
+                  <Input
+                    id="e-season-start"
+                    type="date"
+                    value={form.seasonStart}
+                    onChange={(e) => set("seasonStart", e.target.value)}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="e-season-end">Season ends</FieldLabel>
+                  <Input
+                    id="e-season-end"
+                    type="date"
+                    min={form.seasonStart || undefined}
+                    aria-invalid={seasonOrderInvalid}
+                    value={form.seasonEnd}
+                    onChange={(e) => set("seasonEnd", e.target.value)}
+                  />
+                </Field>
+              </div>
+              {seasonOrderInvalid && (
+                <p role="alert" className="text-xs text-destructive">
+                  The season end date is before the start date.
+                </p>
+              )}
+              <Field orientation="horizontal">
+                <Switch
+                  id="e-dates-reviewed"
+                  checked={form.datesReviewed}
+                  onCheckedChange={(checked) => set("datesReviewed", Boolean(checked))}
+                />
+                <FieldLabel htmlFor="e-dates-reviewed">
+                  Dates confirmed against the source
+                </FieldLabel>
+              </Field>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Turn this on once you have checked, including when the program has no fixed dates
+                (year-round, drop-in, rolling enrollment). It removes the listing from the cleanup
+                queue.
+              </p>
             </FieldGroup>
           </CardContent>
         </Card>

@@ -280,4 +280,4 @@ export type ExtractionResult = z.infer<typeof extractionResultSchema>
 export const HIGH_STAKES_CONFIDENCE_FLOOR = 0.85
 
 /** Bumped whenever the prompt or schema changes, and recorded per run. */
-export const EXTRACTION_VERSION = "2026.09.2"
+export const EXTRACTION_VERSION = "2026.10.1"
