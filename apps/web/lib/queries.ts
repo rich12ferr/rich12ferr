@@ -4,6 +4,7 @@
 // Display labels live in `lib/labels.ts`, which is safe to import anywhere.
 import "server-only"
 
+import { cache } from "react"
 import {
   adminCounts,
   closingSoonOfferings,
@@ -23,6 +24,7 @@ import {
   pendingWeeklyStoryCandidateCount,
   pendingWeeklyStoryCandidates,
   programSlugsForStaticParams,
+  publishedOfferingsForCounts,
   recentlyOpenedOfferings,
   searchOfferings,
   weeklyEditionBySlug as weeklyEditionBySlugRow,
@@ -266,9 +268,19 @@ export async function activitiesForOrganization(slug: string) {
   return rows.map(listingToActivity)
 }
 
-export async function activitiesForSport(slug: string) {
+// Request-cached so the sport page and its generateMetadata share one read.
+export const activitiesForSport = cache(async (slug: string) => {
   const rows = await offeringsBySportSlug(slug)
   return rows.map(listingToActivity)
+})
+
+/**
+ * The sport page's live set: published offerings whose season hasn't ended.
+ * This is the single definition of a sport's program count — the sport page,
+ * its metadata title, the homepage, and /sports all derive from it.
+ */
+export async function liveActivitiesForSport(slug: string, now = new Date()) {
+  return (await activitiesForSport(slug)).filter((a) => !hasSeasonEnded(a, now))
 }
 
 /**
@@ -638,18 +650,32 @@ export async function upcomingSeasonCounts(now = new Date(), audienceTypes?: str
   })
 }
 
-export async function sportSummaries(now = new Date(), audienceTypes?: string[]) {
-  const [sportRows, list] = await Promise.all([listSports(), allActivities(audienceTypes)])
+  /**
+   * Per-sport `total` and `openNow` come from the same live set as
+   * `liveActivitiesForSport`, so every surface shows the sport page's number.
+   *
+   * `rankAudienceTypes` only feeds the sort key, which keeps the tile order
+   * (and the homepage's "Popular right now" picks) exactly as before.
+   */
+  export async function sportSummaries(now = new Date(), rankAudienceTypes?: string[]) {
+  const [sportRows, published, ranked] = await Promise.all([
+  listSports(),
+  publishedOfferingsForCounts(),
+  allActivities(rankAudienceTypes),
+  ])
+  const live = published.map(listingToActivity).filter((a) => !hasSeasonEnded(a, now))
+  const rankTotals = new Map<string, number>()
+  for (const a of ranked) rankTotals.set(a.sport_id, (rankTotals.get(a.sport_id) ?? 0) + 1)
   return sportRows
-    .map((sport) => {
-      const items = list.filter((a) => a.sport_id === sport.id)
-      const openNow = items.filter((a) =>
-        ["open", "closing_soon"].includes(registrationStatus(a, now)),
-      ).length
-      return { sport: sport as unknown as Sport, total: items.length, openNow }
-    })
-    .sort((a, b) => b.total - a.total || a.sport.name.localeCompare(b.sport.name))
-}
+  .map((sport) => {
+  const items = live.filter((a) => a.sport_id === sport.id)
+  const openNow = items.filter((a) =>
+  ["open", "closing_soon"].includes(registrationStatus(a, now)),
+  ).length
+  return { sport: sport as unknown as Sport, total: items.length, openNow, rankTotal: rankTotals.get(sport.id) ?? 0 }
+  })
+  .sort((a, b) => b.rankTotal - a.rankTotal || a.sport.name.localeCompare(b.sport.name))
+  }
 
 export async function organizationSummaries(now = new Date(), audienceTypes?: string[]) {
   const [orgRows, list] = await Promise.all([listOrganizations(), allActivities(audienceTypes)])

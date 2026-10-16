@@ -38,6 +38,7 @@ import {
 } from "@/lib/registration-status"
 import { VerificationBadge } from "@/components/verification-badge"
 import { buildHandoffProps } from "@/lib/analytics"
+import { activityMetadata } from "@/lib/seo"
 
 /**
  * Registration status and "checked N days ago" are computed from the current
@@ -55,10 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const activity = await activityBySlug(slug)
   if (!activity) return { title: "Activity not found" }
-  return {
-    title: `${activity.title} — ${activity.organization.name}`,
-    description: activity.description,
-  }
+  return activityMetadata(activity)
 }
 
 function DetailRow({

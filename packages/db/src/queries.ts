@@ -511,9 +511,19 @@ export async function offeringsBySportSlug(slug: string) {
     and(or(eq(sports.slug, slug), eq(sports.id, slug)), eq(programOfferings.published, true)),
   )
   return rows.map(normalizeListing)
-}
+  }
 
-export async function listSports() {
+  /**
+   * Every published offering under the exact join and predicate
+   * `offeringsBySportSlug` uses, minus the sport filter. Grouping this by sport
+   * reproduces each sport page's set, so displayed counts can't drift from it.
+   */
+  export async function publishedOfferingsForCounts() {
+  const rows = await baseJoin().where(eq(programOfferings.published, true))
+  return rows.map(normalizeListing)
+  }
+  
+  export async function listSports() {
   return db.select().from(sports).orderBy(asc(sports.name))
 }
 
