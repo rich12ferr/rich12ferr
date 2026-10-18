@@ -23,6 +23,8 @@
     "generate-source-registry-seed": "tsx scripts/generate-source-registry-seed.ts",
     "import-source-registry": "tsx scripts/import-source-registry.ts",
     "approve-source": "tsx scripts/approve-source.ts",
+    "reenable-source": "tsx scripts/reenable-source.ts",
+    "find-sources": "tsx scripts/find-sources.ts",
     "approve-candidates": "tsx scripts/approve-candidates.ts",
     "backfill-organization-website": "tsx scripts/backfill-organization-website.ts",
     "scan-weekly-story-candidates": "tsx scripts/scan-weekly-story-candidates.ts",
