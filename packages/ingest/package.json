@@ -25,6 +25,8 @@
     "approve-source": "tsx scripts/approve-source.ts",
     "reenable-source": "tsx scripts/reenable-source.ts",
     "disable-source": "tsx scripts/disable-source.ts",
+    "find-orgs": "tsx scripts/find-orgs.ts",
+    "repoint-source-org": "tsx scripts/repoint-source-org.ts",
     "find-sources": "tsx scripts/find-sources.ts",
     "approve-candidates": "tsx scripts/approve-candidates.ts",
     "backfill-organization-website": "tsx scripts/backfill-organization-website.ts",
