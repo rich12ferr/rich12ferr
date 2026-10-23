@@ -46,6 +46,7 @@ import {
   numeric,
   pgTable,
   text,
+  time,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
@@ -264,6 +265,10 @@ export const programs = pgTable(
     programType: text("program_type").notNull().default("recreational"),
     /** "league" | "class" | "camp" | "clinic" | "tournament" | "drop_in" | "recurring_class" | "other". */
     programFormat: text("program_format"),
+    /** Only when programFormat = "camp". See CAMP_FOCUSES in @openplay/core. */
+    campFocus: text("camp_focus"),
+    /** Only when programFormat = "camp": "day" | "overnight". */
+    campStay: text("camp_stay"),
     /** "youth" | "adult" | "family" | "all_ages". */
     audienceType: text("audience_type"),
     /** "recreational" | "competitive" | "travel" | "elite". */
@@ -299,6 +304,7 @@ export const programs = pgTable(
     index("programs_sport_idx").on(t.sportId),
     index("programs_match_key_idx").on(t.matchKey),
     index("programs_age_range_idx").on(t.minAge, t.maxAge),
+    index("programs_program_format_idx").on(t.programFormat),
   ],
 )
 
@@ -366,6 +372,18 @@ export const programOfferings = pgTable(
     sessions: jsonb("sessions").notNull().default([]),
     /** Freeform labels for search/filtering beyond the sport/program-format taxonomy. */
     tags: text("tags").array().notNull().default([]),
+
+    // Camp-only coverage facets. Null means "not posted", never "no".
+    /** See CAMP_PERIODS in @openplay/core, e.g. "summer" | "february_break". */
+    campPeriod: text("camp_period"),
+    /** "half_day" | "full_day". */
+    dayLength: text("day_length"),
+    /** Local wall-clock time as written by the org, "HH:MM:SS". */
+    dailyStartTime: time("daily_start_time"),
+    dailyEndTime: time("daily_end_time"),
+    beforeCare: boolean("before_care"),
+    afterCare: boolean("after_care"),
+    extendedCareDetails: text("extended_care_details"),
 
     tryoutRequired: boolean("tryout_required").notNull().default(false),
     tryoutDetails: text("tryout_details"),

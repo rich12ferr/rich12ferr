@@ -23,6 +23,7 @@ import {
   sports,
   type ReviewCandidateRow,
 } from "@openplay/db"
+import { inferCampFocus, inferCampPeriod, inferCampStay, looksLikeCamp } from "@openplay/core"
 import { geocodeFromGazetteer } from "./geocode"
 import { programMatchKey, resolveSportSlug, significantTokens } from "./entity-resolution"
 
@@ -175,6 +176,26 @@ export async function approveReviewCandidate(
   const minGrade = (payload.minGrade as number | null) ?? null
   const maxGrade = (payload.maxGrade as number | null) ?? null
 
+  const description = (payload.description as string | null) ?? null
+  const programFormat =
+    (payload.programFormat as string | null) ?? (looksLikeCamp(title) ? "camp" : null)
+  const isCamp = programFormat === "camp"
+  const campString = (key: string) => (isCamp ? ((payload[key] as string | null) ?? null) : null)
+  const campBool = (key: string) => (isCamp ? ((payload[key] as boolean | null) ?? null) : null)
+  const campFields = {
+    campFocus: isCamp ? (campString("campFocus") ?? inferCampFocus(title, sportSlug)) : null,
+    campStay: isCamp ? (campString("campStay") ?? inferCampStay(`${title} ${description ?? ""}`)) : null,
+  }
+  const campOfferingFields = {
+    campPeriod: isCamp ? (campString("campPeriod") ?? inferCampPeriod(season)) : null,
+    dayLength: campString("dayLength"),
+    dailyStartTime: campString("dailyStartTime"),
+    dailyEndTime: campString("dailyEndTime"),
+    beforeCare: campBool("beforeCare"),
+    afterCare: campBool("afterCare"),
+    extendedCareDetails: campString("extendedCareDetails"),
+  }
+
   const programId = newId("prog")
   const slug = await uniqueProgramSlug(`${title} ${org.id}`)
   const matchKey = programMatchKey({
@@ -199,8 +220,10 @@ export async function approveReviewCandidate(
       organizationId: org.id,
       sportId: sport.id,
       title,
-      description: (payload.description as string | null) ?? null,
+      description,
       programType: (payload.programType as string | null) ?? "recreational",
+      programFormat,
+      ...campFields,
       gender,
       minAge,
       maxAge,
@@ -242,6 +265,7 @@ export async function approveReviewCandidate(
       tryoutRequired: Boolean(payload.tryoutRequired),
       tryoutDetails: (payload.tryoutDetails as string | null) ?? null,
       tryoutDate: (payload.tryoutDate as string | null) ?? null,
+      ...campOfferingFields,
       town,
       state,
       zip: (payload.zip as string | null) ?? null,

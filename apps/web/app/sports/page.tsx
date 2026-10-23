@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ArrowRightIcon } from "lucide-react"
+import { CAMPS_ENRICHMENT_SPORT_SLUG } from "@openplay/core"
 import { SportMarker } from "@/components/sport-marker"
 import { seasonLabels, sportSummaries } from "@/lib/queries"
 
@@ -17,7 +18,7 @@ export const metadata = {
 
 export default async function SportsPage() {
   const now = new Date()
-  const rows = await sportSummaries(now)
+  const rows = (await sportSummaries(now)).filter(({ sport }) => sport.slug !== CAMPS_ENRICHMENT_SPORT_SLUG)
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">

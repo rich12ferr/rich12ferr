@@ -14,6 +14,7 @@ export * from "./domain/provenance"
 export * from "./domain/registration"
 export * from "./domain/eligibility"
 export * from "./domain/sport"
+export * from "./domain/camp"
 
 export * from "./search/ranking"
 export * from "./format"

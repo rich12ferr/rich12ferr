@@ -114,6 +114,73 @@ export const PROGRAM_FORMATS = [
 ] as const
 export type ProgramFormat = (typeof PROGRAM_FORMATS)[number]
 
+/**
+ * Camp facets. A camp is a `programFormat`, not a sport: the sport stays the
+ * activity (a soccer camp is still soccer) and these describe the camp itself.
+ */
+export const CAMP_FOCUSES = [
+  "sports",
+  "arts",
+  "stem",
+  "outdoor_adventure",
+  "general",
+  "academic",
+  "other",
+] as const
+export type CampFocus = (typeof CAMP_FOCUSES)[number]
+export const CAMP_FOCUS_LABELS: Record<CampFocus, string> = {
+  sports: "Sports",
+  arts: "Arts",
+  stem: "STEM",
+  outdoor_adventure: "Outdoor adventure",
+  general: "Traditional day camp",
+  academic: "Academic",
+  other: "Other",
+}
+
+export const CAMP_STAYS = ["day", "overnight"] as const
+export type CampStay = (typeof CAMP_STAYS)[number]
+export const CAMP_STAY_LABELS: Record<CampStay, string> = {
+  day: "Day camp",
+  overnight: "Overnight camp",
+}
+
+/** Vermont school breaks don't map onto the four seasons, so they're explicit. */
+export const CAMP_PERIODS = [
+  "summer",
+  "winter_break",
+  "february_break",
+  "april_break",
+  "other_break",
+  "other",
+] as const
+export type CampPeriod = (typeof CAMP_PERIODS)[number]
+export const CAMP_PERIOD_LABELS: Record<CampPeriod, string> = {
+  summer: "Summer",
+  winter_break: "Winter break",
+  february_break: "February break",
+  april_break: "April break",
+  other_break: "Other school break",
+  other: "Other time of year",
+}
+
+export const DAY_LENGTHS = ["half_day", "full_day"] as const
+export type DayLength = (typeof DAY_LENGTHS)[number]
+export const DAY_LENGTH_LABELS: Record<DayLength, string> = {
+  half_day: "Half day",
+  full_day: "Full day",
+}
+
+/** Derived from season start/end dates, never stored. */
+export const SESSION_LENGTHS = ["single_day", "few_days", "one_week", "multi_week"] as const
+export type SessionLength = (typeof SESSION_LENGTHS)[number]
+export const SESSION_LENGTH_LABELS: Record<SessionLength, string> = {
+  single_day: "Single day",
+  few_days: "2–4 days",
+  one_week: "One week",
+  multi_week: "Multi-week",
+}
+
 /** Who the program/offering targets. Independent of `genderEligibility`. */
 export const AUDIENCE_TYPES = ["youth", "adult", "family", "all_ages"] as const
 export type AudienceType = (typeof AUDIENCE_TYPES)[number]
