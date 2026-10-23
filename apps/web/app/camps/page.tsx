@@ -85,8 +85,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
         <CampQuickPicks params={chipParams} />
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[17.5rem_1fr]">
-        <aside aria-label="Camp filters">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+        <aside aria-label="Camp filters" className="min-w-0">
           <CampFilters />
           <div className="flex items-center justify-between gap-3 lg:hidden">
             <CampFilters variant="sheet" />
@@ -98,7 +98,7 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           </div>
         </aside>
 
-        <div className="flex flex-col gap-8">
+        <div className="flex min-w-0 flex-col gap-8">
           {results.length === 0 ? (
             <Empty className="rounded-2xl border border-border bg-card">
               <EmptyHeader>
