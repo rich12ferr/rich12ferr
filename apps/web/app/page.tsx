@@ -5,7 +5,7 @@ import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
 import { HeroAlertForm } from "@/components/hero-alert-form"
 import { HomepageEngagementTracker } from "@/components/homepage-engagement-tracker"
-import { NewsletterForm } from "@/components/newsletter-form"
+import { NewsletterCta } from "@/components/newsletter-cta"
 import { QuickSearch } from "@/components/quick-search"
 import { SeasonMarker } from "@/components/season-marker"
 import { SectionHeading } from "@/components/section-heading"
@@ -238,28 +238,14 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* Weekly digest — the newsletter opt-in, TLDR-style. A themed card
-          rather than a bg-foreground/text-background band: those tokens
-          invert between light/dark mode, which previously left the input
-          styled for a dark band that had turned light. */}
+      {/* Weekly digest — the newsletter opt-in, TLDR-style. */}
       <section data-home-section="newsletter" className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-secondary/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8">
-          <div className="flex max-w-xl flex-col gap-1.5">
-            <p className="inline-flex w-fit items-center gap-2 rounded-full bg-highlight px-3 py-1 text-xs font-semibold text-highlight-foreground">
-              Free weekly email
-            </p>
-            <h2 className="font-display text-xl font-extrabold tracking-tight text-balance sm:text-2xl">
-              The week in Vermont youth activities, in five minutes.
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
-              Bite-sized summaries of new programs, registration openings, and deadlines. One
-              email a week, one-click unsubscribe.
-            </p>
-          </div>
-          <div className="w-full max-w-md sm:shrink-0">
-            <NewsletterForm source="homepage" />
-          </div>
-        </div>
+        <NewsletterCta
+          source="homepage"
+          eyebrow="Free weekly email"
+          title="The week in Vermont youth activities, in five minutes."
+          description="Bite-sized summaries of new programs, registration openings, and deadlines. One email a week, one-click unsubscribe."
+        />
       </section>
 
       {/* Browse by sport */}

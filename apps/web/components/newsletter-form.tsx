@@ -18,7 +18,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * the Alerts page (the `source` prop distinguishes them for funnel reporting).
  * Login-free, single field — the whole point is zero friction.
  */
-export function NewsletterForm({ source }: { source: "homepage" | "alerts_page" }) {
+export type NewsletterSource = "homepage" | "alerts_page" | "camps_page"
+
+export function NewsletterForm({ source }: { source: NewsletterSource }) {
   const [email, setEmail] = useState("")
   const [done, setDone] = useState(false)
   const [pending, startTransition] = useTransition()
