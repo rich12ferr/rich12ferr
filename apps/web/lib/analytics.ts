@@ -128,7 +128,7 @@ export interface AnalyticsEventMap {
   /** A homepage section scrolled at least halfway into view, fired once per section per page view. */
   homepage_section_viewed: { section: string }
   newsletter_subscribed: {
-    source: "homepage" | "alerts_page"
+    source: "homepage" | "alerts_page" | "camps_page"
     /** "subscribed" for a brand-new address, "resubscribed" for a returning one; "already_subscribed" isn't tracked (no state change). */
     outcome: "subscribed" | "resubscribed"
   }

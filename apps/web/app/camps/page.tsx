@@ -4,6 +4,7 @@ import { PlusIcon, TentIcon } from "lucide-react"
 import { ActivityCard } from "@/components/activity-card"
 import { CampFilters } from "@/components/camp-filters"
 import { CampQuickPicks } from "@/components/camp-quick-picks"
+import { NewsletterCta } from "@/components/newsletter-cta"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
@@ -52,6 +53,16 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
         event="search_results_viewed"
         payload={{ result_count: results.length, sport: null, season: filters.period, has_filters: activeFilters > 0 }}
       />
+
+      <section aria-labelledby="camps-newsletter" className="mb-8">
+        <NewsletterCta
+          source="camps_page"
+          headingId="camps-newsletter"
+          eyebrow="Free camp alerts"
+          title="Planning for Summer 2027?"
+          description="Be the first to know when Vermont camps announce their schedules and open registration."
+        />
+      </section>
 
       <header className="mb-5 flex flex-col gap-3">
         <p className="inline-flex items-center gap-1.5 text-xs font-bold tracking-widest text-primary uppercase">

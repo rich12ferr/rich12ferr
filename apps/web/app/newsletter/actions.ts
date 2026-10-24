@@ -20,7 +20,7 @@ export type SubscribeResult =
  */
 export async function subscribeToNewsletterAction(
   rawEmail: string,
-  source?: "homepage" | "alerts_page",
+  source?: "homepage" | "alerts_page" | "camps_page",
 ): Promise<SubscribeResult> {
   const email = rawEmail.trim().toLowerCase()
   if (!EMAIL_RE.test(email)) {
