@@ -11,9 +11,20 @@ import {
   PencilLineIcon,
   PhoneIcon,
   ShieldCheckIcon,
+  TentIcon,
   TicketIcon,
   UsersIcon,
 } from "lucide-react"
+import {
+  campFocusLabel,
+  campPeriodLabel,
+  campStayLabel,
+  careLabel,
+  dailyHoursLabel,
+  dayLengthLabel,
+  isCamp,
+  sessionLengthLabel,
+} from "@/lib/camp-format"
 import { ActivityActions } from "@/components/activity-actions"
 import { ActivityBadges } from "@/components/activity-badges"
 import { ActivityCard } from "@/components/activity-card"
@@ -38,6 +49,7 @@ import {
 } from "@/lib/registration-status"
 import { VerificationBadge } from "@/components/verification-badge"
 import { buildHandoffProps } from "@/lib/analytics"
+import { activityMetadata } from "@/lib/seo"
 
 /**
  * Registration status and "checked N days ago" are computed from the current
@@ -55,10 +67,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const activity = await activityBySlug(slug)
   if (!activity) return { title: "Activity not found" }
-  return {
-    title: `${activity.title} — ${activity.organization.name}`,
-    description: activity.description,
-  }
+  return activityMetadata(activity)
 }
 
 function DetailRow({
@@ -187,6 +196,30 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                   </>
                 ) : null}
               </DetailRow>
+
+              {isCamp(activity) ? (
+                <DetailRow icon={TentIcon} label="Camp details">
+                  <ul className="flex flex-col gap-0.5">
+                    {campStayLabel(activity.camp_stay) || campFocusLabel(activity.camp_focus) ? (
+                      <li>
+                        {[campStayLabel(activity.camp_stay), campFocusLabel(activity.camp_focus)]
+                          .filter(Boolean)
+                          .join(" \u00b7 ")}
+                      </li>
+                    ) : null}
+                    {campPeriodLabel(activity.camp_period) ? (
+                      <li>When: {campPeriodLabel(activity.camp_period)}</li>
+                    ) : null}
+                    {dayLengthLabel(activity.day_length) || dailyHoursLabel(activity) ? (
+                      <li>
+                        Daily: {[dayLengthLabel(activity.day_length), dailyHoursLabel(activity)].filter(Boolean).join(", ")}
+                      </li>
+                    ) : null}
+                    {sessionLengthLabel(activity) ? <li>Session: {sessionLengthLabel(activity)}</li> : null}
+                    {careLabel(activity) ? <li>{careLabel(activity)} available</li> : null}
+                  </ul>
+                </DetailRow>
+              ) : null}
 
               <DetailRow icon={CalendarIcon} label="Dates">
                 <ul className="flex flex-col gap-0.5">

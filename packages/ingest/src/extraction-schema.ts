@@ -229,6 +229,34 @@ export const extractedProgramSchema = z.object({
     ),
   equipmentRequirements: z.string().nullable(),
   beginnerFriendly: z.boolean().nullable(),
+
+  // ---- Camp (only when programFormat is "camp") ---------------------------
+  campFocus: z
+    .enum(["sports", "arts", "stem", "outdoor_adventure", "general", "academic", "other"])
+    .nullable()
+    .describe("Only when programFormat is camp. What the camp is about; 'general' = traditional day camp."),
+  campStay: z.enum(["day", "overnight"]).nullable().describe("Only when programFormat is camp."),
+  campPeriod: z
+    .enum(["summer", "winter_break", "february_break", "april_break", "other_break", "other"])
+    .nullable()
+    .describe("Only when programFormat is camp and the page states when it runs (e.g. 'February vacation camp')."),
+  dayLength: z.enum(["half_day", "full_day"]).nullable().describe("Only when programFormat is camp."),
+  dailyStartTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .describe("Only when programFormat is camp. 24-hour HH:MM daily drop-off/start, as stated."),
+  dailyEndTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .describe("Only when programFormat is camp. 24-hour HH:MM daily pick-up/end, as stated."),
+  beforeCare: z.boolean().nullable().describe("Only when programFormat is camp and the page says so."),
+  afterCare: z.boolean().nullable().describe("Only when programFormat is camp and the page says so."),
+  extendedCareDetails: z
+    .string()
+    .nullable()
+    .describe("Only when programFormat is camp. Care hours/prices as written."),
   tags: z
     .array(z.string())
     .nullable()

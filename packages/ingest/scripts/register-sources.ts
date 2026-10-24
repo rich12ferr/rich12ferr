@@ -40,7 +40,7 @@ type SeedSource = {
 const SEED_SOURCES: SeedSource[] = [
   {
     id: "src_montpelier_rec_home",
-    organizationId: "org_montpelier_rec",
+    organizationId: "org-us-vt-montpelier-recreation",
     url: "https://www.montpelier-vt.org/",
     sourceType: "organization_website",
     label: "Montpelier city site (recreation landing)",
@@ -48,7 +48,7 @@ const SEED_SOURCES: SeedSource[] = [
   },
   {
     id: "src_montpelier_youth_programs",
-    organizationId: "org_montpelier_rec",
+    organizationId: "org-us-vt-montpelier-recreation",
     url: "https://www.montpelier-vt.org/988/Youth-Programs",
     sourceType: "organization_website",
     label: "Montpelier Youth Programs listing",
@@ -56,7 +56,7 @@ const SEED_SOURCES: SeedSource[] = [
   },
   {
     id: "src_waterbury_rec",
-    organizationId: "org_waterbury_rec",
+    organizationId: "org-us-vt-waterbury-recreation-department",
     url: "https://www.waterburyvt.com/departments/recreation",
     sourceType: "registration_platform",
     label: "Waterbury Recreation (MyRec portal)",

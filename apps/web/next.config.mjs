@@ -16,6 +16,9 @@ const nextConfig = {
   // guard otherwise blocks as cross-origin. Dev-only; has no effect on
   // production builds.
   allowedDevOrigins: ["*.vercel.run"],
+  async redirects() {
+    return [{ source: "/sports/camps-enrichment", destination: "/camps", permanent: true }]
+  },
   async headers() {
     return [
       {

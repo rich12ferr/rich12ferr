@@ -4,6 +4,7 @@
 // Display labels live in `lib/labels.ts`, which is safe to import anywhere.
 import "server-only"
 
+import { cache } from "react"
 import {
   adminCounts,
   closingSoonOfferings,
@@ -23,6 +24,7 @@ import {
   pendingWeeklyStoryCandidateCount,
   pendingWeeklyStoryCandidates,
   programSlugsForStaticParams,
+  publishedOfferingsForCounts,
   recentlyOpenedOfferings,
   searchOfferings,
   weeklyEditionBySlug as weeklyEditionBySlugRow,
@@ -34,7 +36,7 @@ import {
   type WeeklyStoryCandidateRow,
   type WeeklyStoryRow,
 } from "@openplay/db"
-import { LAUNCH_HUB, SEASONS } from "@openplay/core"
+import { LAUNCH_HUB, SEASONS, coversWorkday, sessionLengthBucket } from "@openplay/core"
 import { DEFAULT_RADIUS as DEFAULT_RADIUS_MILES } from "@/lib/labels"
 import {
   CLOSING_SOON_DAYS,
@@ -204,6 +206,17 @@ export function listingToActivity(listing: OfferingListing): ActivityWithRelatio
     published: listing.published,
     created_at: listing.createdAt.toISOString(),
     updated_at: listing.updatedAt.toISOString(),
+
+    program_format: listing.programFormat,
+    camp_focus: listing.campFocus,
+    camp_stay: listing.campStay,
+    camp_period: listing.campPeriod,
+    day_length: listing.dayLength,
+    daily_start_time: listing.dailyStartTime,
+    daily_end_time: listing.dailyEndTime,
+    before_care: listing.beforeCare,
+    after_care: listing.afterCare,
+    extended_care_details: listing.extendedCareDetails,
   }
 
   return { ...activity, organization, sport }
@@ -266,9 +279,19 @@ export async function activitiesForOrganization(slug: string) {
   return rows.map(listingToActivity)
 }
 
-export async function activitiesForSport(slug: string) {
+// Request-cached so the sport page and its generateMetadata share one read.
+export const activitiesForSport = cache(async (slug: string) => {
   const rows = await offeringsBySportSlug(slug)
   return rows.map(listingToActivity)
+})
+
+/**
+ * The sport page's live set: published offerings whose season hasn't ended.
+ * This is the single definition of a sport's program count — the sport page,
+ * its metadata title, the homepage, and /sports all derive from it.
+ */
+export async function liveActivitiesForSport(slug: string, now = new Date()) {
+  return (await activitiesForSport(slug)).filter((a) => !hasSeasonEnded(a, now))
 }
 
 /**
@@ -332,6 +355,15 @@ export type SearchParamsShape = {
   cost?: string
   sort?: string
   audience?: string
+  /** Camp facets. `format=camp` scopes any search to camps. */
+  format?: string
+  focus?: string
+  stay?: string
+  period?: string
+  length?: string
+  coverage?: string
+  from?: string
+  to?: string
 }
 
 export type SearchFilters = {
@@ -355,7 +387,19 @@ export type SearchFilters = {
    * which defaults to "no constraint".
    */
   audience: string
+  format: string | null
+  focus: string | null
+  stay: string | null
+  period: string | null
+  /** A `SessionLength` bucket, computed from run dates after the query. */
+  length: string | null
+  /** "workday": full day, or before and after care. */
+  coverage: string | null
+  from: string | null
+  to: string | null
 }
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /** Maps the UI's 3-way audience choice onto the schema's 4-value vocabulary. */
 export const AUDIENCE_FILTER_TO_TYPES: Record<string, string[] | undefined> = {
@@ -387,7 +431,19 @@ export function parseFilters(params: SearchParamsShape): SearchFilters {
     cost: params.cost && params.cost !== "any" ? params.cost : null,
     sort: params.sort ?? "relevance",
     audience: params.audience && params.audience in AUDIENCE_FILTER_TO_TYPES ? params.audience : "youth",
+    format: pick(params.format),
+    focus: pick(params.focus),
+    stay: pick(params.stay),
+    period: pick(params.period),
+    length: pick(params.length),
+    coverage: params.coverage === "workday" ? "workday" : null,
+    from: params.from && ISO_DATE.test(params.from) ? params.from : null,
+    to: params.to && ISO_DATE.test(params.to) ? params.to : null,
   }
+}
+
+function pick(value?: string) {
+  return value && value !== "any" ? value : null
 }
 
 export type EligibilityFlag = "eligible" | "check_rules" | "no_criteria"
@@ -480,11 +536,23 @@ export async function searchActivities(
     tryoutRequired: filters.tryouts === "yes" ? true : filters.tryouts === "no" ? false : null,
     freeOnly: filters.cost === "free",
     audienceTypes: AUDIENCE_FILTER_TO_TYPES[filters.audience],
+    programFormats: filters.format ? [filters.format] : undefined,
+    campFocuses: filters.focus ? [filters.focus] : undefined,
+    campStays: filters.stay ? [filters.stay] : undefined,
+    campPeriods: filters.period ? [filters.period] : undefined,
+    dayLengths: filters.coverage === "workday" ? undefined : filters.length === "half_day" || filters.length === "full_day" ? [filters.length] : undefined,
+    runsFrom: filters.from,
+    runsTo: filters.to,
   })
 
   const results: SearchResult[] = []
 
   for (const row of rows) {
+    if (filters.length && filters.length !== "half_day" && filters.length !== "full_day") {
+      if (sessionLengthBucket(row.seasonStartDate, row.seasonEndDate) !== filters.length) continue
+    }
+    if (filters.coverage === "workday" && !coversWorkday(row)) continue
+
     const activity = listingToActivity(row)
     const status = registrationStatus(activity, now)
     // The collapsed state actually shown on the card (see `ActivityCard`).
@@ -605,7 +673,28 @@ export function countActiveFilters(filters: SearchFilters) {
   // "youth" is the default scope, not an unconstrained state, so only a
   // *different* audience choice counts as an active filter.
   if (filters.audience !== "youth") count++
+  // `format` is the page's scope on /camps, not a user-chosen filter.
+  if (filters.focus) count++
+  if (filters.stay) count++
+  if (filters.period) count++
+  if (filters.length) count++
+  if (filters.coverage) count++
+  if (filters.from || filters.to) count++
   return count
+}
+
+/**
+ * Camps order: open registration first, then soonest start. Undated camps sort
+ * last; the hub renders them under "Dates not posted yet".
+ */
+export function sortCamps(results: SearchResult[]) {
+  return [...results].sort((a, b) => {
+    const stateRank = customerStateRank[a.customerState] - customerStateRank[b.customerState]
+    if (stateRank !== 0) return stateRank
+    const as = parseDate(a.season_start_date)?.getTime() ?? Number.POSITIVE_INFINITY
+    const bs = parseDate(b.season_start_date)?.getTime() ?? Number.POSITIVE_INFINITY
+    return as - bs
+  })
 }
 
 /* -------------------------------------------------------------------------- */
@@ -638,18 +727,32 @@ export async function upcomingSeasonCounts(now = new Date(), audienceTypes?: str
   })
 }
 
-export async function sportSummaries(now = new Date(), audienceTypes?: string[]) {
-  const [sportRows, list] = await Promise.all([listSports(), allActivities(audienceTypes)])
+  /**
+   * Per-sport `total` and `openNow` come from the same live set as
+   * `liveActivitiesForSport`, so every surface shows the sport page's number.
+   *
+   * `rankAudienceTypes` only feeds the sort key, which keeps the tile order
+   * (and the homepage's "Popular right now" picks) exactly as before.
+   */
+  export async function sportSummaries(now = new Date(), rankAudienceTypes?: string[]) {
+  const [sportRows, published, ranked] = await Promise.all([
+  listSports(),
+  publishedOfferingsForCounts(),
+  allActivities(rankAudienceTypes),
+  ])
+  const live = published.map(listingToActivity).filter((a) => !hasSeasonEnded(a, now))
+  const rankTotals = new Map<string, number>()
+  for (const a of ranked) rankTotals.set(a.sport_id, (rankTotals.get(a.sport_id) ?? 0) + 1)
   return sportRows
-    .map((sport) => {
-      const items = list.filter((a) => a.sport_id === sport.id)
-      const openNow = items.filter((a) =>
-        ["open", "closing_soon"].includes(registrationStatus(a, now)),
-      ).length
-      return { sport: sport as unknown as Sport, total: items.length, openNow }
-    })
-    .sort((a, b) => b.total - a.total || a.sport.name.localeCompare(b.sport.name))
-}
+  .map((sport) => {
+  const items = live.filter((a) => a.sport_id === sport.id)
+  const openNow = items.filter((a) =>
+  ["open", "closing_soon"].includes(registrationStatus(a, now)),
+  ).length
+  return { sport: sport as unknown as Sport, total: items.length, openNow, rankTotal: rankTotals.get(sport.id) ?? 0 }
+  })
+  .sort((a, b) => b.rankTotal - a.rankTotal || a.sport.name.localeCompare(b.sport.name))
+  }
 
 export async function organizationSummaries(now = new Date(), audienceTypes?: string[]) {
   const [orgRows, list] = await Promise.all([listOrganizations(), allActivities(audienceTypes)])

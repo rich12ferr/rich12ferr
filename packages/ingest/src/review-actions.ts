@@ -23,6 +23,7 @@ import {
   sports,
   type ReviewCandidateRow,
 } from "@openplay/db"
+import { inferCampFocus, inferCampPeriod, inferCampStay, looksLikeCamp } from "@openplay/core"
 import { geocodeFromGazetteer } from "./geocode"
 import { programMatchKey, resolveSportSlug, significantTokens } from "./entity-resolution"
 
@@ -74,14 +75,18 @@ async function uniqueProgramSlug(base: string): Promise<string> {
  * schema allows both to be null (a page can say "2026-2027 registration"
  * without ever using the words "fall" or "winter"). Rather than invent a
  * value from nothing, this only fills gaps using other signals already
- * present on the *same* payload — the year embedded in the title/description,
- * or a sibling program's season/seasonYear for the same organization.
+ * present on the *same* payload — the year embedded in the title/description —
+ * and, as a last resort when a season is known but no year is, the year the
+ * page was crawled (pages advertise their current or upcoming season). Those
+ * offerings carry no dates, so they surface in the admin missing-dates queue
+ * for a human to confirm.
  */
-function inferSeasonYear(payload: Record<string, unknown>): number | null {
+function inferSeasonYear(payload: Record<string, unknown>, discoveredAt: Date): number | null {
   if (typeof payload.seasonYear === "number") return payload.seasonYear
   const text = `${payload.title ?? ""} ${payload.description ?? ""}`
   const match = text.match(/20\d{2}/)
-  return match ? Number(match[0]) : null
+  if (match) return Number(match[0])
+  return typeof payload.season === "string" ? discoveredAt.getFullYear() : null
 }
 
 function inferSeason(payload: Record<string, unknown>): string | null {
@@ -156,7 +161,7 @@ export async function approveReviewCandidate(
     return { ok: false, error: `No sport matches "${payload.sportName}" (slug "${sportSlug}").` }
   }
 
-  const seasonYear = inferSeasonYear(payload)
+  const seasonYear = inferSeasonYear(payload, candidate.discoveredAt)
   const season = inferSeason(payload)
   if (!seasonYear || !season) {
     return {
@@ -170,6 +175,26 @@ export async function approveReviewCandidate(
   const maxAge = (payload.maxAge as number | null) ?? null
   const minGrade = (payload.minGrade as number | null) ?? null
   const maxGrade = (payload.maxGrade as number | null) ?? null
+
+  const description = (payload.description as string | null) ?? null
+  const programFormat =
+    (payload.programFormat as string | null) ?? (looksLikeCamp(title) ? "camp" : null)
+  const isCamp = programFormat === "camp"
+  const campString = (key: string) => (isCamp ? ((payload[key] as string | null) ?? null) : null)
+  const campBool = (key: string) => (isCamp ? ((payload[key] as boolean | null) ?? null) : null)
+  const campFields = {
+    campFocus: isCamp ? (campString("campFocus") ?? inferCampFocus(title, sportSlug)) : null,
+    campStay: isCamp ? (campString("campStay") ?? inferCampStay(`${title} ${description ?? ""}`)) : null,
+  }
+  const campOfferingFields = {
+    campPeriod: isCamp ? (campString("campPeriod") ?? inferCampPeriod(season)) : null,
+    dayLength: campString("dayLength"),
+    dailyStartTime: campString("dailyStartTime"),
+    dailyEndTime: campString("dailyEndTime"),
+    beforeCare: campBool("beforeCare"),
+    afterCare: campBool("afterCare"),
+    extendedCareDetails: campString("extendedCareDetails"),
+  }
 
   const programId = newId("prog")
   const slug = await uniqueProgramSlug(`${title} ${org.id}`)
@@ -195,8 +220,10 @@ export async function approveReviewCandidate(
       organizationId: org.id,
       sportId: sport.id,
       title,
-      description: (payload.description as string | null) ?? null,
+      description,
       programType: (payload.programType as string | null) ?? "recreational",
+      programFormat,
+      ...campFields,
       gender,
       minAge,
       maxAge,
@@ -238,6 +265,7 @@ export async function approveReviewCandidate(
       tryoutRequired: Boolean(payload.tryoutRequired),
       tryoutDetails: (payload.tryoutDetails as string | null) ?? null,
       tryoutDate: (payload.tryoutDate as string | null) ?? null,
+      ...campOfferingFields,
       town,
       state,
       zip: (payload.zip as string | null) ?? null,

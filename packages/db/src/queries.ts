@@ -98,8 +98,18 @@ export type OfferingListing = {
   dateLastChecked: Date | null
   offeringVerificationStatus: string
   published: boolean
+  campPeriod: string | null
+  dayLength: string | null
+  dailyStartTime: string | null
+  dailyEndTime: string | null
+  beforeCare: boolean | null
+  afterCare: boolean | null
+  extendedCareDetails: string | null
 
   // Program
+  programFormat: string | null
+  campFocus: string | null
+  campStay: string | null
   programId: string
   programSlug: string
   title: string
@@ -192,7 +202,17 @@ const listingColumns = {
   dateLastChecked: programOfferings.dateLastChecked,
   offeringVerificationStatus: programOfferings.verificationStatus,
   published: programOfferings.published,
+  campPeriod: programOfferings.campPeriod,
+  dayLength: programOfferings.dayLength,
+  dailyStartTime: programOfferings.dailyStartTime,
+  dailyEndTime: programOfferings.dailyEndTime,
+  beforeCare: programOfferings.beforeCare,
+  afterCare: programOfferings.afterCare,
+  extendedCareDetails: programOfferings.extendedCareDetails,
 
+  programFormat: programs.programFormat,
+  campFocus: programs.campFocus,
+  campStay: programs.campStay,
   programId: programs.id,
   programSlug: programs.slug,
   title: programs.title,
@@ -294,6 +314,19 @@ export type OfferingSearchInput = {
   tryoutRequired?: boolean | null
   freeOnly?: boolean
   maxFee?: number | null
+  /** e.g. ["camp"]. */
+  programFormats?: string[]
+  campFocuses?: string[]
+  campStays?: string[]
+  /** "summer" also matches camps with no period whose season is summer. */
+  campPeriods?: string[]
+  dayLengths?: string[]
+  /**
+   * Run-date window (ISO dates). Offerings overlapping it match; offerings with
+   * no start date are kept so the UI can show them as "dates not posted".
+   */
+  runsFrom?: string | null
+  runsTo?: string | null
   /** Include unpublished rows. Admin surfaces only. */
   includeUnpublished?: boolean
   limit?: number
@@ -392,6 +425,42 @@ export async function searchOfferings(
       sql`${programOfferings.registrationFee} is null`,
     )
     if (feeCondition) conditions.push(feeCondition)
+  }
+
+  if (input.programFormats?.length) {
+    conditions.push(inArray(programs.programFormat, input.programFormats))
+  }
+  if (input.campFocuses?.length) {
+    conditions.push(inArray(programs.campFocus, input.campFocuses))
+  }
+  if (input.campStays?.length) {
+    conditions.push(inArray(programs.campStay, input.campStays))
+  }
+  if (input.campPeriods?.length) {
+    const periodCondition = input.campPeriods.includes("summer")
+      ? or(
+          inArray(programOfferings.campPeriod, input.campPeriods),
+          and(sql`${programOfferings.campPeriod} is null`, eq(programOfferings.season, "summer")),
+        )
+      : inArray(programOfferings.campPeriod, input.campPeriods)
+    if (periodCondition) conditions.push(periodCondition)
+  }
+  if (input.dayLengths?.length) {
+    conditions.push(inArray(programOfferings.dayLength, input.dayLengths))
+  }
+
+  // Undated offerings are kept (same "don't penalize incomplete data" rule as
+  // maxFee and radius); the web layer groups them under "dates not posted".
+  if (input.runsFrom || input.runsTo) {
+    const overlap: SQL[] = []
+    if (input.runsTo) overlap.push(sql`${programOfferings.seasonStartDate} <= ${input.runsTo}`)
+    if (input.runsFrom) {
+      overlap.push(
+        sql`coalesce(${programOfferings.seasonEndDate}, ${programOfferings.seasonStartDate}) >= ${input.runsFrom}`,
+      )
+    }
+    const windowCondition = or(and(...overlap), sql`${programOfferings.seasonStartDate} is null`)
+    if (windowCondition) conditions.push(windowCondition)
   }
 
   // Radius: ST_DWithin is index-backed, unlike filtering on ST_Distance.
@@ -511,9 +580,19 @@ export async function offeringsBySportSlug(slug: string) {
     and(or(eq(sports.slug, slug), eq(sports.id, slug)), eq(programOfferings.published, true)),
   )
   return rows.map(normalizeListing)
-}
+  }
 
-export async function listSports() {
+  /**
+   * Every published offering under the exact join and predicate
+   * `offeringsBySportSlug` uses, minus the sport filter. Grouping this by sport
+   * reproduces each sport page's set, so displayed counts can't drift from it.
+   */
+  export async function publishedOfferingsForCounts() {
+  const rows = await baseJoin().where(eq(programOfferings.published, true))
+  return rows.map(normalizeListing)
+  }
+  
+  export async function listSports() {
   return db.select().from(sports).orderBy(asc(sports.name))
 }
 
@@ -881,11 +960,28 @@ export async function auditLogForEntity(entityType: string, entityId: string, li
 /** Patch shape for the activity editor's save action, split by which table each field actually lives on. */
 export type OfferingFieldPatch = {
   program?: Partial<
-    Pick<typeof programs.$inferInsert, "title" | "description" | "minGrade" | "maxGrade" | "beginnerFriendly">
+    Pick<
+      typeof programs.$inferInsert,
+      | "title"
+      | "description"
+      | "minGrade"
+      | "maxGrade"
+      | "beginnerFriendly"
+      | "programFormat"
+      | "campFocus"
+      | "campStay"
+    >
   >
   offering?: Partial<
     Pick<
       typeof programOfferings.$inferInsert,
+      | "campPeriod"
+      | "dayLength"
+      | "dailyStartTime"
+      | "dailyEndTime"
+      | "beforeCare"
+      | "afterCare"
+      | "extendedCareDetails"
       | "registrationOpenDate"
       | "registrationCloseDate"
       | "seasonStartDate"

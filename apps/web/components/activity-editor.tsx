@@ -20,6 +20,7 @@ import { programTypeLabels, verificationLabels } from "@/lib/labels"
 import { registrationStatus, statusShortLabels } from "@/lib/registration-status"
 import type { ActivityWithRelations, RegistrationStatus } from "@/lib/types"
 import { saveActivity, type SaveActivityInput } from "@/app/admin/activities/[id]/actions"
+import { CAMP_FOCUS_LABELS, CAMP_PERIOD_LABELS, CAMP_STAY_LABELS, DAY_LENGTH_LABELS } from "@openplay/core"
 
 const statusOverrideOptions = [
   { value: "auto", label: "Computed from dates" },
@@ -28,6 +29,28 @@ const statusOverrideOptions = [
     label: `Force: ${statusShortLabels[s]}`,
   })),
 ]
+
+const toOptions = (labels: Record<string, string>) =>
+  Object.entries(labels).map(([value, label]) => ({ value, label }))
+const campFocusOptions = toOptions(CAMP_FOCUS_LABELS)
+const campStayOptions = toOptions(CAMP_STAY_LABELS)
+const campPeriodOptions = toOptions(CAMP_PERIOD_LABELS)
+const dayLengthOptions = toOptions(DAY_LENGTH_LABELS)
+// Null means "the org doesn't say", which is different from "no care offered".
+const careOptions = [
+  { value: "yes", label: "Offered" },
+  { value: "no", label: "Not offered" },
+]
+
+function triStateValue(value: boolean | null | undefined) {
+  return value === true ? "yes" : value === false ? "no" : ""
+}
+function triStateToBoolean(value: string) {
+  return value === "yes" ? true : value === "no" ? false : null
+}
+function emptyToNull(value: string) {
+  return value === "" ? null : value
+}
 
 /**
  * PRD 22. The editor exists so a human can always overrule computed status and
@@ -54,6 +77,16 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
     verification: activity.verification_status,
     published: activity.published,
     beginnerFriendly: activity.beginner_friendly,
+    isCamp: activity.program_format === "camp",
+    campFocus: activity.camp_focus ?? "",
+    campStay: activity.camp_stay ?? "",
+    campPeriod: activity.camp_period ?? "",
+    dayLength: activity.day_length ?? "",
+    dailyStart: activity.daily_start_time?.slice(0, 5) ?? "",
+    dailyEnd: activity.daily_end_time?.slice(0, 5) ?? "",
+    beforeCare: triStateValue(activity.before_care),
+    afterCare: triStateValue(activity.after_care),
+    careDetails: activity.extended_care_details ?? "",
   }
   const [form, setForm] = useState(initial)
 
@@ -83,8 +116,24 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
         minGrade: form.minGrade === "" ? null : Number(form.minGrade),
         maxGrade: form.maxGrade === "" ? null : Number(form.maxGrade),
         beginnerFriendly: form.beginnerFriendly,
+        // Only touch the format when the camp switch changed, so non-camp formats
+        // like "league" or "clinic" survive an unrelated save.
+        ...(form.isCamp !== initial.isCamp && { programFormat: form.isCamp ? "camp" : null }),
+        ...(form.isCamp && {
+          campFocus: emptyToNull(form.campFocus),
+          campStay: emptyToNull(form.campStay),
+        }),
       },
       offering: {
+        ...(form.isCamp && {
+          campPeriod: emptyToNull(form.campPeriod),
+          dayLength: emptyToNull(form.dayLength),
+          dailyStartTime: emptyToNull(form.dailyStart),
+          dailyEndTime: emptyToNull(form.dailyEnd),
+          beforeCare: triStateToBoolean(form.beforeCare),
+          afterCare: triStateToBoolean(form.afterCare),
+          extendedCareDetails: emptyToNull(form.careDetails.trim()),
+        }),
         registrationOpenDate: form.openDate === "" ? null : form.openDate,
         registrationCloseDate: form.closeDate === "" ? null : form.closeDate,
         seasonStartDate: form.seasonStart === "" ? null : form.seasonStart,
@@ -286,6 +335,121 @@ export function ActivityEditor({ activity }: { activity: ActivityWithRelations }
                 (year-round, drop-in, rolling enrollment). It removes the listing from the cleanup
                 queue.
               </p>
+            </FieldGroup>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Camp details</CardTitle>
+            <CardDescription>
+              What parents filter camps by. Leave a field blank when the source doesn&apos;t say.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FieldGroup>
+              <Field orientation="horizontal">
+                <Switch
+                  id="e-is-camp"
+                  checked={form.isCamp}
+                  onCheckedChange={(checked) => set("isCamp", Boolean(checked))}
+                />
+                <FieldLabel htmlFor="e-is-camp">This is a camp</FieldLabel>
+              </Field>
+              {form.isCamp && (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field>
+                      <FieldLabel htmlFor="e-camp-focus">Focus</FieldLabel>
+                      <FilterSelect
+                        id="e-camp-focus"
+                        value={form.campFocus}
+                        onValueChange={(v) => set("campFocus", v)}
+                        options={campFocusOptions}
+                        placeholder="Not set"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-camp-period">When</FieldLabel>
+                      <FilterSelect
+                        id="e-camp-period"
+                        value={form.campPeriod}
+                        onValueChange={(v) => set("campPeriod", v)}
+                        options={campPeriodOptions}
+                        placeholder="Not set"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-camp-stay">Day or overnight</FieldLabel>
+                      <FilterSelect
+                        id="e-camp-stay"
+                        value={form.campStay}
+                        onValueChange={(v) => set("campStay", v)}
+                        options={campStayOptions}
+                        placeholder="Not set"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-day-length">Day length</FieldLabel>
+                      <FilterSelect
+                        id="e-day-length"
+                        value={form.dayLength}
+                        onValueChange={(v) => set("dayLength", v)}
+                        options={dayLengthOptions}
+                        placeholder="Not set"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-daily-start">Daily start time</FieldLabel>
+                      <Input
+                        id="e-daily-start"
+                        type="time"
+                        value={form.dailyStart}
+                        onChange={(e) => set("dailyStart", e.target.value)}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-daily-end">Daily end time</FieldLabel>
+                      <Input
+                        id="e-daily-end"
+                        type="time"
+                        value={form.dailyEnd}
+                        onChange={(e) => set("dailyEnd", e.target.value)}
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-before-care">Before care</FieldLabel>
+                      <FilterSelect
+                        id="e-before-care"
+                        value={form.beforeCare}
+                        onValueChange={(v) => set("beforeCare", v)}
+                        options={careOptions}
+                        placeholder="Not stated"
+                      />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="e-after-care">After care</FieldLabel>
+                      <FilterSelect
+                        id="e-after-care"
+                        value={form.afterCare}
+                        onValueChange={(v) => set("afterCare", v)}
+                        options={careOptions}
+                        placeholder="Not stated"
+                      />
+                    </Field>
+                  </div>
+                  <Field>
+                    <FieldLabel htmlFor="e-care-details">Extended care details</FieldLabel>
+                    <Textarea
+                      id="e-care-details"
+                      rows={2}
+                      value={form.careDetails}
+                      onChange={(e) => set("careDetails", e.target.value)}
+                      placeholder="e.g. Before care from 7:30 AM, $15/day"
+                    />
+                  </Field>
+                </>
+              )}
             </FieldGroup>
           </CardContent>
         </Card>

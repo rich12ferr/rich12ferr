@@ -19,6 +19,7 @@ import type { ActivityWithRelations, RegistrationStatus, SourceType } from "@/li
 export type DiscoveryOrigin =
   | "homepage"
   | "search"
+  | "camps"
   | "weekly_update"
   | "organization_page"
   | "alert_landing"

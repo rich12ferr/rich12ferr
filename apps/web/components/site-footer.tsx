@@ -7,6 +7,7 @@ const columns = [
     heading: "Discover",
     links: [
       { href: "/search", label: "Find activities" },
+      { href: "/camps", label: "Camps" },
       { href: "/sports", label: "Browse sports" },
       { href: "/organizations", label: "Organizations" },
       { href: "/calendar", label: "Registration calendar" },

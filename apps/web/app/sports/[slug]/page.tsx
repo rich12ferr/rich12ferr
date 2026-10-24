@@ -7,8 +7,9 @@ import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
 import { sports, getSportBySlug } from "@/lib/data/sports"
-import { activitiesForSport, seasonLabels } from "@/lib/queries"
-import { hasSeasonEnded, registrationStatus } from "@/lib/registration-status"
+import { liveActivitiesForSport, seasonLabels } from "@/lib/queries"
+import { registrationStatus } from "@/lib/registration-status"
+import { sportMetadata } from "@/lib/seo"
 import type { Season } from "@/lib/types"
 
 /**
@@ -26,7 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const sport = getSportBySlug(slug)
   if (!sport) return { title: "Sport not found" }
-  return { title: `${sport.name} programs`, description: sport.blurb }
+  const live = await liveActivitiesForSport(sport.slug)
+  return sportMetadata(sport.name, live.length)
 }
 
 const order: Season[] = ["fall", "winter", "spring", "summer"]
@@ -37,7 +39,7 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
   if (!sport) notFound()
 
   const now = new Date()
-  const all = (await activitiesForSport(sport.slug)).filter((a) => !hasSeasonEnded(a, now))
+  const all = await liveActivitiesForSport(sport.slug, now)
   const openNow = all.filter((a) => ["open", "closing_soon"].includes(registrationStatus(a, now)))
 
   const bySeason = order

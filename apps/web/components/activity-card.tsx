@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CircleAlertIcon, ExternalLinkIcon, MapPinIcon, TicketIcon } from "lucide-react"
 import { ActivityBadges } from "@/components/activity-badges"
+import { CampLine } from "@/components/camp-line"
 import { CustomerStatusPill, customerStateAccent } from "@/components/customer-status-pill"
 import { RegistrationHandoffButton } from "@/components/registration-handoff-button"
 import { SeasonIcon } from "@/components/season-icons"
@@ -104,6 +105,8 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
             </dd>
           </div>
         </dl>
+
+        <CampLine activity={activity} />
 
         {eligibilityNote ? (
           <p className="flex w-fit items-start gap-1.5 rounded-lg bg-highlight px-2.5 py-1.5 text-xs font-medium text-highlight-foreground">

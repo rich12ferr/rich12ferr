@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ArrowDownIcon, ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon } from "lucide-react"
+import { ArrowDownIcon, ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon, TentIcon } from "lucide-react"
+import { CAMPS_ENRICHMENT_SPORT_SLUG } from "@openplay/core"
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
 import { HeroAlertForm } from "@/components/hero-alert-form"
@@ -39,7 +40,7 @@ export default async function HomePage() {
   const YOUTH = ["youth"]
   // Issued together: these six reads are independent, so serialising them would
   // add six round trips to the database for no reason.
-  const [deadlines, opened, sportRows, seasons, all, orgRows, weeklyEdition] = await Promise.all([
+  const [deadlines, opened, allSportRows, seasons, all, orgRows, weeklyEdition] = await Promise.all([
     closingSoon(now),
     recentlyOpened(now),
     sportSummaries(now, YOUTH),
@@ -50,7 +51,9 @@ export default async function HomePage() {
   ])
   const total = all.length
   const orgCount = orgRows.length
-  const openNowTotal = sportRows.reduce((sum, row) => sum + row.openNow, 0)
+  const openNowTotal = allSportRows.reduce((sum, row) => sum + row.openNow, 0)
+  // Camps have their own hub at /camps, so the catch-all camp "sport" is not a sport tile.
+  const sportRows = allSportRows.filter(({ sport }) => sport.slug !== CAMPS_ENRICHMENT_SPORT_SLUG)
   // Never manufacture stories to fill the module — show only the stories an
   // editor actually marked featured (rank 1-3), and hide the section
   // entirely once there is no published edition at all.
@@ -271,6 +274,21 @@ export default async function HomePage() {
             </Button>
           }
         />
+        <Link
+          href="/camps"
+          className="mb-3 flex min-h-11 items-center gap-3 rounded-xl border border-border bg-secondary p-3.5 transition-colors hover:border-ring hover:bg-accent/50"
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <TentIcon className="size-5" aria-hidden="true" />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="font-display text-sm font-bold">Looking for camps?</span>
+            <span className="text-xs text-muted-foreground text-pretty">
+              Summer, school-break, day and overnight camps by date, age and town
+            </span>
+          </span>
+          <ArrowRightIcon className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </Link>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {sportRows.map(({ sport, total: count, openNow }) => (
             <li key={sport.id}>

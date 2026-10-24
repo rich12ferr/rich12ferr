@@ -345,7 +345,18 @@ export const SPORTS: Sport[] = [
     primary_seasons: ["winter"],
     blurb:
       "Multi-discipline ski academy winter terms and learn-to-ski/snowboard instruction spanning more than one snow sport.",
-    synonyms: ["ski academy", "winter term", "learn to ski", "learn to snowboard", "learn to ride"],
+    synonyms: [
+      "ski academy",
+      "winter term",
+      "learn to ski",
+      "learn to snowboard",
+      "learn to ride",
+      "skiing and snowboarding",
+      "snowboarding and skiing",
+      "ski and snowboard",
+      "ski and ride",
+      "ski & ride",
+    ],
   },
 ]
 

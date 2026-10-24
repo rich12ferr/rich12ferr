@@ -174,6 +174,21 @@ export type Activity = {
   published: boolean
   created_at: string
   updated_at: string
+
+  /**
+   * Camp facets. Optional so fixtures stay valid; null means "not posted",
+   * which the UI omits rather than rendering as "Unknown".
+   */
+  program_format?: string | null
+  camp_focus?: string | null
+  camp_stay?: string | null
+  camp_period?: string | null
+  day_length?: string | null
+  daily_start_time?: string | null
+  daily_end_time?: string | null
+  before_care?: boolean | null
+  after_care?: boolean | null
+  extended_care_details?: string | null
 }
 
 export type ActivityWithRelations = Activity & {
