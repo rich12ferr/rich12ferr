@@ -156,6 +156,8 @@ export type Activity = {
    * to 0, which would falsely claim the activity is located at the origin.
    */
   distance_from_hub: number | null
+  /** Place `distance_from_hub` is measured from. Absent means Montpelier. */
+  distance_origin?: string | null
   venue_name: string | null
   venue_address: string | null
 

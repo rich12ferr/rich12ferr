@@ -6,7 +6,9 @@ import { SearchToolbar } from "@/components/search-toolbar"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { parseFilters, searchActivities, type SearchParamsShape } from "@/lib/queries"
+import { resolveSearchOrigin } from "@/lib/origin"
+import { OutOfAreaNotice } from "@/components/out-of-area-notice"
+import { parseFilters, searchActivitiesNearby, type SearchParamsShape } from "@/lib/queries"
 
 export const metadata = {
   title: "Find activities",
@@ -21,7 +23,8 @@ export default async function SearchPage({
   const params = await searchParams
   const now = new Date()
   const filters = parseFilters(params)
-  const results = await searchActivities(filters, now)
+  const origin = await resolveSearchOrigin(filters.zip)
+  const { results, widened } = await searchActivitiesNearby(filters, now, origin)
 
   const first = (value: string | string[] | undefined): string | null =>
     Array.isArray(value) ? (value[0] ?? null) : (value ?? null)
@@ -46,16 +49,18 @@ export default async function SearchPage({
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[17.5rem_1fr]">
-        <aside aria-label="Filters">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+        <aside aria-label="Filters" className="min-w-0">
           <SearchFilters />
           <div className="lg:hidden">
             <SearchFilters variant="sheet" />
           </div>
         </aside>
 
-        <div className="flex flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-5">
           <SearchToolbar count={results.length} />
+
+          {widened ? <OutOfAreaNotice place={origin.label} radius={filters.radius} /> : null}
 
           {results.length > 0 ? (
             <ul className="flex flex-col gap-4">

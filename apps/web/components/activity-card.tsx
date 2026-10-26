@@ -101,7 +101,9 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
             <dd className="inline-flex items-center gap-1.5">
               <MapPinIcon className="size-3.5" aria-hidden="true" />
               {activity.town}, {activity.state}
-              {distanceLabel(activity.distance_from_hub) ? ` \u00b7 ${distanceLabel(activity.distance_from_hub)}` : ""}
+              {distanceLabel(activity.distance_from_hub, activity.distance_origin)
+                ? ` \u00b7 ${distanceLabel(activity.distance_from_hub, activity.distance_origin)}`
+                : ""}
             </dd>
           </div>
         </dl>

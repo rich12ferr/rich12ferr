@@ -51,14 +51,15 @@ export function programLabel(activity: Activity) {
  * "near X" claim here; the town/state shown alongside this is the only thing
  * that's actually verified.
  */
-export function distanceLabel(miles: number | null) {
+export function distanceLabel(miles: number | null, origin: string | null = "Montpelier") {
   if (miles === null) return null
-  if (miles < 1) return "In Montpelier"
+  const from = origin || "Montpelier"
+  if (miles < 1) return from === "Montpelier" ? "In Montpelier" : `Under 1 mile from ${from}`
   // One decimal place below 10 miles, whole miles at 10 or above — "10
   // miles" reads cleanly while a program a few blocks away still shows
   // meaningful precision (e.g. "2.3 miles" rather than a rounded "2").
   const rounded = miles < 10 ? Math.round(miles * 10) / 10 : Math.round(miles)
-  return `${rounded} miles from Montpelier`
+  return `${rounded} ${rounded === 1 ? "mile" : "miles"} from ${from}`
 }
 
 /**

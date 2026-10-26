@@ -36,7 +36,7 @@ import {
   type WeeklyStoryCandidateRow,
   type WeeklyStoryRow,
 } from "@openplay/db"
-import { LAUNCH_HUB, SEASONS, coversWorkday, sessionLengthBucket } from "@openplay/core"
+import { LAUNCH_HUB, SEASONS, coversWorkday, sessionLengthBucket, type LatLng } from "@openplay/core"
 import { DEFAULT_RADIUS as DEFAULT_RADIUS_MILES } from "@/lib/labels"
 import {
   CLOSING_SOON_DAYS,
@@ -518,11 +518,13 @@ export type SearchResult = ActivityWithRelations & {
 export async function searchActivities(
   filters: SearchFilters,
   now = new Date(),
+  origin: { point: LatLng; label: string } = { point: LAUNCH_HUB, label: "Montpelier" },
+  options: { ignoreRadius?: boolean } = {},
 ): Promise<SearchResult[]> {
   const rows = await searchOfferings({
     query: filters.q,
-    origin: LAUNCH_HUB,
-    radiusMiles: filters.radius,
+    origin: origin.point,
+    radiusMiles: options.ignoreRadius ? null : filters.radius,
     sportSlugs: filters.sport ? [filters.sport] : undefined,
     season: filters.season,
     towns: filters.town ? [filters.town] : undefined,
@@ -553,7 +555,7 @@ export async function searchActivities(
     }
     if (filters.coverage === "workday" && !coversWorkday(row)) continue
 
-    const activity = listingToActivity(row)
+    const activity = { ...listingToActivity(row), distance_origin: origin.label }
     const status = registrationStatus(activity, now)
     // The collapsed state actually shown on the card (see `ActivityCard`).
     // `status` alone misses cases `customerState` catches — e.g. a season
@@ -592,6 +594,26 @@ export async function searchActivities(
   }
 
   return sortResults(results, filters, now)
+}
+
+/**
+ * A search should never dead-end just because the visitor is far away (an IP
+ * in Boston, a VPN, an out-of-state ZIP). When nothing falls inside the
+ * distance limit, rerun without it — every other filter and the chosen sort
+ * still apply — and flag it so the page can say nothing was nearby.
+ */
+export async function searchActivitiesNearby(
+  filters: SearchFilters,
+  now: Date,
+  origin: { point: LatLng; label: string },
+): Promise<{ results: SearchResult[]; widened: boolean }> {
+  const nearby = await searchActivities(filters, now, origin)
+  // Listings without a geocoded location always pass the radius filter, so a
+  // far-away origin still returns those. Only a located listing proves
+  // something is actually nearby.
+  if (nearby.some((result) => result.distance_from_hub != null)) return { results: nearby, widened: false }
+  const everywhere = await searchActivities(filters, now, origin, { ignoreRadius: true })
+  return { results: everywhere, widened: everywhere.length > 0 }
 }
 
 /**
