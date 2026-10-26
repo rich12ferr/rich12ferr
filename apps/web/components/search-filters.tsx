@@ -5,10 +5,11 @@ import { useCallback, useState } from "react"
 import { FilterIcon, RotateCcwIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel, FieldSet, FieldLegend } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Slider } from "@/components/ui/slider"
 import { FilterSelect } from "@/components/filter-select"
+import { LocationPicker } from "@/components/location-picker"
+import type { OriginSummary } from "@/lib/location-preference"
 import { sports } from "@/lib/data/sports"
 import { gradeOptions } from "@/lib/format"
 import { DEFAULT_RADIUS, towns } from "@/lib/labels"
@@ -85,7 +86,13 @@ function RadiusField({ value, onCommit }: { value: number; onCommit: (value: num
 }
 
 /** PRD 10 filter set. Every change writes to the URL so results stay shareable. */
-export function SearchFilters({ variant = "sidebar" }: { variant?: "sidebar" | "sheet" }) {
+export function SearchFilters({
+  variant = "sidebar",
+  origin,
+}: {
+  variant?: "sidebar" | "sheet"
+  origin: OriginSummary
+}) {
   const router = useRouter()
   const params = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -172,18 +179,7 @@ export function SearchFilters({ variant = "sidebar" }: { variant?: "sidebar" | "
               options={townOptions}
             />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="f-zip">ZIP code</FieldLabel>
-            <Input
-              id="f-zip"
-              inputMode="numeric"
-              maxLength={5}
-              placeholder="05602"
-              defaultValue={params.get("zip") ?? ""}
-              onBlur={(e) => update("zip", e.target.value.replace(/\D/g, ""))}
-              className="h-9"
-            />
-          </Field>
+          <LocationPicker basePath="/search" idPrefix={variant === "sheet" ? "fs" : "f"} origin={origin} />
           <RadiusField value={radius} onCommit={(v) => update("radius", String(v))} />
         </FieldGroup>
       </FieldSet>

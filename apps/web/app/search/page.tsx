@@ -6,7 +6,7 @@ import { SearchToolbar } from "@/components/search-toolbar"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { resolveSearchOrigin } from "@/lib/origin"
+import { originSummary, resolveSearchOrigin } from "@/lib/origin"
 import { OutOfAreaNotice } from "@/components/out-of-area-notice"
 import { parseFilters, searchActivitiesNearby, type SearchParamsShape } from "@/lib/queries"
 
@@ -23,7 +23,8 @@ export default async function SearchPage({
   const params = await searchParams
   const now = new Date()
   const filters = parseFilters(params)
-  const origin = await resolveSearchOrigin(filters.zip)
+  const origin = await resolveSearchOrigin({ zip: filters.zip, near: params.near })
+  const location = originSummary(origin)
   const { results, widened } = await searchActivitiesNearby(filters, now, origin)
 
   const first = (value: string | string[] | undefined): string | null =>
@@ -51,9 +52,9 @@ export default async function SearchPage({
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <aside aria-label="Filters" className="min-w-0">
-          <SearchFilters />
+          <SearchFilters origin={location} />
           <div className="lg:hidden">
-            <SearchFilters variant="sheet" />
+            <SearchFilters variant="sheet" origin={location} />
           </div>
         </aside>
 

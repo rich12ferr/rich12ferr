@@ -21,6 +21,8 @@ import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/componen
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { FilterSelect } from "@/components/filter-select"
+import { LocationPicker } from "@/components/location-picker"
+import type { OriginSummary } from "@/lib/location-preference"
 import { gradeOptions } from "@/lib/format"
 import { towns } from "@/lib/labels"
 
@@ -44,7 +46,13 @@ const gradeFilterOptions = [{ value: "any", label: "Any grade" }, ...gradeOption
 const townOptions = [{ value: "any", label: "Any town" }, ...towns.map((t) => ({ value: t, label: t }))]
 
 /** Camp-specific filter set for /camps. Every change writes to the URL. */
-export function CampFilters({ variant = "sidebar" }: { variant?: "sidebar" | "sheet" }) {
+export function CampFilters({
+  variant = "sidebar",
+  origin,
+}: {
+  variant?: "sidebar" | "sheet"
+  origin: OriginSummary
+}) {
   const router = useRouter()
   const params = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -122,18 +130,7 @@ export function CampFilters({ variant = "sidebar" }: { variant?: "sidebar" | "sh
             <FieldLabel htmlFor={`${idPrefix}-town`}>Town</FieldLabel>
             <FilterSelect id={`${idPrefix}-town`} value={get("town")} onValueChange={(v) => update("town", v)} options={townOptions} />
           </Field>
-          <Field>
-            <FieldLabel htmlFor={`${idPrefix}-zip`}>ZIP code</FieldLabel>
-            <Input
-              id={`${idPrefix}-zip`}
-              inputMode="numeric"
-              maxLength={5}
-              placeholder="05602"
-              defaultValue={params.get("zip") ?? ""}
-              onBlur={(e) => update("zip", e.target.value.replace(/\D/g, ""))}
-              className="h-11 text-base"
-            />
-          </Field>
+          <LocationPicker basePath="/camps" idPrefix={idPrefix} origin={origin} inputClassName="h-11 text-base" />
         </FieldGroup>
       </FieldSet>
 

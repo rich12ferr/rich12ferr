@@ -347,6 +347,8 @@ export type SearchParamsShape = {
   season?: string
   town?: string
   zip?: string
+  /** Rounded "lat,lng" from "Use my location". */
+  near?: string
   radius?: string
   gender?: string
   level?: string
