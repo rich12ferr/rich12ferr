@@ -36,6 +36,7 @@ import { db } from "./client"
 import {
   adminAuditLog,
   alerts,
+  featuredImpressions,
   fieldProvenance,
   handoffEvents,
   organizations,
@@ -50,6 +51,7 @@ import {
   weeklyStories,
   weeklyStoryCandidates,
   type AdminAuditLogRow,
+  type NewFeaturedImpression,
   type NewHandoffEvent,
   type ReportRow,
 } from "./schema"
@@ -1477,6 +1479,129 @@ export async function createHandoffEvent(input: Omit<NewHandoffEvent, "id" | "oc
     .values({ id: newHandoffEventId(), ...input })
     .returning()
   return row
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Featured placement (separate surface — never read by search)             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Published listings an admin flagged Featured, newest flag first. This is
+ * the ONLY reader of `featured_at`: `searchOfferings` and every organic list
+ * select `listingColumns`, which omits it, so Featured cannot leak into
+ * ranking.
+ */
+export async function featuredOfferings(opts: { sportSlug?: string | null; limit?: number } = {}) {
+  const conditions: SQL[] = [eq(programOfferings.published, true), isNotNull(programOfferings.featuredAt)]
+  if (opts.sportSlug) conditions.push(eq(sports.slug, opts.sportSlug))
+  const rows = await baseJoin()
+    .where(and(...conditions))
+    .orderBy(desc(programOfferings.featuredAt))
+    .limit(opts.limit ?? 6)
+  return rows.map(normalizeListing)
+}
+
+export async function offeringFeaturedAt(offeringId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ featuredAt: programOfferings.featuredAt })
+    .from(programOfferings)
+    .where(eq(programOfferings.id, offeringId))
+    .limit(1)
+  return row?.featuredAt ?? null
+}
+
+export async function setOfferingFeatured(offeringId: string, featured: boolean): Promise<Date | null> {
+  const [row] = await db
+    .update(programOfferings)
+    .set({ featuredAt: featured ? new Date() : null })
+    .where(eq(programOfferings.id, offeringId))
+    .returning({ featuredAt: programOfferings.featuredAt })
+  return row?.featuredAt ?? null
+}
+
+export async function createFeaturedImpression(input: Omit<NewFeaturedImpression, "id" | "occurredAt">) {
+  await db.insert(featuredImpressions).values({
+    id: `imp_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`,
+    ...input,
+  })
+}
+
+export type FeaturedReportRow = {
+  organizationId: string
+  organizationName: string
+  impressions: number
+  clicks: number
+  registerClicks: number
+}
+
+/**
+ * Per-organization Featured performance: impressions from
+ * `featured_impressions`, clicks from `handoff_events` where
+ * placement = 'featured'. Organic clicks are excluded by construction.
+ */
+export async function featuredPlacementReport(opts: { since: Date }): Promise<FeaturedReportRow[]> {
+  const [impressionRows, clickRows] = await Promise.all([
+    db
+      .select({
+        organizationId: featuredImpressions.organizationId,
+        organizationName: featuredImpressions.organizationName,
+        impressions: sql<number>`count(*)::int`,
+      })
+      .from(featuredImpressions)
+      .where(and(isNotNull(featuredImpressions.organizationId), gte(featuredImpressions.occurredAt, opts.since)))
+      .groupBy(featuredImpressions.organizationId, featuredImpressions.organizationName),
+    db
+      .select({
+        organizationId: handoffEvents.organizationId,
+        organizationName: handoffEvents.organizationName,
+        clicks: sql<number>`count(*)::int`,
+        registerClicks: sql<number>`(count(*) filter (where ${handoffEvents.ctaLabel} = 'Register'))::int`,
+      })
+      .from(handoffEvents)
+      .where(
+        and(
+          eq(handoffEvents.placement, "featured"),
+          isNotNull(handoffEvents.organizationId),
+          gte(handoffEvents.occurredAt, opts.since),
+        ),
+      )
+      .groupBy(handoffEvents.organizationId, handoffEvents.organizationName),
+  ])
+
+  const byOrg = new Map<string, FeaturedReportRow>()
+  const rowFor = (id: string, name: string | null) => {
+    let row = byOrg.get(id)
+    if (!row) {
+      row = { organizationId: id, organizationName: name ?? id, impressions: 0, clicks: 0, registerClicks: 0 }
+      byOrg.set(id, row)
+    }
+    return row
+  }
+  for (const r of impressionRows) rowFor(r.organizationId!, r.organizationName).impressions = r.impressions
+  for (const r of clickRows) {
+    const row = rowFor(r.organizationId!, r.organizationName)
+    row.clicks = r.clicks
+    row.registerClicks = r.registerClicks
+  }
+  return [...byOrg.values()].sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks)
+}
+
+/** The most recent Featured clicks, for spot-checking the event log. */
+export async function recentFeaturedClicks(limit = 20) {
+  return db
+    .select({
+      id: handoffEvents.id,
+      occurredAt: handoffEvents.occurredAt,
+      organizationName: handoffEvents.organizationName,
+      ctaLabel: handoffEvents.ctaLabel,
+      ctaLocation: handoffEvents.ctaLocation,
+      discoveryOrigin: handoffEvents.discoveryOrigin,
+      destinationUrl: handoffEvents.destinationUrl,
+    })
+    .from(handoffEvents)
+    .where(eq(handoffEvents.placement, "featured"))
+    .orderBy(desc(handoffEvents.occurredAt))
+    .limit(limit)
 }
 
 /**

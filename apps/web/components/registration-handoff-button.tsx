@@ -39,6 +39,7 @@ export function RegistrationHandoffButton({
         listing_id: handoff.offering_id,
         cta_location: handoff.cta_location,
         destination_url: href,
+        placement: handoff.placement ?? null,
       })
     }
     void recordRegistrationHandoff({ ...payload, ...getHandoffSessionFields() }).catch(() => {})

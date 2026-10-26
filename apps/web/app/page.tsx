@@ -3,6 +3,7 @@ import { ArrowDownIcon, ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon, Te
 import { CAMPS_ENRICHMENT_SPORT_SLUG } from "@openplay/core"
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
+import { FeaturedRail } from "@/components/featured-rail"
 import { HeroAlertForm } from "@/components/hero-alert-form"
 import { HomepageEngagementTracker } from "@/components/homepage-engagement-tracker"
 import { NewsletterCta } from "@/components/newsletter-cta"
@@ -17,6 +18,7 @@ import {
   allActivities,
   closingSoon,
   currentWeeklyEdition,
+  featuredActivities,
   organizationSummaries,
   recentlyOpened,
   seasonLabels,
@@ -40,7 +42,7 @@ export default async function HomePage() {
   const YOUTH = ["youth"]
   // Issued together: these six reads are independent, so serialising them would
   // add six round trips to the database for no reason.
-  const [deadlines, opened, allSportRows, seasons, all, orgRows, weeklyEdition] = await Promise.all([
+  const [deadlines, opened, allSportRows, seasons, all, orgRows, weeklyEdition, featured] = await Promise.all([
     closingSoon(now),
     recentlyOpened(now),
     sportSummaries(now, YOUTH),
@@ -48,6 +50,7 @@ export default async function HomePage() {
     allActivities(YOUTH),
     organizationSummaries(now, YOUTH),
     currentWeeklyEdition(),
+    featuredActivities({ now }),
   ])
   const total = all.length
   const orgCount = orgRows.length
@@ -194,6 +197,12 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {featured.length > 0 ? (
+        <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6">
+          <FeaturedRail activities={featured} surface="homepage" now={now} />
+        </div>
+      ) : null}
 
       {/* Recently opened */}
       {opened.length > 0 ? (

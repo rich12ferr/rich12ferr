@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache"
 
 import {
   offeringById,
+  offeringFeaturedAt,
+  setOfferingFeatured as setOfferingFeaturedFlag,
   insertAuditLogEntry,
   setReportStatus,
   updateOfferingFields,
@@ -11,6 +13,34 @@ import {
   type OfferingFieldPatch,
 } from "@openplay/db"
 import { requireAdminAction } from "@/lib/require-admin"
+
+/**
+ * Admin-only Featured flag. Lives outside `saveActivity`'s patch on purpose:
+ * the editor's field patch can't reach `featured_at`, so the only way to
+ * feature a listing is this explicit, audited action.
+ */
+export async function setOfferingFeatured(offeringId: string, featured: boolean): Promise<SaveActivityResult> {
+  await requireAdminAction()
+  const before = await offeringFeaturedAt(offeringId)
+  const listing = await offeringById(offeringId)
+  if (!listing) return { ok: false, error: "This activity no longer exists." }
+
+  const after = await setOfferingFeaturedFlag(offeringId, featured)
+  if (Boolean(before) !== featured) {
+    await insertAuditLogEntry({
+      entityType: "program_offering",
+      entityId: offeringId,
+      changes: { featured: { before: Boolean(before), after: Boolean(after) } },
+      reportId: null,
+    })
+  }
+
+  revalidatePath(`/admin/activities/${offeringId}`)
+  revalidatePath("/admin/featured")
+  revalidatePath("/")
+  revalidatePath(`/sports/${listing.sportSlug}`)
+  return { ok: true }
+}
 
 export type SaveActivityInput = {
   offeringId: string

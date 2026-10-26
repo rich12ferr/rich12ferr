@@ -45,6 +45,8 @@ export async function recordRegistrationHandoff(
       zip: props.zip ?? null,
       sessionId: props.session_id ?? null,
       discoveryOrigin: props.discovery_origin ?? null,
+      // Whitelisted, not passed through: only the literal "featured" is a placement.
+      placement: props.placement === "featured" ? "featured" : null,
     })
   } catch (error) {
     console.error("[v0] Failed to record handoff event:", error)
