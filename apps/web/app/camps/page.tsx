@@ -8,6 +8,7 @@ import { NewsletterCta } from "@/components/newsletter-cta"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { resolveSearchOrigin } from "@/lib/origin"
 import { countActiveFilters, parseFilters, searchActivities, sortCamps, type SearchParamsShape } from "@/lib/queries"
 
 export const metadata: Metadata = {
@@ -33,7 +34,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
   const params = await searchParams
   const now = new Date()
   const filters = { ...parseFilters(params), format: "camp" }
-  const results = sortCamps(await searchActivities(filters, now))
+  const origin = await resolveSearchOrigin(filters.zip)
+  const results = sortCamps(await searchActivities(filters, now, origin))
 
   const dated = results.filter((r) => r.season_start_date)
   const undated = results.filter((r) => !r.season_start_date)

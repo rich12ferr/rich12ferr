@@ -6,6 +6,7 @@ import { SearchToolbar } from "@/components/search-toolbar"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { resolveSearchOrigin } from "@/lib/origin"
 import { parseFilters, searchActivities, type SearchParamsShape } from "@/lib/queries"
 
 export const metadata = {
@@ -21,7 +22,8 @@ export default async function SearchPage({
   const params = await searchParams
   const now = new Date()
   const filters = parseFilters(params)
-  const results = await searchActivities(filters, now)
+  const origin = await resolveSearchOrigin(filters.zip)
+  const results = await searchActivities(filters, now, origin)
 
   const first = (value: string | string[] | undefined): string | null =>
     Array.isArray(value) ? (value[0] ?? null) : (value ?? null)

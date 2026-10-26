@@ -36,7 +36,7 @@ import {
   type WeeklyStoryCandidateRow,
   type WeeklyStoryRow,
 } from "@openplay/db"
-import { LAUNCH_HUB, SEASONS, coversWorkday, sessionLengthBucket } from "@openplay/core"
+import { LAUNCH_HUB, SEASONS, coversWorkday, sessionLengthBucket, type LatLng } from "@openplay/core"
 import { DEFAULT_RADIUS as DEFAULT_RADIUS_MILES } from "@/lib/labels"
 import {
   CLOSING_SOON_DAYS,
@@ -518,10 +518,11 @@ export type SearchResult = ActivityWithRelations & {
 export async function searchActivities(
   filters: SearchFilters,
   now = new Date(),
+  origin: { point: LatLng; label: string } = { point: LAUNCH_HUB, label: "Montpelier" },
 ): Promise<SearchResult[]> {
   const rows = await searchOfferings({
     query: filters.q,
-    origin: LAUNCH_HUB,
+    origin: origin.point,
     radiusMiles: filters.radius,
     sportSlugs: filters.sport ? [filters.sport] : undefined,
     season: filters.season,
@@ -553,7 +554,7 @@ export async function searchActivities(
     }
     if (filters.coverage === "workday" && !coversWorkday(row)) continue
 
-    const activity = listingToActivity(row)
+    const activity = { ...listingToActivity(row), distance_origin: origin.label }
     const status = registrationStatus(activity, now)
     // The collapsed state actually shown on the card (see `ActivityCard`).
     // `status` alone misses cases `customerState` catches — e.g. a season
