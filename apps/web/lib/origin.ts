@@ -1,7 +1,7 @@
 import "server-only"
 import { headers } from "next/headers"
 import zipcodes from "zipcodes"
-import { LAUNCH_HUB, haversineMiles, isValidLatLng, type LatLng } from "@openplay/core"
+import { LAUNCH_HUB, isValidLatLng, type LatLng } from "@openplay/core"
 
 export type SearchOrigin = {
   point: LatLng
@@ -11,14 +11,6 @@ export type SearchOrigin = {
 }
 
 export const HUB_ORIGIN: SearchOrigin = { point: LAUNCH_HUB, label: "Montpelier", source: "hub" }
-
-/**
- * IP geolocation is city-level at best and often resolves to the ISP's
- * exchange, so it is only trusted when it lands near the service area. A
- * visitor in Boston or on a VPN would otherwise get every listing filtered
- * out by the default radius.
- */
-const IP_ORIGIN_MAX_MILES_FROM_HUB = 100
 
 export function originFromZip(zip: string | null | undefined): SearchOrigin | null {
   if (!zip || !/^\d{5}$/.test(zip)) return null
@@ -35,8 +27,9 @@ async function originFromVercelHeaders(): Promise<SearchOrigin | null> {
     lat: Number(h.get("x-vercel-ip-latitude")),
     lng: Number(h.get("x-vercel-ip-longitude")),
   }
+  // A far-away IP (Boston, a VPN) is still used; `searchActivitiesNearby`
+  // widens the search and the page says nothing was nearby.
   if (!isValidLatLng(point)) return null
-  if (haversineMiles(point, LAUNCH_HUB) > IP_ORIGIN_MAX_MILES_FROM_HUB) return null
 
   const rawCity = h.get("x-vercel-ip-city")
   let city: string | null = null

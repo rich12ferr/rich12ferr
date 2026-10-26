@@ -9,7 +9,8 @@ import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { resolveSearchOrigin } from "@/lib/origin"
-import { countActiveFilters, parseFilters, searchActivities, sortCamps, type SearchParamsShape } from "@/lib/queries"
+import { OutOfAreaNotice } from "@/components/out-of-area-notice"
+import { countActiveFilters, parseFilters, searchActivitiesNearby, sortCamps, type SearchParamsShape } from "@/lib/queries"
 
 export const metadata: Metadata = {
   title: "Camps in central Vermont",
@@ -35,7 +36,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
   const now = new Date()
   const filters = { ...parseFilters(params), format: "camp" }
   const origin = await resolveSearchOrigin(filters.zip)
-  const results = sortCamps(await searchActivities(filters, now, origin))
+  const nearby = await searchActivitiesNearby(filters, now, origin)
+  const results = sortCamps(nearby.results)
 
   const dated = results.filter((r) => r.season_start_date)
   const undated = results.filter((r) => !r.season_start_date)
@@ -112,6 +114,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
         </aside>
 
         <div className="flex min-w-0 flex-col gap-8">
+          {nearby.widened ? <OutOfAreaNotice place={origin.label} radius={filters.radius} noun="camps" /> : null}
+
           {results.length === 0 ? (
             <Empty className="rounded-2xl border border-border bg-card">
               <EmptyHeader>

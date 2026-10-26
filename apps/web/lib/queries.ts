@@ -519,11 +519,12 @@ export async function searchActivities(
   filters: SearchFilters,
   now = new Date(),
   origin: { point: LatLng; label: string } = { point: LAUNCH_HUB, label: "Montpelier" },
+  options: { ignoreRadius?: boolean } = {},
 ): Promise<SearchResult[]> {
   const rows = await searchOfferings({
     query: filters.q,
     origin: origin.point,
-    radiusMiles: filters.radius,
+    radiusMiles: options.ignoreRadius ? null : filters.radius,
     sportSlugs: filters.sport ? [filters.sport] : undefined,
     season: filters.season,
     towns: filters.town ? [filters.town] : undefined,
@@ -593,6 +594,26 @@ export async function searchActivities(
   }
 
   return sortResults(results, filters, now)
+}
+
+/**
+ * A search should never dead-end just because the visitor is far away (an IP
+ * in Boston, a VPN, an out-of-state ZIP). When nothing falls inside the
+ * distance limit, rerun without it — every other filter and the chosen sort
+ * still apply — and flag it so the page can say nothing was nearby.
+ */
+export async function searchActivitiesNearby(
+  filters: SearchFilters,
+  now: Date,
+  origin: { point: LatLng; label: string },
+): Promise<{ results: SearchResult[]; widened: boolean }> {
+  const nearby = await searchActivities(filters, now, origin)
+  // Listings without a geocoded location always pass the radius filter, so a
+  // far-away origin still returns those. Only a located listing proves
+  // something is actually nearby.
+  if (nearby.some((result) => result.distance_from_hub != null)) return { results: nearby, widened: false }
+  const everywhere = await searchActivities(filters, now, origin, { ignoreRadius: true })
+  return { results: everywhere, widened: everywhere.length > 0 }
 }
 
 /**
