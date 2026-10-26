@@ -8,7 +8,7 @@ import { NewsletterCta } from "@/components/newsletter-cta"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { resolveSearchOrigin } from "@/lib/origin"
+import { originSummary, resolveSearchOrigin } from "@/lib/origin"
 import { OutOfAreaNotice } from "@/components/out-of-area-notice"
 import { countActiveFilters, parseFilters, searchActivitiesNearby, sortCamps, type SearchParamsShape } from "@/lib/queries"
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/camps" },
 }
 
-const CAMP_PARAM_KEYS = ["period", "stay", "focus", "length", "coverage", "from", "to", "age", "grade", "town", "zip"] as const
+const CAMP_PARAM_KEYS = ["period", "stay", "focus", "length", "coverage", "from", "to", "age", "grade", "town", "zip", "near"] as const
 
 /** The next Vermont school break a parent is likely planning for. Approximate by month. */
 function nextBreak(now: Date) {
@@ -35,7 +35,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
   const params = await searchParams
   const now = new Date()
   const filters = { ...parseFilters(params), format: "camp" }
-  const origin = await resolveSearchOrigin(filters.zip)
+  const origin = await resolveSearchOrigin({ zip: filters.zip, near: params.near })
+  const location = originSummary(origin)
   const nearby = await searchActivitiesNearby(filters, now, origin)
   const results = sortCamps(nearby.results)
 
@@ -102,9 +103,9 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
         <aside aria-label="Camp filters" className="min-w-0">
-          <CampFilters />
-          <div className="flex items-center justify-between gap-3 lg:hidden">
-            <CampFilters variant="sheet" />
+          <CampFilters origin={location} />
+          <div className="lg:hidden">
+            <CampFilters variant="sheet" origin={location} />
             {activeFilters > 0 ? (
               <Link href="/camps" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline">
                 Clear {activeFilters} {activeFilters === 1 ? "filter" : "filters"}

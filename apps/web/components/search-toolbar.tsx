@@ -23,6 +23,7 @@ const labelFor: Record<string, (value: string) => string> = {
   season: (v) => seasonLabels[v as keyof typeof seasonLabels] ?? v,
   town: (v) => v,
   zip: (v) => `ZIP ${v}`,
+  near: () => "Near your location",
   radius: (v) => `Within ${v} mi`,
   gender: (v) => ({ girls: "Girls", boys: "Boys", coed: "Coed only" })[v] ?? v,
   level: (v) => (v === "recreational" ? "Recreational / school" : "Competitive / club"),
