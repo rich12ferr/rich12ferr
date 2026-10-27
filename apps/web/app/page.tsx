@@ -3,7 +3,7 @@ import { ArrowDownIcon, ArrowRightIcon, BellIcon, CalendarDaysIcon, PlusIcon, Te
 import { CAMPS_ENRICHMENT_SPORT_SLUG } from "@openplay/core"
 import { ActivityCard } from "@/components/activity-card"
 import { CalendarEventRow } from "@/components/calendar-event-row"
-import { FeaturedRail } from "@/components/featured-rail"
+import { FeaturedImpression } from "@/components/featured-impression"
 import { HeroAlertForm } from "@/components/hero-alert-form"
 import { HomepageEngagementTracker } from "@/components/homepage-engagement-tracker"
 import { NewsletterCta } from "@/components/newsletter-cta"
@@ -63,7 +63,10 @@ export default async function HomePage() {
   const featuredStories = (weeklyEdition?.stories ?? [])
     .filter((story) => story.featuredRank !== null)
     .sort((a, b) => (a.featuredRank ?? 0) - (b.featuredRank ?? 0))
-    .slice(0, 3)
+  // The module stays at three cards: when a listing is flagged Featured, it
+  // takes the third slot and the stories give it room.
+  const featuredActivity = featured[0] ?? null
+  const weeklyStories = featuredStories.slice(0, featuredActivity ? 2 : 3)
   // Only queried on the empty path — the common case (deadlines exist) never
   // pays for this extra read.
   const monthStarts = deadlines.length === 0 ? await seasonStartsInCurrentMonth(now) : []
@@ -198,12 +201,6 @@ export default async function HomePage() {
         )}
       </section>
 
-      {featured.length > 0 ? (
-        <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6">
-          <FeaturedRail activities={featured} surface="homepage" now={now} />
-        </div>
-      ) : null}
-
       {/* Recently opened */}
       {opened.length > 0 ? (
         <section data-home-section="newly_open" className="border-y border-border bg-secondary/60">
@@ -225,7 +222,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* What's happening this week — timely editorial context, not a blog. */}
-      {featuredStories.length > 0 ? (
+      {weeklyStories.length > 0 || featuredActivity ? (
         <section data-home-section="weekly_stories" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
           <SectionHeading
             title="What's happening this week"
@@ -238,11 +235,23 @@ export default async function HomePage() {
             }
           />
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredStories.map((story) => (
+            {weeklyStories.map((story) => (
               <li key={story.id}>
                 <WeeklyStoryCard story={story} />
               </li>
             ))}
+            {featuredActivity ? (
+              <li>
+                <FeaturedImpression
+                  offeringId={featuredActivity.id}
+                  organizationId={featuredActivity.organization_id}
+                  surface="homepage"
+                  className="h-full"
+                >
+                  <ActivityCard activity={featuredActivity} now={now} placement="featured" className="h-full" />
+                </FeaturedImpression>
+              </li>
+            ) : null}
           </ul>
         </section>
       ) : null}
