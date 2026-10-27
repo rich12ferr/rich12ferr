@@ -7,7 +7,8 @@ import { SectionHeading } from "@/components/section-heading"
 import { SportMarker } from "@/components/sport-marker"
 import { Button } from "@/components/ui/button"
 import { sports, getSportBySlug } from "@/lib/data/sports"
-import { liveActivitiesForSport, seasonLabels } from "@/lib/queries"
+import { FeaturedRail } from "@/components/featured-rail"
+import { featuredActivities, liveActivitiesForSport, seasonLabels } from "@/lib/queries"
 import { registrationStatus } from "@/lib/registration-status"
 import { sportMetadata } from "@/lib/seo"
 import type { Season } from "@/lib/types"
@@ -39,7 +40,10 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
   if (!sport) notFound()
 
   const now = new Date()
-  const all = await liveActivitiesForSport(sport.slug, now)
+  const [all, featured] = await Promise.all([
+    liveActivitiesForSport(sport.slug, now),
+    featuredActivities({ sportSlug: sport.slug, now }),
+  ])
   const openNow = all.filter((a) => ["open", "closing_soon"].includes(registrationStatus(a, now)))
 
   const bySeason = order
@@ -98,6 +102,14 @@ export default async function SportPage({ params }: { params: Promise<{ slug: st
           </div>
         </dl>
       </header>
+
+      <FeaturedRail
+        activities={featured}
+        surface="sport_page"
+        now={now}
+        title={`Featured ${sport.name} programs`}
+        className="mb-10"
+      />
 
       {bySeason.map(({ season, items }) => (
         <section key={season} className="mb-10">

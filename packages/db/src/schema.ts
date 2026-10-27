@@ -332,6 +332,13 @@ export const programOfferings = pgTable(
    * Takes the listing out of the missing-dates cleanup queue.
    */
   datesReviewedAt: timestamp("dates_reviewed_at", { withTimezone: true }),
+    /**
+     * Admin-only Featured placement flag: non-null means the listing appears in
+     * the labeled Featured rail. Deliberately NOT part of `listingColumns`, so
+     * search ranking can never read it — Featured is a separate surface, not a
+     * ranking signal (see the About page's neutral-ordering commitment).
+     */
+    featuredAt: timestamp("featured_at", { withTimezone: true }),
 
     registrationUrl: text("registration_url"),
     registrationProvider: text("registration_provider"),
@@ -1036,6 +1043,8 @@ export const handoffEvents = pgTable(
     sessionId: text("session_id"),
     /** `DiscoveryOrigin` from `apps/web/lib/analytics.ts` — the surface the visitor was last on ("homepage", "search", ...). */
     discoveryOrigin: text("discovery_origin"),
+    /** "featured" when the click came from a Featured rail card; null for every organic surface. */
+    placement: text("placement"),
   },
   (t) => [
     index("handoff_events_org_idx").on(t.organizationId, t.occurredAt),
@@ -1043,6 +1052,33 @@ export const handoffEvents = pgTable(
     index("handoff_events_offering_idx").on(t.offeringId),
     index("handoff_events_occurred_at_idx").on(t.occurredAt),
     index("handoff_events_location_idx").on(t.town, t.state),
+    index("handoff_events_placement_idx").on(t.placement, t.occurredAt),
+  ],
+)
+
+/**
+ * One row per Featured card that was actually seen (at least half on screen),
+ * once per card per page view. Paired with `handoff_events.placement =
+ * 'featured'` to produce the per-organization Featured report. Organization
+ * fields are read server-side from the listing, never trusted from the client.
+ */
+export const featuredImpressions = pgTable(
+  "featured_impressions",
+  {
+    id: text("id").primaryKey(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+    /** "homepage" | "sport_page". */
+    surface: text("surface").notNull(),
+    offeringId: text("offering_id").notNull(),
+    programId: text("program_id"),
+    organizationId: text("organization_id"),
+    organizationName: text("organization_name"),
+    sportSlug: text("sport_slug"),
+    sessionId: text("session_id"),
+  },
+  (t) => [
+    index("featured_impressions_org_idx").on(t.organizationId, t.occurredAt),
+    index("featured_impressions_offering_idx").on(t.offeringId),
   ],
 )
 
@@ -1219,6 +1255,7 @@ export type NewWeeklyEdition = typeof weeklyEditions.$inferInsert
 export type NewWeeklyStory = typeof weeklyStories.$inferInsert
 export type NewWeeklyStoryCandidate = typeof weeklyStoryCandidates.$inferInsert
 export type NewHandoffEvent = typeof handoffEvents.$inferInsert
+export type NewFeaturedImpression = typeof featuredImpressions.$inferInsert
 export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert
 export type NewNewsletterIssue = typeof newsletterIssues.$inferInsert
 export type NewNewsletterSend = typeof newsletterSends.$inferInsert

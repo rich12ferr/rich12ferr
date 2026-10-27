@@ -35,6 +35,11 @@ export type CtaLocation =
   | "activity_detail_sticky"
   | "weekly_update_detail"
   | "organization_website"
+  | "featured_rail"
+
+/** "featured" for the labeled Featured rail; absent for every organic surface. */
+export type Placement = "featured"
+export type FeaturedSurface = "homepage" | "sport_page"
 
 /**
  * Payload for `registration_handoff_clicked`. Offering-scoped fields are
@@ -70,6 +75,7 @@ export type RegistrationHandoffProps = {
   source_type?: SourceType | null
   registration_provider?: string | null
   registration_status?: RegistrationStatus | null
+  placement?: Placement | null
 }
 
 /** Typed map of every product event to its payload shape. */
@@ -113,6 +119,13 @@ export interface AnalyticsEventMap {
     listing_id: string
     cta_location: CtaLocation
     destination_url: string
+    placement?: Placement | null
+  }
+  /** A Featured rail card at least half on screen, once per card per page view. */
+  featured_impression: {
+    listing_id: string
+    organization_id: string
+    surface: FeaturedSurface
   }
   alert_created: {
     alert_type: "activity" | "sport" | "child_match"

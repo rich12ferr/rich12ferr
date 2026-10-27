@@ -9,6 +9,7 @@ import {
   adminCounts,
   closingSoonOfferings,
   currentWeeklyEdition as currentWeeklyEditionRow,
+  featuredOfferings,
   listOrganizations,
   listReports,
   listSports,
@@ -292,6 +293,24 @@ export const activitiesForSport = cache(async (slug: string) => {
  */
 export async function liveActivitiesForSport(slug: string, now = new Date()) {
   return (await activitiesForSport(slug)).filter((a) => !hasSeasonEnded(a, now))
+}
+
+/**
+ * Admin-flagged Featured listings for the labeled rail. A separate read from
+ * every organic list: search and sport sections never see `featured_at`, so
+ * this rail is the only place the flag has any effect. Ended seasons drop out
+ * so the rail never promotes something a parent can't act on.
+ */
+export async function featuredActivities(
+  opts: { sportSlug?: string; now?: Date; limit?: number } = {},
+): Promise<ActivityWithRelations[]> {
+  const now = opts.now ?? new Date()
+  const limit = opts.limit ?? 3
+  const rows = await featuredOfferings({ sportSlug: opts.sportSlug, limit: limit * 2 })
+  return rows
+    .map(listingToActivity)
+    .filter((a) => !hasSeasonEnded(a, now))
+    .slice(0, limit)
 }
 
 /**

@@ -28,7 +28,7 @@ const principles = [
   {
     icon: ScaleIcon,
     title: "Results are ordered on neutral criteria only.",
-    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. No one can pay to change this order. Any clearly-labeled sponsored placements we offer in the future appear on a separate surface and never affect rankings.",
+    body: "Eligibility first, then how urgent the registration deadline is, then distance. Never athletic ability, coach relationships, family reputation, or past participation. No one can pay to change this order. Programs we choose to feature appear only in a separate rail labeled \u201cFeatured\u201d on the homepage and sport pages, and never change search results or their order.",
   },
   {
     icon: ShieldCheckIcon,

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { CircleAlertIcon, ExternalLinkIcon, MapPinIcon, TicketIcon } from "lucide-react"
+import { CircleAlertIcon, ExternalLinkIcon, MapPinIcon, StarIcon, TicketIcon } from "lucide-react"
 import { ActivityBadges } from "@/components/activity-badges"
 import { CampLine } from "@/components/camp-line"
 import { CustomerStatusPill, customerStateAccent } from "@/components/customer-status-pill"
@@ -19,25 +19,44 @@ export type ActivityCardProps = {
   eligibilityNote?: string | null
   now?: Date
   className?: string
+  /** Only the Featured rail sets this: adds the visible label and attributes clicks to the featured placement. */
+  placement?: "featured"
 }
 
 /**
  * The result card from PRD 13. Every field a parent needs to decide whether to
  * click: sport, program, org, eligibility, season, deadline, cost, distance.
  */
-export function ActivityCard({ activity, eligibilityNote, now = new Date(), className }: ActivityCardProps) {
+export function ActivityCard({
+  activity,
+  eligibilityNote,
+  now = new Date(),
+  className,
+  placement,
+}: ActivityCardProps) {
   const { state: resolved, detail } = customerFacingState(activity, now)
   const canRegister = resolved === "open"
   const demo = isDemoListing(activity)
+  const featured = placement === "featured"
   // Kept only for analytics attribution, mirroring the activity detail page —
   // every label/branch below reads `resolved` (the collapsed 4-state value)
   // instead.
   const analyticsStatus = registrationStatus(activity, now)
+  const handoffFor = (ctaLabel: string) => ({
+    ...buildHandoffProps(activity, {
+      ctaLabel,
+      ctaLocation: featured ? ("featured_rail" as const) : ("activity_card" as const),
+      status: analyticsStatus,
+    }),
+    placement: featured ? ("featured" as const) : null,
+  })
 
   return (
     <article
+      aria-label={featured ? `Featured: ${activity.title}` : undefined}
       className={cn(
-        "group relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md",
+        "group relative min-w-0 overflow-hidden rounded-2xl border bg-card text-card-foreground transition-shadow hover:shadow-md",
+        featured ? "border-highlight ring-1 ring-highlight" : "border-border",
         className,
       )}
     >
@@ -47,6 +66,12 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
       />
 
       <div className="flex flex-col gap-3 py-5 pl-6 pr-5">
+        {featured ? (
+          <p className="inline-flex w-fit items-center gap-1 rounded-full bg-highlight px-2.5 py-0.5 text-xs font-bold tracking-wide text-highlight-foreground uppercase">
+            <StarIcon className="size-3" aria-hidden="true" />
+            Featured
+          </p>
+        ) : null}
         <div className="flex items-start gap-3">
           <SportMarker slug={activity.sport.slug} name={activity.sport.name} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -134,11 +159,8 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
           {!demo && canRegister && activity.registration_url ? (
             <RegistrationHandoffButton
               href={activity.registration_url}
-              handoff={buildHandoffProps(activity, {
-                ctaLabel: "Register",
-                ctaLocation: "activity_card",
-                status: analyticsStatus,
-              })}
+              handoff={handoffFor("Register")}
+              registerClickout={featured}
               size="sm"
               className="shrink-0"
             >
@@ -148,11 +170,7 @@ export function ActivityCard({ activity, eligibilityNote, now = new Date(), clas
           ) : !demo && resolved !== "closed" && activity.source_url ? (
             <RegistrationHandoffButton
               href={activity.source_url}
-              handoff={buildHandoffProps(activity, {
-                ctaLabel: "View program page",
-                ctaLocation: "activity_card",
-                status: analyticsStatus,
-              })}
+              handoff={handoffFor("View program page")}
               size="sm"
               variant="outline"
               className="shrink-0"
