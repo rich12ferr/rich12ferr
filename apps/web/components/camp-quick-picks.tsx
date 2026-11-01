@@ -1,11 +1,15 @@
 import Link from "next/link"
+import type { CampPeriod } from "@openplay/core"
 import { cn } from "@/lib/utils"
 
-const PICKS = [
-  { label: "Summer", key: "period", value: "summer" },
-  { label: "February break", key: "period", value: "february_break" },
-  { label: "April break", key: "period", value: "april_break" },
-  { label: "Winter break", key: "period", value: "winter_break" },
+const PERIOD_PICK_LABELS: Partial<Record<CampPeriod, string>> = {
+  winter_break: "Winter break",
+  february_break: "February break",
+  april_break: "April break",
+  summer: "Summer",
+}
+
+const FACET_PICKS = [
   { label: "Day camps", key: "stay", value: "day" },
   { label: "Overnight", key: "stay", value: "overnight" },
   { label: "Sports", key: "focus", value: "sports" },
@@ -16,9 +20,23 @@ const PICKS = [
 
 /**
  * One-tap entry points. Each chip toggles a single facet on the current URL,
- * so picks combine ("Summer" + "Arts") and stay shareable.
+ * so picks combine ("Summer" + "Arts") and stay shareable. Breaks are listed
+ * soonest-first so the next school vacation leads.
  */
-export function CampQuickPicks({ params }: { params: Record<string, string | undefined> }) {
+export function CampQuickPicks({
+  params,
+  periodOrder,
+}: {
+  params: Record<string, string | undefined>
+  periodOrder: CampPeriod[]
+}) {
+  const PICKS = [
+    ...periodOrder.flatMap((value) => {
+      const label = PERIOD_PICK_LABELS[value]
+      return label ? [{ label, key: "period", value }] : []
+    }),
+    ...FACET_PICKS,
+  ]
   return (
     <nav aria-label="Quick camp filters" className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
       <ul className="flex w-max gap-2 sm:w-auto sm:flex-wrap">

@@ -8,6 +8,8 @@ import { NewsletterCta } from "@/components/newsletter-cta"
 import { TrackView } from "@/components/track-view"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { CAMP_PERIOD_LABELS, type CampPeriod } from "@openplay/core"
+import { CAMP_GROUP_HEADINGS, campPeriodOf, nextCampPeriod, upcomingCampPeriods } from "@/lib/camp-format"
 import { originSummary, resolveSearchOrigin } from "@/lib/origin"
 import { OutOfAreaNotice } from "@/components/out-of-area-notice"
 import { countActiveFilters, parseFilters, searchActivitiesNearby, sortCamps, type SearchParamsShape } from "@/lib/queries"
@@ -15,20 +17,18 @@ import { countActiveFilters, parseFilters, searchActivitiesNearby, sortCamps, ty
 export const metadata: Metadata = {
   title: "Camps in central Vermont",
   description:
-    "Find summer, school-break, day and overnight camps by dates, age, town, focus and daily schedule — sports, arts, STEM and outdoor adventure.",
+    "Find camps for every Vermont school vacation and summer — winter break, February break, April break and summer weeks — by dates, age, town, focus and daily schedule.",
   alternates: { canonical: "/camps" },
 }
 
 const CAMP_PARAM_KEYS = ["period", "stay", "focus", "length", "coverage", "from", "to", "age", "grade", "town", "zip", "near"] as const
 
-/** The next Vermont school break a parent is likely planning for. Approximate by month. */
-function nextBreak(now: Date) {
-  const month = now.getMonth()
-  if (month === 11 && now.getDate() < 24) return "Winter break"
-  if (month <= 1 && !(month === 1 && now.getDate() > 22)) return "February break"
-  if (month <= 3 && !(month === 3 && now.getDate() > 22)) return "April break"
-  if (month <= 7) return "Summer"
-  return "Winter break"
+function newsletterTitle(period: CampPeriod, now: Date) {
+  if (period === "summer") {
+    const year = now.getMonth() > 7 ? now.getFullYear() + 1 : now.getFullYear()
+    return `Planning for summer ${year}?`
+  }
+  return `Planning for ${CAMP_PERIOD_LABELS[period].toLowerCase()}?`
 }
 
 export default async function CampsPage({ searchParams }: { searchParams: Promise<SearchParamsShape> }) {
@@ -43,6 +43,21 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
   const dated = results.filter((r) => r.season_start_date)
   const undated = results.filter((r) => !r.season_start_date)
   const openCount = results.filter((r) => r.customerState === "open").length
+  const nextPeriod = nextCampPeriod(now)
+  const periodOrder = upcomingCampPeriods(now)
+
+  const groupsByPeriod = new Map<CampPeriod, typeof dated>()
+  for (const result of dated) {
+    const period = campPeriodOf(result)
+    groupsByPeriod.set(period, [...(groupsByPeriod.get(period) ?? []), result])
+  }
+  const groupRank = (period: CampPeriod) => {
+    const index = periodOrder.indexOf(period)
+    return index === -1 ? periodOrder.length : index
+  }
+  const datedGroups = [...groupsByPeriod.entries()]
+    .map(([period, items]) => ({ period, items }))
+    .sort((a, b) => groupRank(a.period) - groupRank(b.period))
 
   const chipParams: Record<string, string | undefined> = {}
   for (const key of CAMP_PARAM_KEYS) {
@@ -64,8 +79,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           source="camps_page"
           headingId="camps-newsletter"
           eyebrow="Free camp alerts"
-          title="Planning for Summer 2027?"
-          description="Be the first to know when Vermont camps announce their schedules and open registration."
+          title={newsletterTitle(nextPeriod, now)}
+          description="Be the first to know when Vermont camps post vacation-week and summer schedules and open registration."
         />
       </section>
 
@@ -78,8 +93,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           Find a camp that fits your calendar
         </h1>
         <p className="text-base leading-relaxed text-muted-foreground text-pretty">
-          Summer, school-break, day and overnight camps. Pick the week you need covered, then narrow by age,
-          town and hours.
+          Camps for every school vacation, not just summer: winter break, February and April break, and summer
+          weeks. Pick the week you need covered, then narrow by age, town and hours.
         </p>
         <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
           <div className="flex gap-1.5">
@@ -92,13 +107,13 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           </div>
           <div className="flex gap-1.5">
             <dt className="text-muted-foreground">Next break</dt>
-            <dd className="font-bold">{nextBreak(now)}</dd>
+            <dd className="font-bold">{CAMP_PERIOD_LABELS[nextPeriod]}</dd>
           </div>
         </dl>
       </header>
 
       <div className="mb-6">
-        <CampQuickPicks params={chipParams} />
+        <CampQuickPicks params={chipParams} periodOrder={periodOrder} />
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
@@ -142,20 +157,21 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
             </Empty>
           ) : null}
 
-          {dated.length > 0 ? (
-            <section aria-labelledby="camps-dated" className="flex flex-col gap-4">
-              <h2 id="camps-dated" className="font-display text-lg font-bold">
-                {dated.length} {dated.length === 1 ? "camp" : "camps"} with dates
+          {datedGroups.map(({ period, items }) => (
+            <section key={period} aria-labelledby={`camps-${period}`} className="flex flex-col gap-4">
+              <h2 id={`camps-${period}`} className="flex items-baseline gap-2 font-display text-lg font-bold">
+                {CAMP_GROUP_HEADINGS[period]}
+                <span className="text-sm font-semibold text-muted-foreground tabular-nums">{items.length}</span>
               </h2>
               <ul className="flex flex-col gap-4">
-                {dated.map((result) => (
+                {items.map((result) => (
                   <li key={result.id}>
                     <ActivityCard activity={result} eligibilityNote={result.eligibilityNote} now={now} />
                   </li>
                 ))}
               </ul>
             </section>
-          ) : null}
+          ))}
 
           {undated.length > 0 ? (
             <section aria-labelledby="camps-undated" className="flex flex-col gap-4">
