@@ -288,7 +288,7 @@ export default async function HomePage() {
           <span className="flex min-w-0 flex-col">
             <span className="font-display text-sm font-bold">Looking for camps?</span>
             <span className="text-xs text-muted-foreground text-pretty">
-              Summer, school-break, day and overnight camps by date, age and town
+              School-vacation and summer camps, year-round, by date, age and town
             </span>
           </span>
           <ArrowRightIcon className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

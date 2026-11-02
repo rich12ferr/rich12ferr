@@ -26,6 +26,51 @@ export const campStayLabel = (v?: string | null) => labelOf<CampStay>(CAMP_STAY_
 export const campPeriodLabel = (v?: string | null) => labelOf<CampPeriod>(CAMP_PERIOD_LABELS, v)
 export const dayLengthLabel = (v?: string | null) => labelOf<DayLength>(DAY_LENGTH_LABELS, v)
 
+/** The four planning windows in calendar order, starting from winter break. */
+const PLANNING_CYCLE = ["winter_break", "february_break", "april_break", "summer"] as const satisfies readonly CampPeriod[]
+
+/** The next break a Vermont parent is likely planning for. Approximate by date. */
+export function nextCampPeriod(now: Date): CampPeriod {
+  const month = now.getMonth()
+  const day = now.getDate()
+  if (month === 11 || (month === 0 && day <= 2)) return "winter_break"
+  if (month <= 1 && !(month === 1 && day > 22)) return "february_break"
+  if (month <= 3 && !(month === 3 && day > 22)) return "april_break"
+  if (month <= 7) return "summer"
+  return "winter_break"
+}
+
+/** Planning windows ordered from the next one, so the soonest break comes first. */
+export function upcomingCampPeriods(now: Date): CampPeriod[] {
+  const start = PLANNING_CYCLE.indexOf(nextCampPeriod(now) as (typeof PLANNING_CYCLE)[number])
+  return [...PLANNING_CYCLE.slice(start), ...PLANNING_CYCLE.slice(0, start)]
+}
+
+/**
+ * The break or season a camp belongs to. Uses the listed period when set,
+ * otherwise infers it from the start month so holiday camps never land in Summer.
+ */
+export function campPeriodOf(activity: Pick<Activity, "camp_period" | "season" | "season_start_date">): CampPeriod {
+  if (activity.camp_period && activity.camp_period in CAMP_PERIOD_LABELS) return activity.camp_period as CampPeriod
+  const start = activity.season_start_date ? new Date(`${activity.season_start_date.slice(0, 10)}T00:00:00Z`) : null
+  const month = start && !Number.isNaN(start.getTime()) ? start.getUTCMonth() : null
+  if (month === 11) return "winter_break"
+  if (month === 1) return "february_break"
+  if (month === 3) return "april_break"
+  if (month !== null && month >= 5 && month <= 7) return "summer"
+  if (month === null && activity.season === "summer") return "summer"
+  return "other"
+}
+
+export const CAMP_GROUP_HEADINGS: Record<CampPeriod, string> = {
+  winter_break: "Winter break camps",
+  february_break: "February break camps",
+  april_break: "April break camps",
+  summer: "Summer camps",
+  other_break: "Other school-break camps",
+  other: "Other times of year",
+}
+
 /** "08:30:00" -> "8:30", "15:00" -> "3:00". Hours are shown as posted, in Vermont local time. */
 export function formatClock(time: string | null | undefined) {
   if (!time) return null

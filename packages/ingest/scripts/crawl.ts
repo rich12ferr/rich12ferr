@@ -4,6 +4,7 @@
  *   pnpm --filter @openplay/ingest crawl                    # all due sources
  *   pnpm --filter @openplay/ingest crawl -- --source src_x  # one source
  *   pnpm --filter @openplay/ingest crawl -- --force         # ignore hash gate
+ *   pnpm --filter @openplay/ingest crawl -- --timeout 15    # per-source budget, minutes
  *
  * There is deliberately no --dry-run. The pipeline's safety property is that
  * nothing it extracts becomes publicly visible on its own: new and materially
@@ -32,6 +33,9 @@ function option(name: string): string | undefined {
 async function main() {
   const force = flag("force")
   const sourceId = option("source")
+  const timeoutMinutes = Number(option("timeout"))
+  const sourceTimeoutMs =
+    Number.isFinite(timeoutMinutes) && timeoutMinutes > 0 ? timeoutMinutes * 60_000 : undefined
 
   console.log(
     `\nCrawl starting${force ? " (forced — bypassing the content-hash gate)" : ""}\n`,
@@ -47,9 +51,9 @@ async function main() {
       await pool.end()
       process.exit(1)
     }
-    results = [await ingestSourceWithTimeout(row, { force })]
+    results = [await ingestSourceWithTimeout(row, { force, sourceTimeoutMs })]
   } else {
-    results = await runDueSources({ force })
+    results = await runDueSources({ force, sourceTimeoutMs })
   }
 
   if (results.length === 0) {

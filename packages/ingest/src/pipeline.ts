@@ -295,34 +295,26 @@ function mergeExtractOutputs(outputs: ExtractOutput[], model?: string): ExtractO
  */
 async function extractCivicRecPrograms(
   details: CivicRecDetail[],
-  common: { organizationHint: string | null; fetchedAt: Date; model?: string },
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string; deadline?: number },
 ): Promise<ExtractOutput> {
-  const outputs: ExtractOutput[] = []
+  const results: (ExtractOutput | null)[] = new Array(details.length).fill(null)
+  let next = 0
 
-  for (const detail of details) {
-    const input = {
-      content: detail.text,
-      sourceUrl: detail.url,
-      organizationHint: common.organizationHint,
-      fetchedAt: common.fetchedAt,
-      model: common.model,
-      links: [{ text: "Register on the catalog", url: detail.registrationUrl }],
+  // A full catalog is ~70 groups; one at a time cannot finish inside the
+  // source budget, so groups run concurrently like myrec detail pages.
+  const worker = async () => {
+    while (next < details.length) {
+      const index = next++
+      const detail = details[index]
+      if (!detail) break
+      results[index] = await extractCivicRecGroup(detail, common)
     }
-
-    let output: ExtractOutput | null = null
-    for (let attempt = 1; attempt <= 2 && !output; attempt++) {
-      try {
-        output = await extractPrograms(input)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        console.error(
-          `[v0] [civicrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
-        )
-      }
-    }
-    if (output) outputs.push(output)
   }
+  await Promise.all(
+    Array.from({ length: Math.min(MYREC_EXTRACTION_CONCURRENCY, details.length) }, worker),
+  )
 
+  const outputs = results.filter((output): output is ExtractOutput => output !== null)
   const merged = mergeExtractOutputs(outputs, common.model)
   return {
     ...merged,
@@ -331,6 +323,41 @@ async function extractCivicRecPrograms(
       programs: merged.result.programs.filter((program) => program.sportName !== null),
     },
   }
+}
+
+async function extractCivicRecGroup(
+  detail: CivicRecDetail,
+  common: { organizationHint: string | null; fetchedAt: Date; model?: string; deadline?: number },
+): Promise<ExtractOutput | null> {
+  const input = {
+    timeoutMs: undefined as number | undefined,
+    content: detail.text,
+    sourceUrl: detail.url,
+    organizationHint: common.organizationHint,
+    fetchedAt: common.fetchedAt,
+    model: common.model,
+    links: [{ text: "Register on the catalog", url: detail.registrationUrl }],
+  }
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    if (common.deadline !== undefined) {
+      const remaining = common.deadline - Date.now()
+      if (remaining < 10_000) {
+        console.error(`[v0] [civicrec] skipping ${detail.url}: source time budget exhausted`)
+        return null
+      }
+      input.timeoutMs = Math.min(remaining, 120_000)
+    }
+    try {
+      return await extractPrograms(input)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.error(
+        `[v0] [civicrec] extraction attempt ${attempt}/2 failed for ${detail.url}: ${message}`,
+      )
+    }
+  }
+  return null
 }
 
 /* -------------------------------------------------------------------------- */
@@ -564,6 +591,10 @@ export async function ingestSource(
               organizationHint,
               fetchedAt: startedAt,
               model: options.model,
+              deadline:
+                startedAt.getTime() +
+                (options.sourceTimeoutMs ?? DEFAULT_SOURCE_TIMEOUT_MS) -
+                30_000,
             })
           : await extractPrograms({
             content: fetched.content,
@@ -1151,7 +1182,7 @@ async function recordSuccess(
       .from(programOfferings)
       .where(
         and(
-          sql`${programOfferings.id} = any(${offeringIds})`,
+          inArray(programOfferings.id, offeringIds),
           sql`${programOfferings.registrationCloseDate} is not null`,
         ),
       )

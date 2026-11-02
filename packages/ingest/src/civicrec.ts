@@ -39,6 +39,9 @@ import { checkRobots, USER_AGENT, type FetchPageResult } from "./fetch"
 /** Hard ceiling on catalog tabs walked in one crawl. */
 export const MAX_CIVICREC_TABS = 40
 
+/** Hard ceiling on result pages walked per tab (the catalog serves 15 groups per page). */
+export const MAX_CIVICREC_PAGES_PER_TAB = 20
+
 /** Hard ceiling on distinct activity groups expanded in one crawl. */
 export const MAX_CIVICREC_GROUPS = 200
 
@@ -97,17 +100,20 @@ class CookieJar {
 async function civicRecFetch(
   jar: CookieJar,
   url: string,
-  options: { json?: boolean; timeoutMs?: number } = {},
+  options: { json?: boolean; timeoutMs?: number; form?: URLSearchParams } = {},
 ): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000)
   try {
     const response = await fetch(url, {
+      method: options.form ? "POST" : "GET",
+      body: options.form?.toString(),
       signal: controller.signal,
       headers: {
         "user-agent": USER_AGENT,
         cookie: jar.header(),
         ...(options.json ? { "x-requested-with": "XMLHttpRequest" } : {}),
+        ...(options.form ? { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" } : {}),
       },
     })
     jar.store(response)
@@ -117,9 +123,13 @@ async function civicRecFetch(
   }
 }
 
-async function civicRecGetJson(jar: CookieJar, url: string): Promise<any | null> {
+async function civicRecGetJson(
+  jar: CookieJar,
+  url: string,
+  form?: URLSearchParams,
+): Promise<any | null> {
   try {
-    const response = await civicRecFetch(jar, url, { json: true })
+    const response = await civicRecFetch(jar, url, { json: true, form })
     if (!response.ok) return null
     return await response.json()
   } catch {
@@ -134,7 +144,7 @@ async function civicRecGetJson(jar: CookieJar, url: string): Promise<any | null>
 type CatalogTab = { id: number | string; label: string }
 type CatalogGroup = { id: number | string; name: string; type: string }
 type CatalogSection = { groups?: CatalogGroup[] }
-type CatalogItemsResponse = { sections?: CatalogSection[] }
+type CatalogItemsResponse = { sections?: CatalogSection[]; hasMoreResults?: boolean }
 type CatalogTabsResponse = { tabs?: CatalogTab[] }
 
 type SessionFeature = { name: string; value: string }
@@ -296,19 +306,26 @@ async function collectActivityGroups(
 ): Promise<{ tabId: CatalogTab["id"]; groupId: CatalogGroup["id"]; name: string }[]> {
   const byId = new Map<string, { tabId: CatalogTab["id"]; groupId: CatalogGroup["id"]; name: string }>()
 
-  for (const tab of tabs) {
-    const response: CatalogItemsResponse | null = await civicRecGetJson(
-      jar,
-      `${catalogUrl}/getItems/${checkoutKey}/${tab.id}`,
-    )
-    for (const section of response?.sections ?? []) {
-      for (const group of section.groups ?? []) {
-        if (group.type !== "activity") continue
-        const key = String(group.id)
-        if (!byId.has(key)) byId.set(key, { tabId: tab.id, groupId: group.id, name: group.name })
+  // `getItems` returns 15 groups per page; the catalog UI loads the rest by
+  // POSTing `page=N` until `hasMoreResults` is false. A plain GET only ever
+  // returns page 1, which silently dropped most of every larger tab.
+  tabLoop: for (const tab of tabs) {
+    for (let page = 1; page <= MAX_CIVICREC_PAGES_PER_TAB; page++) {
+      const response: CatalogItemsResponse | null = await civicRecGetJson(
+        jar,
+        `${catalogUrl}/getItems/${checkoutKey}/${tab.id}`,
+        new URLSearchParams({ page: String(page) }),
+      )
+      for (const section of response?.sections ?? []) {
+        for (const group of section.groups ?? []) {
+          if (group.type !== "activity") continue
+          const key = String(group.id)
+          if (!byId.has(key)) byId.set(key, { tabId: tab.id, groupId: group.id, name: group.name })
+        }
       }
+      if (byId.size >= MAX_CIVICREC_GROUPS) break tabLoop
+      if (!response?.hasMoreResults) break
     }
-    if (byId.size >= MAX_CIVICREC_GROUPS) break
   }
 
   return [...byId.values()].slice(0, MAX_CIVICREC_GROUPS)
