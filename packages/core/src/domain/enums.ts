@@ -133,7 +133,7 @@ export const CAMP_FOCUS_LABELS: Record<CampFocus, string> = {
   arts: "Arts",
   stem: "STEM",
   outdoor_adventure: "Outdoor adventure",
-  general: "Traditional day camp",
+  general: "Traditional camp",
   academic: "Academic",
   other: "Other",
 }
