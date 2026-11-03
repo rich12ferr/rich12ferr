@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from "react"
-import { Bike, Disc, Footprints, Snowflake, Target, Tent, Timer, Volleyball, Waves } from "lucide-react"
+import { Bike, Disc, Footprints, Music, Snowflake, Target, Tent, Timer, Volleyball, Waves } from "lucide-react"
 
 /**
  * Sport iconography, replacing the two-letter monogram in `SportMarker`.
@@ -258,5 +258,6 @@ export const sportIcons: Record<string, ComponentType<IconProps>> = {
   snowboarding: SnowboardingIcon,
   "freestyle-skiing": FreestyleSkiingIcon,
   biathlon: Target,
+  dance: Music,
   "snow-sports": Snowflake,
 }
