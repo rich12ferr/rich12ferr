@@ -1141,6 +1141,63 @@ export async function createSubmission(input: NewSubmissionInput) {
   return row
 }
 
+/** Pending submissions (newest first) plus the most recently decided ones, for `/admin/submissions`. */
+export async function adminSubmissions(decidedLimit = 15) {
+  const [pending, decided] = await Promise.all([
+    db
+      .select()
+      .from(submissions)
+      .where(eq(submissions.status, "pending"))
+      .orderBy(desc(submissions.submittedAt)),
+    db
+      .select()
+      .from(submissions)
+      .where(sql`${submissions.status} <> 'pending'`)
+      .orderBy(desc(sql`coalesce(${submissions.reviewedAt}, ${submissions.submittedAt})`))
+      .limit(decidedLimit),
+  ])
+  return { pending, decided }
+}
+
+export async function pendingSubmissionCount() {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(submissions)
+    .where(eq(submissions.status, "pending"))
+  return row?.count ?? 0
+}
+
+export async function submissionById(id: string) {
+  const [row] = await db.select().from(submissions).where(eq(submissions.id, id)).limit(1)
+  return row ?? null
+}
+
+/**
+ * Records the reviewer's decision. Guarded on `status = 'pending'` so a
+ * double-click or two admins acting at once can't decide the same row twice.
+ */
+export async function recordSubmissionDecision(
+  id: string,
+  decision: { status: "approved" | "rejected"; reviewedBy: string; reviewCandidateId?: string | null },
+) {
+  const [row] = await db
+    .update(submissions)
+    .set({
+      status: decision.status,
+      reviewedAt: new Date(),
+      reviewedBy: decision.reviewedBy,
+      reviewCandidateId: decision.reviewCandidateId ?? null,
+    })
+    .where(and(eq(submissions.id, id), eq(submissions.status, "pending")))
+    .returning()
+  return row ?? null
+}
+
+/** Every sport/activity, alphabetical, for admin pickers. */
+export async function allSports() {
+  return db.select({ id: sports.id, slug: sports.slug, name: sports.name }).from(sports).orderBy(asc(sports.name))
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Contact / listing reports (write path)                                    */
 /* -------------------------------------------------------------------------- */

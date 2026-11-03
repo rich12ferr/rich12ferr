@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./review-actions": "./src/review-actions.ts"
+    "./review-actions": "./src/review-actions.ts",
+    "./submission-actions": "./src/submission-actions.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

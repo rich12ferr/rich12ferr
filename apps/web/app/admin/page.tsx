@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusPill } from "@/components/status-pill"
-import { submissions } from "@/lib/data/moderation"
+import { pendingSubmissionCount } from "@openplay/db"
 import { adminMetrics, reviewQueue, weeklyStoryCandidateCount } from "@/lib/queries"
 import {
   RECHECK_AFTER_DAYS,
@@ -42,13 +42,12 @@ const TRUSTED_STATUSES = new Set(["admin_reviewed", "organization_verified"])
 
 export default async function AdminDashboardPage() {
   const now = new Date()
-  const [metrics, weeklyCandidates, candidates] = await Promise.all([
+  const [metrics, weeklyCandidates, candidates, pendingSubmissions] = await Promise.all([
     adminMetrics(now),
     weeklyStoryCandidateCount(),
     reviewQueue(),
+    pendingSubmissionCount(),
   ])
-
-  const pendingSubmissions = submissions.filter((s) => s.status === "pending").length
   const lowConfidence = candidates.filter((c) => c.confidence < 0.7).length
 
   const healthCards = [

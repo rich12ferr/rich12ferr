@@ -1,171 +1,376 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
-import { CheckIcon, ExternalLinkIcon, InboxIcon, MailIcon, XIcon } from "lucide-react"
+import { CheckIcon, ExternalLinkIcon, InboxIcon, XIcon } from "lucide-react"
+import { CAMP_PERIOD_LABELS, CAMP_STAY_LABELS } from "@openplay/core"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Separator } from "@/components/ui/separator"
-import type { Submission } from "@/lib/types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { FilterSelect, type SelectOption } from "@/components/filter-select"
+import type { SubmissionDraft, SubmissionView } from "@/lib/submission-prefill"
+import { declineSubmissionAction, publishSubmissionAction } from "@/app/admin/submissions/actions"
 
-/** PRD 23. Parents and coaches fill the gaps a crawler cannot reach. */
-export function SubmissionQueue({ submissions }: { submissions: Submission[] }) {
-  const [items, setItems] = useState(submissions)
-  const pending = items.filter((s) => s.status === "pending")
-  const decided = items.filter((s) => s.status !== "pending")
+const SEASON_OPTIONS: SelectOption[] = [
+  { value: "summer", label: "Summer" },
+  { value: "fall", label: "Fall" },
+  { value: "winter", label: "Winter" },
+  { value: "spring", label: "Spring" },
+]
 
-  function decide(id: string, status: "approved" | "rejected") {
-    setItems((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)))
-    toast.success(status === "approved" ? "Submission accepted" : "Submission declined", {
-      description:
-        status === "approved"
-          ? "It moves to the activity editor so you can verify the details before publishing."
-          : "The submitter will be thanked without the listing going live.",
-    })
-  }
+const FORMAT_OPTIONS: SelectOption[] = [
+  { value: "camp", label: "Camp" },
+  { value: "league", label: "League" },
+  { value: "class", label: "Class" },
+  { value: "clinic", label: "Clinic" },
+  { value: "tournament", label: "Tournament" },
+  { value: "drop_in", label: "Drop-in" },
+  { value: "other", label: "Other" },
+]
+
+const STAY_OPTIONS = Object.entries(CAMP_STAY_LABELS).map(([value, label]) => ({ value, label }))
+const PERIOD_OPTIONS = Object.entries(CAMP_PERIOD_LABELS).map(([value, label]) => ({ value, label }))
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+export function SubmissionQueue({
+  pending,
+  decided,
+  sports,
+}: {
+  pending: SubmissionView[]
+  decided: SubmissionView[]
+  sports: { slug: string; name: string }[]
+}) {
+  const sportOptions = sports.map((s) => ({ value: s.slug, label: s.name }))
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Community submissions</h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {pending.length} waiting on review. Nothing here is published automatically, no matter how
-          complete it looks.
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">Community submissions</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground text-pretty">
+          Activities suggested by parents and organizers through the public form. Check the details
+          against the source page, fill in anything missing, then publish. Nothing goes live until you do.
         </p>
       </header>
 
-      {pending.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <InboxIcon />
-            </EmptyMedia>
-            <EmptyTitle>No submissions waiting</EmptyTitle>
-            <EmptyDescription>New parent and coach submissions land here for review.</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {pending.map((submission) => (
-            <Card key={submission.id}>
-              <CardHeader>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">{submission.sport_name}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      submitted {submission.submitted_at}
-                    </span>
-                  </div>
-                  <CardTitle className="text-base">{submission.program_name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{submission.organization_name}</p>
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex flex-col gap-4">
-                <dl className="grid gap-3 sm:grid-cols-2">
-                  <Detail label="Who can play">{submission.eligibility}</Detail>
-                  <Detail label="Registration dates">{submission.registration_dates}</Detail>
-                  <Detail label="Registration link">
-                    {submission.registration_url ? (
-                      <a
-                        href={submission.registration_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
-                      >
-                        Open link
-                        <ExternalLinkIcon className="size-3" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">Not provided</span>
-                    )}
-                  </Detail>
-                  <Detail label="Source page">
-                    {submission.source_url ? (
-                      <a
-                        href={submission.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline"
-                      >
-                        Open source
-                        <ExternalLinkIcon className="size-3" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">Not provided</span>
-                    )}
-                  </Detail>
-                </dl>
-
-                {submission.comments && (
-                  <p className="rounded-lg bg-muted p-3 text-sm leading-relaxed">
-                    &ldquo;{submission.comments}&rdquo;
-                  </p>
-                )}
-
-                <Separator />
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MailIcon className="size-3.5" aria-hidden="true" />
-                    {submission.submitter_email}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => decide(submission.id, "rejected")}>
-                      <XIcon data-icon="inline-start" />
-                      Decline
-                    </Button>
-                    <Button size="sm" onClick={() => decide(submission.id, "approved")}>
-                      <CheckIcon data-icon="inline-start" />
-                      Accept for editing
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {decided.length > 0 && (
-        <section aria-labelledby="decided" className="flex flex-col gap-3">
-          <h2 id="decided" className="font-display text-lg font-semibold">
-            Recently decided
-          </h2>
+      <section aria-labelledby="pending-heading" className="flex flex-col gap-4">
+        <h2 id="pending-heading" className="flex items-center gap-2 text-lg font-semibold">
+          Waiting for review
+          <Badge variant="secondary">{pending.length}</Badge>
+        </h2>
+        {pending.length === 0 ? (
           <Card>
-            <CardContent className="flex flex-col gap-0 p-0">
-              {decided.map((submission, index) => (
-                <div
-                  key={submission.id}
-                  className={`flex items-center gap-3 p-4 ${index > 0 ? "border-t" : ""}`}
-                >
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-medium">{submission.program_name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {submission.organization_name}
-                    </span>
-                  </div>
-                  <Badge variant={submission.status === "approved" ? "default" : "outline"}>
-                    {submission.status}
-                  </Badge>
-                </div>
-              ))}
+            <CardContent className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
+              <InboxIcon className="size-5" aria-hidden="true" />
+              No submissions waiting. New ones from the Suggest an activity form will appear here.
             </CardContent>
           </Card>
+        ) : (
+          pending.map((submission) => (
+            <PendingSubmission key={submission.id} submission={submission} sportOptions={sportOptions} />
+          ))
+        )}
+      </section>
+
+      {decided.length > 0 && (
+        <section aria-labelledby="decided-heading" className="flex flex-col gap-3">
+          <h2 id="decided-heading" className="text-lg font-semibold">
+            Recently reviewed
+          </h2>
+          <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+            {decided.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-medium">{s.programName}</span>
+                  <span className="text-muted-foreground">{s.organizationName}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Badge variant={s.status === "approved" ? "default" : "outline"}>
+                    {s.status === "approved" ? "Published" : "Declined"}
+                  </Badge>
+                  {s.reviewedAt && <span>{formatDate(s.reviewedAt)}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </div>
   )
 }
 
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+function SubmittedDetail({ label, value }: { label: string; value: string | null }) {
+  if (!value) return null
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+      <dd className="text-sm leading-relaxed break-words">{value}</dd>
     </div>
+  )
+}
+
+function PendingSubmission({
+  submission,
+  sportOptions,
+}: {
+  submission: SubmissionView
+  sportOptions: SelectOption[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<SubmissionDraft>(submission.draft)
+  const [error, setError] = useState<string | null>(null)
+  const [published, setPublished] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  const set = (key: keyof SubmissionDraft) => (value: string) => setDraft((d) => ({ ...d, [key]: value }))
+  const input = (key: keyof SubmissionDraft) => ({
+    value: draft[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set(key)(e.target.value),
+  })
+
+  function publish() {
+    setError(null)
+    startTransition(async () => {
+      const result = await publishSubmissionAction(submission.id, draft)
+      if (!result.ok) {
+        setError(result.error)
+        return
+      }
+      toast.success(`Published "${draft.title}"`)
+      setPublished(result.programSlug ?? "")
+    })
+  }
+
+  function decline() {
+    startTransition(async () => {
+      const result = await declineSubmissionAction(submission.id)
+      if (result.ok) toast.success("Submission declined")
+      else toast.error(result.error)
+    })
+  }
+
+  const fieldId = (key: string) => `${submission.id}-${key}`
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-col gap-1">
+        <CardTitle className="text-base text-balance">{submission.programName}</CardTitle>
+        <CardDescription>
+          {submission.organizationName} · submitted {formatDate(submission.submittedAt)}
+          {submission.submitterEmail ? ` by ${submission.submitterEmail}` : ""}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <SubmittedDetail label="Activity" value={submission.sportName} />
+          <SubmittedDetail label="Eligibility" value={submission.eligibility} />
+          <SubmittedDetail label="Registration dates" value={submission.registrationDates} />
+          <SubmittedDetail label="Notes" value={submission.comments} />
+        </dl>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {submission.sourceUrl && (
+            <a href={submission.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline">
+              Source page <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
+            </a>
+          )}
+          {submission.registrationUrl && submission.registrationUrl !== submission.sourceUrl && (
+            <a href={submission.registrationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline">
+              Registration link <ExternalLinkIcon className="size-3.5" aria-hidden="true" />
+            </a>
+          )}
+        </div>
+
+        {published !== null ? (
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            <CheckIcon className="size-4 text-primary" aria-hidden="true" />
+            Published.
+            {published && (
+              <Link href={`/activities/${published}`} className="text-primary underline-offset-4 hover:underline">
+                View the listing
+              </Link>
+            )}
+          </p>
+        ) : !open ? (
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setOpen(true)}>Review &amp; publish</Button>
+            <Button variant="outline" onClick={decline} disabled={isPending}>
+              <XIcon aria-hidden="true" /> Decline
+            </Button>
+          </div>
+        ) : (
+          <form
+            className="flex flex-col gap-6 border-t border-border pt-5"
+            onSubmit={(e) => {
+              e.preventDefault()
+              publish()
+            }}
+          >
+            <FieldSet>
+              <FieldLegend>Listing</FieldLegend>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field className="sm:col-span-2">
+                  <FieldLabel htmlFor={fieldId("title")}>Title</FieldLabel>
+                  <Input id={fieldId("title")} required {...input("title")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("sport")}>Activity</FieldLabel>
+                  <FilterSelect id={fieldId("sport")} value={draft.sportSlug} onValueChange={set("sportSlug")} options={sportOptions} placeholder="Pick an activity" />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("format")}>Format</FieldLabel>
+                  <FilterSelect id={fieldId("format")} value={draft.programFormat} onValueChange={set("programFormat")} options={FORMAT_OPTIONS} placeholder="Not specified" />
+                </Field>
+                {draft.programFormat === "camp" && (
+                  <>
+                    <Field>
+                      <FieldLabel htmlFor={fieldId("stay")}>Day or overnight</FieldLabel>
+                      <FilterSelect id={fieldId("stay")} value={draft.campStay} onValueChange={set("campStay")} options={STAY_OPTIONS} placeholder="Not specified" />
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor={fieldId("period")}>Camp period</FieldLabel>
+                      <FilterSelect id={fieldId("period")} value={draft.campPeriod} onValueChange={set("campPeriod")} options={PERIOD_OPTIONS} placeholder="Work it out from the dates" />
+                    </Field>
+                  </>
+                )}
+                <Field className="sm:col-span-2">
+                  <FieldLabel htmlFor={fieldId("description")}>Description</FieldLabel>
+                  <Textarea id={fieldId("description")} rows={4} {...input("description")} />
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            <FieldSet>
+              <FieldLegend>Organization and location</FieldLegend>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field className="sm:col-span-2">
+                  <FieldLabel htmlFor={fieldId("org")}>Organization</FieldLabel>
+                  <Input id={fieldId("org")} required {...input("organizationName")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("town")}>Town</FieldLabel>
+                  <Input id={fieldId("town")} required {...input("town")} />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("state")}>State</FieldLabel>
+                    <Input id={fieldId("state")} required maxLength={2} {...input("state")} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("zip")}>ZIP</FieldLabel>
+                    <Input id={fieldId("zip")} inputMode="numeric" {...input("zip")} />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("venue")}>Venue</FieldLabel>
+                  <Input id={fieldId("venue")} {...input("venueName")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("address")}>Address</FieldLabel>
+                  <Input id={fieldId("address")} {...input("venueAddress")} />
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            <FieldSet>
+              <FieldLegend>Dates, ages and price</FieldLegend>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor={fieldId("season")}>Season</FieldLabel>
+                  <FilterSelect id={fieldId("season")} value={draft.season} onValueChange={set("season")} options={SEASON_OPTIONS} placeholder="Pick a season" />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("year")}>Year</FieldLabel>
+                  <Input id={fieldId("year")} required inputMode="numeric" {...input("seasonYear")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("start")}>Program starts</FieldLabel>
+                  <Input id={fieldId("start")} type="date" {...input("seasonStartDate")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("end")}>Program ends</FieldLabel>
+                  <Input id={fieldId("end")} type="date" {...input("seasonEndDate")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("open")}>Registration opens</FieldLabel>
+                  <Input id={fieldId("open")} type="date" {...input("registrationOpenDate")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("close")}>Registration closes</FieldLabel>
+                  <Input id={fieldId("close")} type="date" {...input("registrationCloseDate")} />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("minAge")}>Min age</FieldLabel>
+                    <Input id={fieldId("minAge")} inputMode="numeric" {...input("minAge")} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("maxAge")}>Max age</FieldLabel>
+                    <Input id={fieldId("maxAge")} inputMode="numeric" {...input("maxAge")} />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("minGrade")}>Min grade (K = 0)</FieldLabel>
+                    <Input id={fieldId("minGrade")} inputMode="numeric" {...input("minGrade")} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={fieldId("maxGrade")}>Max grade</FieldLabel>
+                    <Input id={fieldId("maxGrade")} inputMode="numeric" {...input("maxGrade")} />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("fee")}>Price ($)</FieldLabel>
+                  <Input id={fieldId("fee")} inputMode="decimal" {...input("registrationFee")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("feeNotes")}>Price notes</FieldLabel>
+                  <Input id={fieldId("feeNotes")} placeholder="e.g. per session, sibling discount" {...input("additionalFees")} />
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            <FieldSet>
+              <FieldLegend>Links and contact</FieldLegend>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor={fieldId("source")}>Source page</FieldLabel>
+                  <Input id={fieldId("source")} type="url" required {...input("sourceUrl")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("reg")}>Registration link</FieldLabel>
+                  <Input id={fieldId("reg")} type="url" {...input("registrationUrl")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={fieldId("email")}>Contact email</FieldLabel>
+                  <Input id={fieldId("email")} type="email" {...input("contactEmail")} />
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Publishing…" : "Publish listing"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={isPending}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   )
 }
