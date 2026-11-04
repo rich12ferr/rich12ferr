@@ -539,13 +539,17 @@ export default async function ActivityPage({
               </p>
             ) : null}
 
-            <Separator />
-
-            <ActivityActions
-              activityTitle={activity.title}
-              programId={activity.program_id}
-              layout="stack"
-            />
+            {/* R1: an "email me when registration opens" offer contradicts a confirmed-open session. */}
+            {canRegister ? null : (
+              <>
+                <Separator />
+                <ActivityActions
+                  activityTitle={activity.title}
+                  programId={activity.program_id}
+                  layout="stack"
+                />
+              </>
+            )}
 
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
               Registration happens on {activity.registration_provider ?? activity.organization.name}
