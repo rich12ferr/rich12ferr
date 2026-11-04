@@ -38,7 +38,9 @@ export function inferCampStay(text: string | null | undefined): CampStay {
 
 /** Only summer is safe to infer from the season; breaks need stated text. */
 export function inferCampPeriod(season: string | null | undefined): CampPeriod | null {
-  return season === "summer" ? "summer" : null
+  if (season === "summer") return "summer"
+  if (season === "fall") return "fall_break"
+  return null
 }
 
 function toUtcDay(iso: string): number {

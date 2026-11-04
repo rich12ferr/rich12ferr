@@ -17,7 +17,7 @@ import { countActiveFilters, parseFilters, searchActivitiesNearby, sortCamps, ty
 export const metadata: Metadata = {
   title: "Camps in central Vermont",
   description:
-    "Find camps for every Vermont school vacation and summer — winter break, February break, April break and summer weeks — by dates, age, town, focus and daily schedule.",
+    "Find camps for every Vermont school vacation and summer — fall break, winter break, February break, April break and summer weeks — by dates, age, town, focus and daily schedule.",
   alternates: { canonical: "/camps" },
 }
 
@@ -59,6 +59,10 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
     .map(([period, items]) => ({ period, items }))
     .sort((a, b) => groupRank(a.period) - groupRank(b.period))
 
+  const nextBreakMissing =
+    !filters.period && !nearby.widened && results.length > 0 && !groupsByPeriod.has(nextPeriod)
+  const nextBreakLabel = CAMP_PERIOD_LABELS[nextPeriod].toLowerCase()
+
   const chipParams: Record<string, string | undefined> = {}
   for (const key of CAMP_PARAM_KEYS) {
     const value = params[key]
@@ -93,8 +97,8 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           Find a camp that fits your calendar
         </h1>
         <p className="text-base leading-relaxed text-muted-foreground text-pretty">
-          Camps for every school vacation, not just summer: winter break, February and April break, and summer
-          weeks. Pick the week you need covered, then narrow by age, town and hours.
+          Camps for every school vacation, not just summer: fall and winter break, February and April break, and
+          summer weeks. Pick the week you need covered, then narrow by age, town and hours.
         </p>
         <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
           <div className="flex gap-1.5">
@@ -131,6 +135,27 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
 
         <div className="flex min-w-0 flex-col gap-8">
           {nearby.widened ? <OutOfAreaNotice place={origin.label} radius={filters.radius} noun="camps" /> : null}
+
+          {nextBreakMissing ? (
+            <div role="status" className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
+              <TentIcon className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="font-display text-base font-bold text-foreground text-balance">
+                  No {nextBreakLabel} camps within {filters.radius} miles of {origin.label} yet
+                </p>
+                <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
+                  The camps below are for later breaks. Enter your ZIP in the filters, or{" "}
+                  <Link
+                    href={`/camps?period=${nextPeriod}&radius=75`}
+                    className="font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    see {nextBreakLabel} camps across Vermont
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {results.length === 0 ? (
             <Empty className="rounded-2xl border border-border bg-card">

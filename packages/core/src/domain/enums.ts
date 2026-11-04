@@ -148,6 +148,7 @@ export const CAMP_STAY_LABELS: Record<CampStay, string> = {
 /** Vermont school breaks don't map onto the four seasons, so they're explicit. */
 export const CAMP_PERIODS = [
   "summer",
+  "fall_break",
   "winter_break",
   "february_break",
   "april_break",
@@ -157,6 +158,7 @@ export const CAMP_PERIODS = [
 export type CampPeriod = (typeof CAMP_PERIODS)[number]
 export const CAMP_PERIOD_LABELS: Record<CampPeriod, string> = {
   summer: "Summer",
+  fall_break: "Fall break",
   winter_break: "Winter break",
   february_break: "February break",
   april_break: "April break",
