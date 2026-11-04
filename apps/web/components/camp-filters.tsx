@@ -49,9 +49,11 @@ const townOptions = [{ value: "any", label: "Any town" }, ...towns.map((t) => ({
 export function CampFilters({
   variant = "sidebar",
   origin,
+  resultCount,
 }: {
   variant?: "sidebar" | "sheet"
   origin: OriginSummary
+  resultCount?: number
 }) {
   const router = useRouter()
   const params = useSearchParams()
@@ -162,7 +164,20 @@ export function CampFilters({
               onCheckedChange={(checked) => update("coverage", checked ? "workday" : "")}
             />
             <FieldLabel htmlFor={`${idPrefix}-coverage`} className="font-normal">
-              Covers a full workday (with care)
+              Covers a full workday
+            </FieldLabel>
+          </Field>
+          <p className="-mt-1 text-xs leading-relaxed text-muted-foreground">
+            Posted as full-day, or with both before- and after-care. Camps that haven&apos;t posted hours are hidden.
+          </p>
+          <Field orientation="horizontal" className="min-h-11 items-center">
+            <Checkbox
+              id={`${idPrefix}-past`}
+              checked={params.get("past") === "1"}
+              onCheckedChange={(checked) => update("past", checked ? "1" : "")}
+            />
+            <FieldLabel htmlFor={`${idPrefix}-past`} className="font-normal">
+              Include past sessions
             </FieldLabel>
           </Field>
         </FieldGroup>
@@ -180,11 +195,19 @@ export function CampFilters({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger render={<Button variant="outline" className="min-h-11 lg:hidden" />}>
           <FilterIcon data-icon="inline-start" />
-          Camp filters
+          More filters
         </SheetTrigger>
         <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl px-5 pb-8 pt-5">
-          <SheetTitle className="mb-4 font-display text-lg font-bold">Camp filters</SheetTitle>
+          <SheetTitle className="mb-1 font-display text-lg font-bold">More filters</SheetTitle>
+          <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+            Results update as you choose. Your choices stay applied when you close this panel.
+          </p>
           {body}
+          <div className="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-background px-5 pt-4">
+            <Button className="min-h-11 w-full" onClick={() => setOpen(false)}>
+              {resultCount === undefined ? "Show results" : `Show ${resultCount} ${resultCount === 1 ? "camp" : "camps"}`}
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
     )

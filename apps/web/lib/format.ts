@@ -68,11 +68,14 @@ export function distanceLabel(miles: number | null, origin: string | null = "Mon
  */
 export function freshnessLabel(activity: Activity, now = new Date()) {
   const days = daysSinceLastChecked(activity, now)
-  if (days === null) return "Last checked date unknown"
-  if (days <= 0) return "Checked today"
-  if (days === 1) return "Checked yesterday"
-  if (days < 30) return `Checked ${days} days ago`
-  return `Checked ${formatDate(activity.date_last_checked)}`
+  // "Updated" rather than "Checked": the date records when this listing was
+  // last refreshed, which may be an automated source fetch, not a person
+  // confirming details with the organizer (PRD R8).
+  if (days === null) return "Update date unknown"
+  if (days <= 0) return "Updated today"
+  if (days === 1) return "Updated yesterday"
+  if (days < 30) return `Updated ${days} days ago`
+  return `Updated ${formatDate(activity.date_last_checked)}`
 }
 
 export function isStale(activity: Activity, now = new Date()) {

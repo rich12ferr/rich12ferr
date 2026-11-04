@@ -136,6 +136,8 @@ export interface AnalyticsEventMap {
   }
   /** First focus of a search field, before any submit — separates "engaged with search" from "bounced". */
   search_focused: { source: "home_quick_search" | "home_alert_form" }
+  /** A camp-finder control changed: where/when/age, a filter, the sort, or a removed chip. */
+  camp_search_changed: { field: string; value: string | null; surface: "search_bar" | "filters" | "sort" | "chip" }
   /** Furthest point reached on the homepage, fired once per threshold per page view. */
   homepage_scrolled: { depth_percent: 25 | 50 | 75 | 100 }
   /** A homepage section scrolled at least halfway into view, fired once per section per page view. */
