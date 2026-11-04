@@ -26,18 +26,24 @@ export const campStayLabel = (v?: string | null) => labelOf<CampStay>(CAMP_STAY_
 export const campPeriodLabel = (v?: string | null) => labelOf<CampPeriod>(CAMP_PERIOD_LABELS, v)
 export const dayLengthLabel = (v?: string | null) => labelOf<DayLength>(DAY_LENGTH_LABELS, v)
 
-/** The four planning windows in calendar order, starting from winter break. */
-const PLANNING_CYCLE = ["winter_break", "february_break", "april_break", "summer"] as const satisfies readonly CampPeriod[]
+/** The five planning windows in calendar order, starting from fall break. */
+const PLANNING_CYCLE = [
+  "fall_break",
+  "winter_break",
+  "february_break",
+  "april_break",
+  "summer",
+] as const satisfies readonly CampPeriod[]
 
-/** The next break a Vermont parent is likely planning for. Approximate by date. */
+/** The next break a Vermont parent is likely planning for. Approximate by date; fall break runs through Thanksgiving week. */
 export function nextCampPeriod(now: Date): CampPeriod {
   const month = now.getMonth()
   const day = now.getDate()
-  if (month === 11 || (month === 0 && day <= 2)) return "winter_break"
+  if (month === 11 || (month === 0 && day <= 2) || (month === 10 && day > 28)) return "winter_break"
   if (month <= 1 && !(month === 1 && day > 22)) return "february_break"
   if (month <= 3 && !(month === 3 && day > 22)) return "april_break"
   if (month <= 7) return "summer"
-  return "winter_break"
+  return "fall_break"
 }
 
 /** Planning windows ordered from the next one, so the soonest break comes first. */
@@ -51,9 +57,13 @@ export function upcomingCampPeriods(now: Date): CampPeriod[] {
  * otherwise infers it from the start month so holiday camps never land in Summer.
  */
 export function campPeriodOf(activity: Pick<Activity, "camp_period" | "season" | "season_start_date">): CampPeriod {
-  if (activity.camp_period && activity.camp_period in CAMP_PERIOD_LABELS) return activity.camp_period as CampPeriod
   const start = activity.season_start_date ? new Date(`${activity.season_start_date.slice(0, 10)}T00:00:00Z`) : null
   const month = start && !Number.isNaN(start.getTime()) ? start.getUTCMonth() : null
+  const isFallMonth = month !== null && month >= 8 && month <= 10
+  const listed = activity.camp_period && activity.camp_period in CAMP_PERIOD_LABELS ? (activity.camp_period as CampPeriod) : null
+  // Catch-all periods predate fall_break, so a September–November date wins over them.
+  if (listed && !(isFallMonth && (listed === "other" || listed === "other_break"))) return listed
+  if (isFallMonth) return "fall_break"
   if (month === 11) return "winter_break"
   if (month === 1) return "february_break"
   if (month === 3) return "april_break"
@@ -63,6 +73,7 @@ export function campPeriodOf(activity: Pick<Activity, "camp_period" | "season" |
 }
 
 export const CAMP_GROUP_HEADINGS: Record<CampPeriod, string> = {
+  fall_break: "Fall break camps",
   winter_break: "Winter break camps",
   february_break: "February break camps",
   april_break: "April break camps",

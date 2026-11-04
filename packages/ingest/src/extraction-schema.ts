@@ -237,9 +237,11 @@ export const extractedProgramSchema = z.object({
     .describe("Only when programFormat is camp. What the camp is about; 'general' = traditional day camp."),
   campStay: z.enum(["day", "overnight"]).nullable().describe("Only when programFormat is camp."),
   campPeriod: z
-    .enum(["summer", "winter_break", "february_break", "april_break", "other_break", "other"])
+    .enum(["summer", "fall_break", "winter_break", "february_break", "april_break", "other_break", "other"])
     .nullable()
-    .describe("Only when programFormat is camp and the page states when it runs (e.g. 'February vacation camp')."),
+    .describe(
+      "Only when programFormat is camp and the page states when it runs (e.g. 'February vacation camp'). fall_break = September–November days off: Columbus/Indigenous Peoples' Day, teacher in-service, November or Thanksgiving break.",
+    ),
   dayLength: z.enum(["half_day", "full_day"]).nullable().describe("Only when programFormat is camp."),
   dailyStartTime: z
     .string()

@@ -78,7 +78,8 @@ function guessCampPeriod(text: string, season: string): string {
   if (/february/.test(lower)) return "february_break"
   if (/april/.test(lower)) return "april_break"
   if (/holiday|winter break|december/.test(lower)) return "winter_break"
-  return season === "summer" ? "summer" : ""
+  if (/thanksgiving|november|fall break|columbus day|indigenous peoples|in-service/.test(lower)) return "fall_break"
+  return season === "fall" ? "fall_break" : ""
 }
 
 /**

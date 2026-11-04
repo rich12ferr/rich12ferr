@@ -3,6 +3,7 @@ import type { CampPeriod } from "@openplay/core"
 import { cn } from "@/lib/utils"
 
 const PERIOD_PICK_LABELS: Partial<Record<CampPeriod, string>> = {
+  fall_break: "Fall break",
   winter_break: "Winter break",
   february_break: "February break",
   april_break: "April break",
