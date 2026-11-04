@@ -385,6 +385,8 @@ export type SearchParamsShape = {
   coverage?: string
   from?: string
   to?: string
+  /** "1" shows camp sessions that have already ended. */
+  past?: string
 }
 
 export type SearchFilters = {

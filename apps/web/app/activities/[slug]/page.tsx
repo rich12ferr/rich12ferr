@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import {
   AlertTriangleIcon,
+  ArrowLeftIcon,
   BuildingIcon,
   CalendarIcon,
   ClipboardListIcon,
@@ -15,7 +16,9 @@ import {
   TicketIcon,
   UsersIcon,
 } from "lucide-react"
+import { campGroupKey, groupCampSessions } from "@/lib/camp-results"
 import {
+  campDatesLabel,
   campFocusLabel,
   campPeriodLabel,
   campStayLabel,
@@ -90,10 +93,19 @@ function DetailRow({
   )
 }
 
-export default async function ActivityPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ActivityPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ from?: string | string[] }>
+}) {
   const { slug } = await params
+  const { from } = await searchParams
   const activity = await activityBySlug(slug)
   if (!activity) notFound()
+  // Only same-site camp result URLs, so this can't become an open redirect.
+  const backHref = typeof from === "string" && /^\/camps(\?|$)/.test(from) ? from : null
 
   const now = new Date()
   const { state: status, detail: statusDetail } = customerFacingState(activity, now)
@@ -103,9 +115,14 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
   // 4-state value) instead.
   const analyticsStatus = registrationStatus(activity, now)
 
-  const similar = (await activitiesForSport(activity.sport.slug))
-    .filter((a) => a.id !== activity.id && !hasSeasonEnded(a, now))
+  const sportActivities = await activitiesForSport(activity.sport.slug)
+  const groupKey = campGroupKey(activity)
+  const sessions = groupCampSessions(sportActivities.filter((a) => campGroupKey(a) === groupKey))[0]?.sessions ?? []
+  const sessionIds = new Set(sessions.map((s) => s.id))
+  const similar = sportActivities
+    .filter((a) => a.id !== activity.id && !sessionIds.has(a.id) && !hasSeasonEnded(a, now))
     .slice(0, 2)
+  const sessionQuery = backHref ? `?from=${encodeURIComponent(backHref)}` : ""
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
@@ -121,6 +138,15 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
           registration_status: analyticsStatus,
         }}
       />
+      {backHref ? (
+        <Link
+          href={backHref}
+          className="mb-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          <ArrowLeftIcon className="size-4" aria-hidden="true" />
+          Back to camp results
+        </Link>
+      ) : null}
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
@@ -174,6 +200,44 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               {activity.description}
             </p>
           </header>
+
+          {sessions.length > 1 ? (
+            <section id="sessions" aria-labelledby="sessions-heading" className="scroll-mt-24 flex flex-col gap-3">
+              <h2 id="sessions-heading" className="font-display text-lg font-bold">
+                {sessions.length} sessions
+              </h2>
+              <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-card">
+                {sessions.map((session) => {
+                  const sessionState = customerFacingState(session, now)
+                  const current = session.id === activity.id
+                  return (
+                    <li key={session.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <p className="text-sm font-semibold">
+                          {current ? (
+                            <span aria-current="page">{session.title}</span>
+                          ) : (
+                            <Link href={`/activities/${session.slug}${sessionQuery}`} className="hover:underline">
+                              {session.title}
+                            </Link>
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {campDatesLabel(session) ?? "Dates not posted yet"}
+                          {" \u00b7 "}
+                          {session.registration_fee === null ? "Price not listed" : formatFee(session.registration_fee, session.currency)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CustomerStatusPill state={sessionState.state} />
+                        {current ? <span className="text-xs font-semibold text-muted-foreground">Viewing</span> : null}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ) : null}
 
           <Separator />
 
@@ -366,7 +430,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
                   <dd className="font-medium">{activity.organization.name}</dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-muted-foreground">Last checked</dt>
+                  <dt className="text-muted-foreground">Listing updated</dt>
                   <dd className="font-medium">{freshnessLabel(activity, now)}</dd>
                 </div>
               </dl>
@@ -475,13 +539,17 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
               </p>
             ) : null}
 
-            <Separator />
-
-            <ActivityActions
-              activityTitle={activity.title}
-              programId={activity.program_id}
-              layout="stack"
-            />
+            {/* R1: an "email me when registration opens" offer contradicts a confirmed-open session. */}
+            {canRegister ? null : (
+              <>
+                <Separator />
+                <ActivityActions
+                  activityTitle={activity.title}
+                  programId={activity.program_id}
+                  layout="stack"
+                />
+              </>
+            )}
 
             <p className="text-[0.6875rem] leading-relaxed text-muted-foreground">
               Registration happens on {activity.registration_provider ?? activity.organization.name}
