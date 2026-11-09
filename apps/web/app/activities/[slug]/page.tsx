@@ -295,7 +295,11 @@ export default async function ActivityPage({
                   ) : null}
                   {activity.season_start_date || activity.season_end_date ? (
                     <li>
-                      Season: {formatDate(activity.season_start_date)} to {formatDate(activity.season_end_date)}
+                      {activity.season_start_date && activity.season_end_date
+                      ? `Season: ${formatDate(activity.season_start_date)} to ${formatDate(activity.season_end_date)}`
+                      : activity.season_start_date
+                        ? `Season begins: ${formatDate(activity.season_start_date)}`
+                        : `Season ends: ${formatDate(activity.season_end_date)}`}
                     </li>
                   ) : null}
                   {activity.registration_open_date ? (
