@@ -40,6 +40,7 @@ import {
   fieldProvenance,
   handoffEvents,
   organizations,
+  pageViews,
   programOfferings,
   programs,
   reports,
@@ -53,6 +54,7 @@ import {
   type AdminAuditLogRow,
   type NewFeaturedImpression,
   type NewHandoffEvent,
+  type NewPageView,
   type ReportRow,
 } from "./schema"
 
@@ -1690,4 +1692,132 @@ export async function handoffEventCountsByOrganization(opts: { since: Date; unti
       sql`date_trunc('day', ${handoffEvents.occurredAt}) desc`,
       desc(sql`count(*)`),
     )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Page views + conversion report                                           */
+/* -------------------------------------------------------------------------- */
+
+export async function createPageView(input: Omit<NewPageView, "id" | "occurredAt">) {
+  await db.insert(pageViews).values({
+    id: `pv_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`,
+    ...input,
+  })
+}
+
+export async function sportRowBySlug(slug: string) {
+  const rows = await db
+    .select({ id: sports.id, slug: sports.slug, name: sports.name })
+    .from(sports)
+    .where(eq(sports.slug, slug))
+    .limit(1)
+  return rows[0] ?? null
+}
+
+/**
+ * The page a click happened on. New rows carry `page` directly; older rows
+ * fall back to what the CTA location and discovery origin imply.
+ */
+const clickPage = sql.raw(`coalesce(page, case
+  when cta_location like 'activity_detail%' then 'activity_detail'
+  when cta_location = 'weekly_update_detail' then 'weekly_update'
+  when cta_location = 'organization_website' then 'organization_page'
+  when cta_location = 'featured_rail' then 'homepage'
+  when discovery_origin in ('homepage', 'search', 'camps', 'organization_page', 'weekly_update') then discovery_origin
+  else 'unknown' end)`)
+
+export type ConversionRow = {
+  key: string
+  label: string
+  views: number
+  /** Clicks on the pages counted in `views`, the numerator for CTR. */
+  clicks: number
+  /** Clicks from result cards and other pages, not counted in CTR. */
+  otherClicks: number
+}
+
+export type ConversionReport = {
+  /** Earliest page view on record, or null if none yet. */
+  trackingSince: Date | null
+  /** Effective report start: the later of the requested window and `trackingSince`. */
+  since: Date
+  totals: { views: number; clicks: number }
+  byPage: ConversionRow[]
+  byOrganization: ConversionRow[]
+  bySport: ConversionRow[]
+}
+
+type CountRow = { key: string | null; label: string | null; n: number }
+
+function merge(views: CountRow[], onPage: CountRow[], other: CountRow[]): ConversionRow[] {
+  const map = new Map<string, ConversionRow>()
+  const get = (r: CountRow) => {
+    const key = r.key ?? "unknown"
+    let row = map.get(key)
+    if (!row) {
+      row = { key, label: r.label ?? key, views: 0, clicks: 0, otherClicks: 0 }
+      map.set(key, row)
+    }
+    return row
+  }
+  for (const r of views) get(r).views += r.n
+  for (const r of onPage) get(r).clicks += r.n
+  for (const r of other) get(r).otherClicks += r.n
+  return [...map.values()].sort(
+    (a, b) => b.clicks + b.otherClicks - (a.clicks + a.otherClicks) || b.views - a.views,
+  )
+}
+
+/**
+ * Click-through rate by page, organization and sport. CTR is clicks on a
+ * page ÷ views of that page. For organizations and sports, "views" means
+ * their own pages (activity detail plus organization or sport page), and
+ * clicks from result cards elsewhere are reported separately as
+ * `otherClicks` so the rate is never inflated past 100%.
+ */
+export async function conversionReport(opts: { since: Date }): Promise<ConversionReport> {
+  const first = await db.execute<{ first: Date | null }>(sql`select min(occurred_at) as first from page_views`)
+  const raw = first.rows[0]?.first ?? null
+  const trackingSince = raw ? new Date(raw) : null
+  const since = trackingSince && trackingSince > opts.since ? trackingSince : opts.since
+
+  const rows = async (q: SQL) => (await db.execute<CountRow>(q)).rows
+
+  const [pageViewsRows, pageClicks, orgViews, orgOn, orgOther, sportViews, sportOn, sportOther] = await Promise.all([
+    rows(sql`select page as key, page as label, count(*)::int as n from page_views
+      where occurred_at >= ${since} group by page`),
+    rows(sql`select ${clickPage} as key, ${clickPage} as label, count(*)::int as n from handoff_events
+      where occurred_at >= ${since} group by 1`),
+    rows(sql`select organization_id as key, max(organization_name) as label, count(*)::int as n from page_views
+      where occurred_at >= ${since} and organization_id is not null
+        and page in ('activity_detail', 'organization_page') group by organization_id`),
+    rows(sql`select organization_id as key, max(organization_name) as label, count(*)::int as n from handoff_events
+      where occurred_at >= ${since} and organization_id is not null
+        and ${clickPage} in ('activity_detail', 'organization_page') group by organization_id`),
+    rows(sql`select organization_id as key, max(organization_name) as label, count(*)::int as n from handoff_events
+      where occurred_at >= ${since} and organization_id is not null
+        and ${clickPage} not in ('activity_detail', 'organization_page') group by organization_id`),
+    rows(sql`select sport_id as key, max(sport_name) as label, count(*)::int as n from page_views
+      where occurred_at >= ${since} and sport_id is not null
+        and page in ('activity_detail', 'sport_page') group by sport_id`),
+    rows(sql`select sport_id as key, max(sport_name) as label, count(*)::int as n from handoff_events
+      where occurred_at >= ${since} and sport_id is not null
+        and ${clickPage} in ('activity_detail', 'sport_page') group by sport_id`),
+    rows(sql`select sport_id as key, max(sport_name) as label, count(*)::int as n from handoff_events
+      where occurred_at >= ${since} and sport_id is not null
+        and ${clickPage} not in ('activity_detail', 'sport_page') group by sport_id`),
+  ])
+
+  const byPage = merge(pageViewsRows, pageClicks, [])
+  return {
+    trackingSince,
+    since,
+    totals: {
+      views: byPage.reduce((s, r) => s + r.views, 0),
+      clicks: byPage.reduce((s, r) => s + r.clicks, 0),
+    },
+    byPage,
+    byOrganization: merge(orgViews, orgOn, orgOther),
+    bySport: merge(sportViews, sportOn, sportOther),
+  }
 }

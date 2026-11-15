@@ -12,6 +12,7 @@ import {
   NewspaperIcon,
   SparklesIcon,
   StarIcon,
+  TrendingUpIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +23,7 @@ const links = [
   { href: "/admin/review", label: "AI review", icon: SparklesIcon },
   { href: "/admin/weekly-candidates", label: "This Week", icon: NewspaperIcon },
   { href: "/admin/featured", label: "Featured", icon: StarIcon },
+  { href: "/admin/conversions", label: "Conversions", icon: TrendingUpIcon },
   { href: "/admin/newsletter", label: "Newsletter", icon: MailIcon },
   { href: "/admin/submissions", label: "Submissions", icon: InboxIcon },
   { href: "/admin/reports", label: "Reports", icon: FlagIcon },

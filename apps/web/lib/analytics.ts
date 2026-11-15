@@ -211,10 +211,66 @@ function getSessionContext(): SessionContext {
   }
 }
 
+/** Public page types recorded in `page_views` and on each click, for the admin conversion report. */
+export type PageType =
+  | "homepage"
+  | "search"
+  | "camps"
+  | "calendar"
+  | "activity_detail"
+  | "organization_page"
+  | "organizations"
+  | "sport_page"
+  | "sports"
+  | "weekly_update"
+
+export const PAGE_TYPES: readonly PageType[] = [
+  "homepage",
+  "search",
+  "camps",
+  "calendar",
+  "activity_detail",
+  "organization_page",
+  "organizations",
+  "sport_page",
+  "sports",
+  "weekly_update",
+]
+
+/** Maps a pathname to its page type, or null for pages the report ignores (admin, account, legal, ...). */
+export function pathToPage(pathname: string): PageType | null {
+  if (pathname === "/") return "homepage"
+  const [first, second] = pathname.split("/").filter(Boolean)
+  switch (first) {
+    case "search":
+      return "search"
+    case "camps":
+      return "camps"
+    case "calendar":
+      return "calendar"
+    case "activities":
+      return second ? "activity_detail" : null
+    case "organizations":
+      if (!second) return "organizations"
+      return second === "claim" ? null : "organization_page"
+    case "sports":
+      return second ? "sport_page" : "sports"
+    case "this-week":
+      return "weekly_update"
+    default:
+      return null
+  }
+}
+
 /** The session fields persisted alongside a handoff click in `handoff_events`. */
-export function getHandoffSessionFields(): { session_id: string | null; discovery_origin: DiscoveryOrigin | null } {
+export function getHandoffSessionFields(): {
+  session_id: string | null
+  discovery_origin: DiscoveryOrigin | null
+  page: PageType | null
+} {
   const { session_id, discovery_origin } = getSessionContext()
-  return { session_id, discovery_origin }
+  const page = typeof window === "undefined" ? null : pathToPage(window.location.pathname)
+  return { session_id, discovery_origin, page }
 }
 
 /** Maps a landing pathname to the discovery surface it represents. */

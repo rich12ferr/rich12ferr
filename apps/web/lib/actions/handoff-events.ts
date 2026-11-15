@@ -1,7 +1,8 @@
 "use server"
 
 import { createHandoffEvent } from "@openplay/db"
-import type { RegistrationHandoffProps } from "@/lib/analytics"
+import { PAGE_TYPES, type PageType, type RegistrationHandoffProps } from "@/lib/analytics"
+import { isAdminRequest } from "@/lib/is-admin-request"
 
 /**
  * Persists one registration/website handoff click to `handoff_events`.
@@ -22,10 +23,15 @@ export async function recordRegistrationHandoff(
     destination_url: string
     session_id?: string | null
     discovery_origin?: string | null
+    page?: string | null
   },
 ): Promise<void> {
   try {
+    // Admin clicks are internal testing; keep them out of conversion metrics.
+    if (await isAdminRequest()) return
+    const page = PAGE_TYPES.includes(props.page as PageType) ? (props.page as PageType) : null
     await createHandoffEvent({
+      page,
       ctaLabel: props.cta_label,
       ctaLocation: props.cta_location,
       destinationUrl: props.destination_url,
