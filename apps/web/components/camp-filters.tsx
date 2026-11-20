@@ -193,7 +193,7 @@ export function CampFilters({
   if (variant === "sheet") {
     return (
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger render={<Button variant="outline" className="min-h-11 lg:hidden" />}>
+        <SheetTrigger render={<Button variant="outline" className="min-h-11 rounded-full" />}>
           <FilterIcon data-icon="inline-start" />
           More filters
         </SheetTrigger>
