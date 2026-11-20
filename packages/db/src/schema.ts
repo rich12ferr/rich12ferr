@@ -1045,6 +1045,8 @@ export const handoffEvents = pgTable(
     discoveryOrigin: text("discovery_origin"),
     /** "featured" when the click came from a Featured rail card; null for every organic surface. */
     placement: text("placement"),
+    /** `PageType` the click happened on ("activity_detail", "camps", ...). Null for clicks recorded before this column existed. */
+    page: text("page"),
   },
   (t) => [
     index("handoff_events_org_idx").on(t.organizationId, t.occurredAt),
@@ -1079,6 +1081,36 @@ export const featuredImpressions = pgTable(
   (t) => [
     index("featured_impressions_org_idx").on(t.organizationId, t.occurredAt),
     index("featured_impressions_offering_idx").on(t.offeringId),
+  ],
+)
+
+/**
+ * One row per public page view, the denominator for the admin conversion
+ * report (clicks in `handoff_events` ÷ views here). Only whitelisted page
+ * types are recorded; organization and sport fields are resolved server-side
+ * from the URL, never taken from the client. Admin sessions are not recorded.
+ */
+export const pageViews = pgTable(
+  "page_views",
+  {
+    id: text("id").primaryKey(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+    /** `PageType` from `apps/web/lib/analytics.ts`. */
+    page: text("page").notNull(),
+    path: text("path").notNull(),
+    offeringId: text("offering_id"),
+    programId: text("program_id"),
+    organizationId: text("organization_id"),
+    organizationName: text("organization_name"),
+    sportId: text("sport_id"),
+    sportSlug: text("sport_slug"),
+    sportName: text("sport_name"),
+    sessionId: text("session_id"),
+  },
+  (t) => [
+    index("page_views_page_idx").on(t.page, t.occurredAt),
+    index("page_views_org_idx").on(t.organizationId, t.occurredAt),
+    index("page_views_sport_idx").on(t.sportId, t.occurredAt),
   ],
 )
 
@@ -1256,6 +1288,7 @@ export type NewWeeklyStory = typeof weeklyStories.$inferInsert
 export type NewWeeklyStoryCandidate = typeof weeklyStoryCandidates.$inferInsert
 export type NewHandoffEvent = typeof handoffEvents.$inferInsert
 export type NewFeaturedImpression = typeof featuredImpressions.$inferInsert
+export type NewPageView = typeof pageViews.$inferInsert
 export type NewNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert
 export type NewNewsletterIssue = typeof newsletterIssues.$inferInsert
 export type NewNewsletterSend = typeof newsletterSends.$inferInsert

@@ -44,7 +44,7 @@ export default async function ThisWeekArchivePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl gap-8 px-4 py-10 sm:px-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row lg:gap-8">
       <WeeklyArchiveNav editions={summaries} currentSlug={edition.weekSlug} />
       <WeeklyEditionArticle edition={edition} summaries={summaries} isCurrent />
     </div>

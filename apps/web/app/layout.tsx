@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { AnalyticsProvider } from "@/components/analytics-provider"
+import { PageViewTracker } from "@/components/page-view-tracker"
 import "./globals.css"
 
 const inter = Inter({
@@ -89,6 +90,7 @@ export default function RootLayout({
         </div>
         <Toaster position="top-center" />
         <AnalyticsProvider />
+        <PageViewTracker />
         {process.env.NODE_ENV === "production" && (
           <>
             <Analytics />

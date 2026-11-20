@@ -234,7 +234,7 @@ export default async function HomePage() {
               </Button>
             }
           />
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {weeklyStories.map((story) => (
               <li key={story.id}>
                 <WeeklyStoryCard story={story} />
