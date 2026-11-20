@@ -74,7 +74,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`bg-background ${inter.variable} ${outfit.variable}`}>
+      <head>
+        <script
+          id="google-tag-manager"
+          dangerouslySetInnerHTML={{ __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-MT58R3R4');` }}
+        />
+      </head>
       <body className="min-h-dvh font-sans antialiased">
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-MT58R3R4"
+            title="Google Tag Manager"
+            height="0"
+            width="0"
+            hidden
+          />
+        </noscript>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

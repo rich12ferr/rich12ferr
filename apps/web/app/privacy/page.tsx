@@ -5,7 +5,7 @@ export const metadata = {
   description: "What Sign Up Vermont collects, why, and how you can remove it.",
 }
 
-const lastUpdated = "September 2026"
+const lastUpdated = "November 2026"
 
 export default function PrivacyPage() {
   return (
@@ -20,8 +20,8 @@ export default function PrivacyPage() {
           <h2 className="font-display text-lg font-bold text-foreground">The short version</h2>
           <p>
             Sign Up Vermont is a directory. You can search it, browse it, and set up alerts without
-            creating an account. We collect the minimum information needed to send you an alert email or
-            respond to a message you send us, and nothing else. We do not sell your information, and we
+            creating an account. We collect information to send requested alerts, respond to messages, and understand
+            how visitors use the directory. We do not sell your information, and we
             do not share it with the organizations running the activities you look up.
           </p>
         </section>
@@ -38,7 +38,11 @@ export default function PrivacyPage() {
           <p>
             Like most websites, our hosting and analytics infrastructure automatically logs basic technical
             information, such as approximate location and browser type, for security and reliability
-            purposes. We do not use this information to identify individual visitors.
+            purposes. We use Google Tag Manager to load measurement tags. When Google Analytics is
+            enabled, it can use cookies to measure visits and page views. Learn more about{" "}
+            <a href="https://policies.google.com/technologies/partner-sites" className="font-medium text-foreground underline underline-offset-2">
+              how Google uses information from partner sites
+            </a>.
           </p>
         </section>
 
