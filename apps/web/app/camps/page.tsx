@@ -13,7 +13,7 @@ import { TrackView } from "@/components/track-view"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { eligibilityLabel } from "@/lib/format"
 import { campPeriodOf } from "@/lib/camp-format"
-import { groupCampSessions, isPastCampSession, parseCampSort, sortCampGroups, type CampGroup } from "@/lib/camp-results"
+import { buildCampInventory, groupCampSessions, parseCampSort, sortCampGroups, type CampGroup } from "@/lib/camp-results"
 import { originSummary, resolveSearchOrigin } from "@/lib/origin"
 import { countActiveFilters, parseFilters, searchActivitiesNearby, type SearchParamsShape } from "@/lib/queries"
 
@@ -51,8 +51,10 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
   const origin = await resolveSearchOrigin({ zip: filters.zip, near: params.near })
   const nearby = await searchActivitiesNearby(filters, now, origin)
   const sort = parseCampSort(typeof params.sort === "string" ? params.sort : null)
-  const groups = sortCampGroups(groupCampSessions(nearby.results.filter((r) => !isPastCampSession(r, now))), sort, now)
-  const past = nearby.results.filter((r) => isPastCampSession(r, now))
+  const inventory = buildCampInventory(nearby.results, now)
+  const confirmed = sortCampGroups(groupCampSessions(inventory.upcoming), sort, now)
+  const soonKeys = new Set(inventory.comingSoon.map((g) => g.key))
+  const groups = [...confirmed, ...inventory.comingSoon.sort((a, b) => a.title.localeCompare(b.title))]
   const active = countActiveFilters(filters)
   const query: Record<string, string> = Object.fromEntries(
     Object.entries(params).filter((e): e is [string, string] => typeof e[1] === "string"),
@@ -77,7 +79,7 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
     <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {items.map((g) => (
         <li key={g.key}>
-          <CampResultCard group={g} now={now} returnTo={href()} />
+          <CampResultCard group={g} now={now} returnTo={href()} comingSoon={soonKeys.has(g.key)} />
         </li>
       ))}
     </ul>
@@ -108,6 +110,7 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
           </h2>
           <p className="text-sm text-muted-foreground">
             {nearby.widened ? "Across Vermont" : `Within ${filters.radius} miles of ${origin.label}`}
+            {inventory.comingSoon.length > 0 && ` · ${confirmed.length} with dates, ${inventory.comingSoon.length} coming soon`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -154,16 +157,6 @@ export default async function CampsPage({ searchParams }: { searchParams: Promis
             {cards(items)}
           </section>
         ))
-      )}
-      {past.length > 0 && (
-        <section className="border-t border-border pt-4">
-          <Link href={href("past", "1")} scroll={false} className="text-sm font-semibold text-primary underline">
-            {query.past === "1" ? "Hide" : "Show"} {past.length} past {past.length === 1 ? "session" : "sessions"}
-          </Link>
-          {query.past === "1" && (
-            <div className="pt-4">{cards(sortCampGroups(groupCampSessions(past), "start", now).reverse())}</div>
-          )}
-        </section>
       )}
       <NewsletterCta
         source="camps_page"
