@@ -67,6 +67,45 @@ export function groupCampSessions<T extends ActivityWithRelations>(results: T[])
   })
 }
 
+/** A program across years: "Camp X Summer 2026" and "Camp X Summer 2027" match. */
+export function campProgramKey(activity: ActivityWithRelations) {
+  const title = campBaseTitle(activity.title).replace(/\b20\d{2}\b/g, "").replace(/\s+/g, " ").trim()
+  return [activity.organization_id, title.toLowerCase(), activity.town.toLowerCase()].join("|")
+}
+
+export function campTitleWithoutYear(title: string) {
+  return title.replace(/\s*\b20\d{2}\b/g, "").replace(/\s+/g, " ").trim() || title
+}
+
+/**
+ * Full inventory: every program with a confirmed upcoming session, plus one
+ * "coming soon" entry per program that only has past sessions (it ran
+ * before, but next season's dates aren't posted yet).
+ */
+export function buildCampInventory<T extends ActivityWithRelations>(results: T[], now = new Date()) {
+  const upcoming = results.filter((r) => !isPastCampSession(r, now))
+  const confirmed = new Set(upcoming.map(campProgramKey))
+  const latestPast = new Map<string, T>()
+  for (const r of results) {
+    if (!isPastCampSession(r, now)) continue
+    const key = campProgramKey(r)
+    if (confirmed.has(key)) continue
+    const prev = latestPast.get(key)
+    if (!prev || (r.season_year ?? 0) * 1e13 + pastTime(r) > (prev.season_year ?? 0) * 1e13 + pastTime(prev))
+      latestPast.set(key, r)
+  }
+  const comingSoon: CampGroup<T>[] = [...latestPast.entries()].map(([key, s]) => ({
+    key: `soon:${key}`,
+    title: campTitleWithoutYear(campBaseTitle(s.title)),
+    sessions: [s],
+  }))
+  return { upcoming, comingSoon }
+}
+
+function pastTime(activity: ActivityWithRelations) {
+  return parseDate(activity.season_start_date)?.getTime() ?? 0
+}
+
 function startTime(activity: ActivityWithRelations) {
   return parseDate(activity.season_start_date)?.getTime() ?? Number.POSITIVE_INFINITY
 }
